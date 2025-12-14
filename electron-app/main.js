@@ -14,11 +14,12 @@ function createSplashWindow() {
         width: 400,
         height: 350,
         frame: false,
-        transparent: true,
         resizable: false,
         center: true,
         alwaysOnTop: true,
         icon: path.join(__dirname, 'src', 'icon.ico'),
+        backgroundColor: '#0f172a',
+        roundedCorners: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true
@@ -34,10 +35,11 @@ function createLoginWindow() {
         width: 400,
         height: 500,
         frame: false,
-        transparent: true,
         resizable: false,
         center: true,
         icon: path.join(__dirname, 'src', 'icon.ico'),
+        backgroundColor: '#0f172a',
+        roundedCorners: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

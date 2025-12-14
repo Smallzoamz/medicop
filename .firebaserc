@@ -1,6 +1,6 @@
 {
   "projects": {
-    "medicrecruiting": "onemedicrecruitment-db"
+    "default": "medic-op"
   },
   "targets": {},
   "etags": {}

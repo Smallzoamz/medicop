@@ -9,7 +9,7 @@ echo.
 
 cd /d f:\MedicRecruitment
 
-set VERSION=1.5.0
+set VERSION=1.5.1
 
 echo 📦 Version: %VERSION%
 echo.
