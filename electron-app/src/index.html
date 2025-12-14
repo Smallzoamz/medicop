@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.4.9 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.5.0 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -440,7 +440,7 @@
     <div id="electron-title-bar" class="electron-title-bar hidden">
         <div class="title-bar-left">
             <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
-            <span class="title-bar-text">Medical OP Systems v.1.4.9</span>
+            <span class="title-bar-text">Medical OP Systems v.1.5.0</span>
         </div>
         <div class="title-bar-controls">
             <button class="title-bar-btn" id="btn-minimize" title="ย่อ">
@@ -6535,7 +6535,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.4.9';
+        const APP_VERSION = '1.5.0';
         function showChangelogModal() { document.getElementById('changelog-modal').classList.remove('hidden'); }
         function closeChangelogModal() { document.getElementById('changelog-modal').classList.add('hidden'); localStorage.setItem('op_last_seen_version', APP_VERSION); }
         function checkShowChangelog() { const lastSeen = localStorage.getItem('op_last_seen_version'); if (lastSeen !== APP_VERSION) { setTimeout(() => showChangelogModal(), 500); } }
@@ -10275,6 +10275,26 @@
         }, 1000);
 
         async function initApp() {
+            // Initialize Electron title bar (if in Electron)
+            const isElectron = window.electronEnv?.isElectron || window.isElectronApp;
+            if (isElectron) {
+                const titleBar = document.getElementById('electron-title-bar');
+                if (titleBar) {
+                    titleBar.classList.remove('hidden');
+                    document.body.classList.add('has-title-bar');
+                }
+                // Setup window control buttons
+                document.getElementById('btn-minimize')?.addEventListener('click', () => {
+                    window.windowControls?.minimize();
+                });
+                document.getElementById('btn-maximize')?.addEventListener('click', () => {
+                    window.windowControls?.maximize();
+                });
+                document.getElementById('btn-close')?.addEventListener('click', () => {
+                    window.windowControls?.close();
+                });
+            }
+
             // Load version from Firebase and display on login page
             try {
                 const versionDoc = await db.collection('settings').doc('appVersion').get();
