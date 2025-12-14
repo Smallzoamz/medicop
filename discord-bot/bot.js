@@ -644,10 +644,13 @@ async function postSummaryToDiscord(summary, docId) {
         const ongoingStories = (summary.ongoingStories || []);  // Stories still in progress
         const closedStories = storiesList || []; // Completed stories from this shift
 
-        // Closed Stories (completed during shift)
-        message += `⚔️ **สตอรี่ที่ปิดแล้ว (${closedStories.length} เคส):**\n`;
-        if (closedStories.length > 0) {
-            closedStories.forEach((s, i) => {
+        // Filter: only show stories that were STARTED and CLOSED
+        const startedAndClosed = closedStories.filter(s => s.startTime && s.startTime !== '-');
+
+        // Closed Stories (started AND completed during shift)
+        message += `⚔️ **สตอรี่ที่เริ่มแล้ว และ ปิดแล้ว (${startedAndClosed.length} เคส):**\n`;
+        if (startedAndClosed.length > 0) {
+            startedAndClosed.forEach((s, i) => {
                 const partyA = s.partyA || '?';
                 const partyB = s.partyB || '?';
                 const medics = s.medics || s.assignedMedics || [];
@@ -667,7 +670,7 @@ async function postSummaryToDiscord(summary, docId) {
                 message += '\n';
             });
         } else {
-            message += '_ไม่มีสตอรี่_\n';
+            message += '_ไม่มีสตอรี่ที่เริ่มแล้วและปิดแล้ว_\n';
         }
 
         // Ongoing Stories (still in progress when shift ended)
@@ -825,33 +828,8 @@ async function updateOPChannelMessage(data) {
                 message += '────────────────────\n\n';
             }
 
-            // Stories (cases) - show in OP Channel too
-            const allStories = data.cases || [];
-            const stories = filterTodayItems(allStories);
-            message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
-            if (stories.length > 0) {
-                stories.forEach((c, i) => {
-                    const partyA = c.partyA || '?';
-                    const partyB = c.partyB || '?';
-                    const location = c.location || '';
-                    const startTime = c.startTime || '';
-                    const medics = c.medics || [];
-                    // Use Discord mentions for story medics (if linked)
-                    const mainMedic = medics[0] ? formatWithMention(medics[0]) : 'ยังไม่มี';
-                    const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
-
-                    message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
-                    message += `ระหว่าง ${partyA} VS ${partyB}\n`;
-                    if (location) message += `📍 ${location}\n`;
-                    message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
-                    if (supportMedics) {
-                        message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
-                    }
-                    message += '\n';
-                });
-            } else {
-                message += '_ไม่มีสตอรี่ในขณะนี้_\n';
-            }
+            // Stories are now shown ONLY in shift summary (postSummaryToDiscord)
+            // Removed from here to avoid duplicate/confusing messages
 
             // Events (activeEvents) - show in OP Channel too
             const allEvents = data.activeEvents || [];
@@ -896,7 +874,9 @@ async function updateOPChannelMessage(data) {
     }
 }
 
-// --- Update Story Channel Message (Stories Only) ---
+// --- Update Story Channel Message (CLOSED Stories Only) ---
+// Only posts when ALL stories for the day are closed
+// Edits existing message while stories are still open
 async function updateStoryChannelMessage(data) {
     try {
         const channel = await client.channels.fetch(STORY_CHANNEL_ID);
@@ -908,11 +888,28 @@ async function updateStoryChannelMessage(data) {
         const allStories = data.cases || [];
         const stories = filterTodayItems(allStories);
 
+        // Check if there are any OPEN (not closed) stories
+        const openStories = stories.filter(s => !s.closed);
+        const closedStories = stories.filter(s => s.closed);
+
+        // If there are open stories, don't post/update yet - let bot edit when medics are assigned
+        // Only post when ALL stories for the day are closed
+        if (openStories.length > 0) {
+            console.log(`⏳ ${openStories.length} stories still open, waiting for all to close...`);
+            // Don't post anything - wait until all stories are closed
+            return;
+        }
+
+        // No open stories - either all closed or no stories at all
+        if (closedStories.length === 0) {
+            console.log('📭 No closed stories to post');
+            return;
+        }
+
         // Get date from first story's storyDate, or use current date as fallback
         let dateStr;
-        if (stories.length > 0 && stories[0].storyDate) {
-            // storyDate is in YYYY-MM-DD format, convert to Thai display
-            const [year, month, day] = stories[0].storyDate.split('-').map(Number);
+        if (closedStories.length > 0 && closedStories[0].storyDate) {
+            const [year, month, day] = closedStories[0].storyDate.split('-').map(Number);
             const storyDateObj = new Date(year, month - 1, day);
             dateStr = storyDateObj.toLocaleDateString('th-TH', {
                 day: 'numeric',
@@ -920,7 +917,6 @@ async function updateStoryChannelMessage(data) {
                 year: 'numeric'
             });
         } else {
-            // Fallback to current date
             const now = new Date();
             dateStr = now.toLocaleDateString('th-TH', {
                 day: 'numeric',
@@ -929,64 +925,41 @@ async function updateStoryChannelMessage(data) {
             });
         }
 
-        // Build message for Story Channel (Stories ONLY - NO Events)
+        // Build message for Story Channel (CLOSED Stories ONLY)
         let message = '';
-        message += '**📋 แจ้งเคสสตอรี่**\n';
+        message += '**📋 สรุปเคสสตอรี่**\n';
         message += '────────────────────\n';
         message += `📅 ${dateStr}\n`;
         message += '────────────────────\n\n';
 
-        // Stories ONLY
-        message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
-        if (stories.length > 0) {
-            stories.forEach((c, i) => {
-                const partyA = c.partyA || '?';
-                const partyB = c.partyB || '?';
-                const location = c.location || '';
-                const startTime = c.startTime || '';
-                const medics = c.medics || [];
-                // Use Discord mentions for story medics (if linked)
-                const mainMedic = medics[0] ? formatWithMention(medics[0]) : 'ยังไม่มี';
-                const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
+        // Show CLOSED stories only
+        message += `⚔️ **สตอรี่ที่ปิดแล้ว (${closedStories.length} เคส):**\n`;
+        closedStories.forEach((c, i) => {
+            const partyA = c.partyA || '?';
+            const partyB = c.partyB || '?';
+            const location = c.location || '';
+            const startTime = c.startTime || '';
+            const medics = c.medics || [];
+            const mainMedic = medics[0] ? formatWithMention(medics[0]) : '-';
+            const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
 
-                message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
-                message += `ระหว่าง ${partyA} VS ${partyB}\n`;
-                if (location) message += `📍 ${location}\n`;
-                message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
-                if (supportMedics) {
-                    message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
-                }
-                message += '\n';
-            });
-        } else {
-            message += '_ไม่มีสตอรี่ในขณะนี้_\n';
-        }
-        // NO Events in Story Channel
-
-        // Get stored message ID for Story channel
-        const configDoc = await db.collection('config').doc('discord_message').get();
-        const storedMessageId = configDoc.exists ? configDoc.data().storyMessageId : null;
-
-        if (storedMessageId) {
-            try {
-                const msg = await channel.messages.fetch(storedMessageId);
-                await msg.edit(message);
-                console.log('✅ Story Channel message edited');
-            } catch (e) {
-                const newMsg = await channel.send(message);
-                await db.collection('config').doc('discord_message').set({
-                    ...configDoc.data(),
-                    storyMessageId: newMsg.id
-                }, { merge: true });
-                console.log('✅ Story Channel new message sent');
+            message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
+            message += `ระหว่าง ${partyA} VS ${partyB}\n`;
+            if (location) message += `📍 ${location}\n`;
+            message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
+            if (supportMedics) {
+                message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
             }
-        } else {
-            const newMsg = await channel.send(message);
-            await db.collection('config').doc('discord_message').set({
-                storyMessageId: newMsg.id
-            }, { merge: true });
-            console.log('✅ Story Channel initial message sent');
-        }
+            message += '\n';
+        });
+
+        // Post NEW message when all stories are closed
+        const newMsg = await channel.send(message);
+        await db.collection('config').doc('discord_message').set({
+            storyMessageId: newMsg.id
+        }, { merge: true });
+        console.log('✅ Story Channel summary posted (all stories closed)');
+
     } catch (error) {
         console.error('❌ updateStoryChannelMessage error:', error);
     }
