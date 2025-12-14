@@ -248,8 +248,9 @@ function startStoryListener() {
 
         console.log(`📊 Update: ${cases.length} cases, OP: ${currentOP}, OnDuty: ${onDutyCount}`);
 
-        // Send/Edit message in Discord - pass entire data object
-        await updateStoryMessage(data);
+        // Send/Edit messages to BOTH channels
+        await updateOPChannelMessage(data);      // ห้องรันคิว OP
+        await updateStoryChannelMessage(data);   // ห้องแจ้งเคสสตอรี่ (เฉพาะสตอรี่)
     }, (error) => {
         console.error('❌ Firestore listener error:', error);
     });
@@ -503,28 +504,22 @@ async function postSummaryToDiscord(summary, docId) {
     }
 }
 
-// --- Update Story Message in Discord ---
-async function updateStoryMessage(data) {
+// --- Update OP Channel Message (Queue, On Duty, Off Duty, AFK) ---
+async function updateOPChannelMessage(data) {
     try {
-        const channel = await client.channels.fetch(STORY_CHANNEL_ID);
+        const channel = await client.channels.fetch(OP_CHANNEL_ID);
         if (!channel) {
-            console.error('❌ Story channel not found');
+            console.error('❌ OP channel not found');
             return;
         }
 
-        // FIXED: Use correct field names from OP system
-        const allStories = data.cases || [];  // OP uses "cases" not "stories"
-        const stories = filterTodayItems(allStories); // Only show today's stories
         const currentOP = data.currentOP || 'ไม่มี';
         const supOP = data.supOP || null;
         const onDuty = data.onDuty || [];  // Array of strings (names)
         const offDuty = data.offDuty || []; // Array of strings (names)
         const afkList = data.afk || [];     // OP uses "afk" not "afkList"
-        const allEvents = data.activeEvents || []; // OP uses "activeEvents" not "events"
-        const eventList = filterTodayItems(allEvents); // Only show today's events
-        // Use _lastModified as shift start time (timestamp when OP started)
         const lastModified = data._lastModified || null;
-        const medicStatuses = data.medicStatuses || {}; // Status per medic: { name: 'accept'|'waitfix'|'decline' }
+        const medicStatuses = data.medicStatuses || {}; // Status per medic
 
         // Format date
         const now = new Date();
@@ -534,7 +529,7 @@ async function updateStoryMessage(data) {
             year: 'numeric'
         });
 
-        // Build message in text format (like the image)
+        // Build message for OP Channel (Queue info)
         let message = '';
         message += '**สรุปการเข้าเวร OP**\n';
         message += '────────────────────\n';
@@ -543,7 +538,6 @@ async function updateStoryMessage(data) {
         if (supOP) {
             message += `👥 Support OP: ${supOP}\n`;
         }
-        // Format timestamp as time (HH:MM) in Bangkok timezone
         if (lastModified && typeof lastModified === 'number') {
             const shiftDate = new Date(lastModified);
             const timeStr = shiftDate.toLocaleTimeString('th-TH', {
@@ -555,25 +549,19 @@ async function updateStoryMessage(data) {
         }
         message += '────────────────────\n\n';
 
-        // On Duty List - onDuty is array of STRINGS (names), not objects
-        // 📍 = ONLY person who clicked "✓ รับเคส" (accept status), NO default
+        // On Duty List
         message += `✅ **On Duty (${onDuty.length} คน):**\n`;
         if (onDuty.length > 0) {
             onDuty.forEach((name) => {
-                // Get status from medicStatuses object
                 const status = medicStatuses[name] || '';
-
-                // Format status icon - NO default, only explicit status
                 let icon = '';
                 if (status === 'accept') {
                     icon = ' 📍'; // กด ✓ รับเคส = ถึงคิว
                 } else if (status === 'waitfix') {
-                    icon = ' ⏳'; // รอเคสแก้ (นาฬิกาทราย)
+                    icon = ' ⏳'; // รอเคสแก้
                 } else if (status === 'decline') {
-                    icon = ' ❌'; // ไม่รับเคส (กากบาท)
+                    icon = ' ❌'; // ไม่รับเคส
                 }
-                // No status = no icon
-
                 message += `• ${name}${icon}\n`;
             });
         } else {
@@ -596,11 +584,10 @@ async function updateStoryMessage(data) {
         }
         message += '────────────────────\n\n';
 
-        // AFK List (if any) - afk is array of STRINGS (names)
+        // AFK List
         if (afkList.length > 0) {
             message += `💤 **AFK (${afkList.length} คน):**\n`;
             afkList.forEach(name => {
-                // afk is just array of names, check afkTimes for duration
                 const afkTime = data.afkTimes?.[name];
                 let timeStr = '';
                 if (afkTime) {
@@ -609,10 +596,68 @@ async function updateStoryMessage(data) {
                 }
                 message += `• ${name}${timeStr}\n`;
             });
-            message += '────────────────────\n\n';
+            message += '────────────────────\n';
         }
 
-        // Stories (cases) - OP uses "medics" not "assignedMedics"
+        // Get stored message ID for OP channel
+        const configDoc = await db.collection('config').doc('discord_message').get();
+        const storedMessageId = configDoc.exists ? configDoc.data().opChannelMessageId : null;
+
+        if (storedMessageId) {
+            try {
+                const msg = await channel.messages.fetch(storedMessageId);
+                await msg.edit(message);
+                console.log('✅ OP Channel message edited');
+            } catch (e) {
+                const newMsg = await channel.send(message);
+                await db.collection('config').doc('discord_message').set({
+                    ...configDoc.data(),
+                    opChannelMessageId: newMsg.id
+                }, { merge: true });
+                console.log('✅ OP Channel new message sent');
+            }
+        } else {
+            const newMsg = await channel.send(message);
+            await db.collection('config').doc('discord_message').set({
+                opChannelMessageId: newMsg.id
+            }, { merge: true });
+            console.log('✅ OP Channel initial message sent');
+        }
+    } catch (error) {
+        console.error('❌ updateOPChannelMessage error:', error);
+    }
+}
+
+// --- Update Story Channel Message (Stories Only) ---
+async function updateStoryChannelMessage(data) {
+    try {
+        const channel = await client.channels.fetch(STORY_CHANNEL_ID);
+        if (!channel) {
+            console.error('❌ Story channel not found');
+            return;
+        }
+
+        const allStories = data.cases || [];
+        const stories = filterTodayItems(allStories);
+        const allEvents = data.activeEvents || [];
+        const eventList = filterTodayItems(allEvents);
+
+        // Format date
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        // Build message for Story Channel (Stories & Events ONLY)
+        let message = '';
+        message += '**📋 แจ้งเคสสตอรี่**\n';
+        message += '────────────────────\n';
+        message += `📅 ${dateStr}\n`;
+        message += '────────────────────\n\n';
+
+        // Stories Only
         message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
         if (stories.length > 0) {
             stories.forEach((c, i) => {
@@ -620,7 +665,6 @@ async function updateStoryMessage(data) {
                 const partyB = c.partyB || '?';
                 const location = c.location || '';
                 const startTime = c.startTime || '';
-                // OP uses "medics" array, not "assignedMedics"
                 const medics = c.medics || [];
                 const mainMedic = medics[0] || 'ยังไม่มี';
                 const supportMedics = medics.slice(1).join(', ');
@@ -638,19 +682,18 @@ async function updateStoryMessage(data) {
             message += '_ไม่มีสตอรี่ในขณะนี้_\n';
         }
 
-        // Events (activeEvents) - if any
+        // Events (if any)
         if (eventList.length > 0) {
             message += '────────────────────\n';
             message += `🎉 **Events (${eventList.length}):**\n`;
             eventList.forEach(e => {
-                // OP uses "medics" array for event participants
                 const participants = (e.medics || []).join(', ') || 'ยังไม่มี';
                 message += `**${e.name || 'Event'}**\n`;
                 message += `ผู้เข้าร่วม: ${participants}\n\n`;
             });
         }
 
-        // Get stored message ID
+        // Get stored message ID for Story channel
         const configDoc = await db.collection('config').doc('discord_message').get();
         const storedMessageId = configDoc.exists ? configDoc.data().storyMessageId : null;
 
@@ -658,25 +701,24 @@ async function updateStoryMessage(data) {
             try {
                 const msg = await channel.messages.fetch(storedMessageId);
                 await msg.edit(message);
-                console.log('✅ Message edited');
+                console.log('✅ Story Channel message edited');
             } catch (e) {
-                // Message not found, send new
                 const newMsg = await channel.send(message);
                 await db.collection('config').doc('discord_message').set({
+                    ...configDoc.data(),
                     storyMessageId: newMsg.id
-                });
-                console.log('✅ New message sent');
+                }, { merge: true });
+                console.log('✅ Story Channel new message sent');
             }
         } else {
-            // No stored message, send new
             const newMsg = await channel.send(message);
             await db.collection('config').doc('discord_message').set({
                 storyMessageId: newMsg.id
-            });
-            console.log('✅ Initial message sent');
+            }, { merge: true });
+            console.log('✅ Story Channel initial message sent');
         }
     } catch (error) {
-        console.error('❌ updateStoryMessage error:', error);
+        console.error('❌ updateStoryChannelMessage error:', error);
     }
 }
 
