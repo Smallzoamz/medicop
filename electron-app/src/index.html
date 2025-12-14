@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.5.5 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.5.6 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -459,7 +459,7 @@
     <div id="electron-title-bar" class="electron-title-bar hidden">
         <div class="title-bar-left">
             <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
-            <span class="title-bar-text">Medical OP Systems v.1.5.3</span>
+            <span class="title-bar-text">Medical OP Systems v.1.5.6</span>
         </div>
         <div class="title-bar-controls">
             <button class="title-bar-btn minimize" id="btn-minimize" title="ย่อ">
@@ -517,6 +517,7 @@
     </div>
 
     <!-- Changelog Modal -->
+    <!-- Changelog Modal -->
     <div id="changelog-modal"
         class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div
@@ -528,8 +529,57 @@
             <div id="changelog-content" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 <div class="bg-gradient-to-r from-cyan-900/50 to-transparent rounded-xl p-4 border-l-4 border-cyan-500">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-cyan-400 font-bold text-sm">v1.3.8</span>
+                        <span class="text-cyan-400 font-bold text-sm">v1.5.6</span>
                         <span class="text-[10px] bg-cyan-500 text-white px-2 py-0.5 rounded-full">Latest</span>
+                        <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 💬 DM Chat ลิงค์คลิกได้ + ตัดบรรทัดอัตโนมัติ</li>
+                        <li>• 🔗 ปุ่มเชื่อมต่อ Discord ในฟอร์มสมัครสมาชิก (EXE)</li>
+                        <li>• ✖️ ปุ่มปิดโปรแกรม + Confirm Dialog (EXE)</li>
+                        <li>• 👋 หน้า Goodbye เมื่อ Logout (EXE)</li>
+                        <li>• 🌙 หน้า Goodbye เมื่อปิดโปรแกรม (EXE)</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.5.5</span>
+                        <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 🔗 Discord Account Linking (OAuth2)</li>
+                        <li>• 📌 Discord Mention สำหรับ OP/Story (ถ้า Linked)</li>
+                        <li>• 🤖 Discord Bot แสดง Story ของวันนี้เท่านั้น</li>
+                        <li>• 📝 Autocomplete สำหรับชื่อ On Duty</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.5.0</span>
+                        <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 🖥️ EXE Desktop App (Windows)</li>
+                        <li>• 🔄 Auto Update สำหรับ EXE</li>
+                        <li>• 🎵 Music Player ในแอป</li>
+                        <li>• 🎨 Custom Title Bar</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.4.0</span>
+                        <span class="text-[10px] text-slate-500">12 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 🎯 Custom Cursor สำหรับ User/Server</li>
+                        <li>• 💬 Group Chat สำหรับทีมแพทย์</li>
+                        <li>• 💌 DM Chat Bubble แบบ Facebook</li>
+                        <li>• ✅ Read Receipt (อ่านแล้ว)</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.3.8</span>
                         <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
@@ -1867,7 +1917,7 @@
                 <div class="px-5 py-3 border-b border-white/10 flex justify-between items-center">
                     <span class="text-sm text-slate-300 flex items-center gap-2"><span
                             class="w-2 h-2 rounded-full bg-cyan-500"></span> Operator Systems Login</span>
-                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.3.8</span>
+                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.5.6</span>
                 </div>
                 <div class="flex border-b border-white/10">
                     <button onclick="showAuthTab('login')" id="tab-login"
@@ -6602,7 +6652,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.5.3';
+        const APP_VERSION = '1.5.6';
         function showChangelogModal() { document.getElementById('changelog-modal').classList.remove('hidden'); }
         function closeChangelogModal() { document.getElementById('changelog-modal').classList.add('hidden'); localStorage.setItem('op_last_seen_version', APP_VERSION); }
         function checkShowChangelog() { const lastSeen = localStorage.getItem('op_last_seen_version'); if (lastSeen !== APP_VERSION) { setTimeout(() => showChangelogModal(), 500); } }
@@ -10522,12 +10572,22 @@
             const authUrl = `${DISCORD_AUTH_URL}?userId=${encodeURIComponent(currentUser.username)}`;
             const popup = window.open(authUrl, 'Discord Link', 'width=500,height=700');
 
+            // Check if popup was blocked
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                showNotif('Error', '❌ Pop-up ถูกบล็อก กรุณาอนุญาต Pop-up และลองใหม่');
+                return;
+            }
+
             // Listen for popup close
             const checkPopup = setInterval(() => {
-                if (popup.closed) {
+                try {
+                    if (!popup || popup.closed) {
+                        clearInterval(checkPopup);
+                        // Refresh user data to check if discord was linked
+                        setTimeout(() => refreshDiscordLinkStatus(), 1000);
+                    }
+                } catch (e) {
                     clearInterval(checkPopup);
-                    // Refresh user data to check if discord was linked
-                    setTimeout(() => refreshDiscordLinkStatus(), 1000);
                 }
             }, 500);
         }

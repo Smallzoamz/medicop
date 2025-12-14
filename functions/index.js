@@ -677,8 +677,8 @@ exports.linkDiscordAccount = onCall({ region: "asia-southeast1" }, async (reques
             }
         }
 
-        // Update user document (use set with merge to create if not exists)
-        await db.collection('users').doc(uid).set({
+        // Update user document (write to op_users which is where web reads from)
+        await db.collection('op_users').doc(uid).set({
             discordId: discordId,
             discordUsername: member.user.username,
             discordAvatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
@@ -782,16 +782,22 @@ exports.discordCallback = onRequest({ region: "us-central1" }, async (req, res) 
         // Get member info from guild for badge
         let badge = null;
         try {
-            await ensureClientReady();
+            await ensureBotLogin();
             const guild = await client.guilds.fetch(GUILD_ID);
             const member = await guild.members.fetch(discordUser.id);
-            badge = getBadgeFromRoles(member);
+            // Find badge from roles
+            for (const [roleName, roleId] of Object.entries(ROLE_IDS)) {
+                if (roleId && member.roles.cache.has(roleId)) {
+                    badge = roleName;
+                    break;
+                }
+            }
         } catch (e) {
             console.log('Could not get badge:', e.message);
         }
 
-        // Update Firestore user document (use set with merge to create if not exists)
-        await db.collection('users').doc(userId).set({
+        // Update Firestore user document (write to op_users which is where web reads from)
+        await db.collection('op_users').doc(userId).set({
             discordId: discordUser.id,
             discordUsername: discordUser.username,
             discordAvatar: `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`,

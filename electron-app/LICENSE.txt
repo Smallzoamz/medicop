@@ -23,7 +23,7 @@ SOFTWARE.
 ---
 
 Medical OP Systems Desktop Application
-Version 1.5.3
+Version 1.5.6
 
 This software is designed for medical operation management.
 By installing this software, you agree to the terms above.
