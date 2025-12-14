@@ -200,11 +200,12 @@ function startStoryListener() {
         if (!doc.exists) return;
 
         const data = doc.data();
-        const stories = data.stories || [];
+        // FIXED: Use "cases" not "stories"
+        const cases = data.cases || [];
         const currentOP = data.currentOP || 'ไม่มี';
         const onDutyCount = (data.onDuty || []).length;
 
-        console.log(`📊 Update: ${stories.length} stories, OP: ${currentOP}, OnDuty: ${onDutyCount}`);
+        console.log(`📊 Update: ${cases.length} cases, OP: ${currentOP}, OnDuty: ${onDutyCount}`);
 
         // Send/Edit message in Discord - pass entire data object
         await updateStoryMessage(data);
@@ -399,33 +400,45 @@ async function updateStoryMessage(data) {
         if (supOP) {
             message += `👥 Support OP: ${supOP}\n`;
         }
-        // Format timestamp as time (HH:MM)
+        // Format timestamp as time (HH:MM) in Bangkok timezone
         if (lastModified && typeof lastModified === 'number') {
             const shiftDate = new Date(lastModified);
-            const hours = String(shiftDate.getHours()).padStart(2, '0');
-            const mins = String(shiftDate.getMinutes()).padStart(2, '0');
-            message += `⏰ เวลา: ${hours}:${mins}\n`;
+            const timeStr = shiftDate.toLocaleTimeString('th-TH', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Asia/Bangkok'
+            });
+            message += `⏰ เวลา: ${timeStr}\n`;
         }
         message += '────────────────────\n\n';
 
         // On Duty List - onDuty is array of STRINGS (names), not objects
+        // 📍 = only the FIRST person who is ready (accept or no status)
         message += `✅ **On Duty (${onDuty.length} คน):**\n`;
         if (onDuty.length > 0) {
+            let foundNextInQueue = false; // Track if we've found the person who's next
+
             onDuty.forEach((name, index) => {
                 // Get status from medicStatuses object
                 const status = medicStatuses[name] || '';
 
-                // Format status icon based on OP system statuses
-                let statusIcon = '';
-                if (status === 'accept') statusIcon = ' 📍';  // ถึงคิว/รับเคส
-                else if (status === 'waitfix') statusIcon = ' 🔧'; // รอเคสแก้
-                else if (status === 'decline') statusIcon = ' 🚫'; // ไม่รับเคส
+                // Determine if this person is ready to take a case
+                const isReady = status === 'accept' || status === '';
 
-                // First person without status gets 📍 (next in queue)
-                const isNextInQueue = index === 0 && !status;
-                const queueIcon = isNextInQueue ? ' 📍' : '';
+                // Format status icon
+                let icon = '';
+                if (status === 'waitfix') {
+                    icon = ' 🔧'; // รอเคสแก้
+                } else if (status === 'decline') {
+                    icon = ' 🚫'; // ไม่รับเคส
+                } else if (isReady && !foundNextInQueue) {
+                    // First ready person gets 📍 (next in queue)
+                    icon = ' 📍';
+                    foundNextInQueue = true;
+                }
+                // Others with 'accept' or '' status don't get any icon
 
-                message += `• ${name}${statusIcon}${queueIcon}\n`;
+                message += `• ${name}${icon}\n`;
             });
         } else {
             message += '_ไม่มี_\n';
