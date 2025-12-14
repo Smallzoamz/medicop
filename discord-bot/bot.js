@@ -919,9 +919,10 @@ async function updateOPChannelMessage(data) {
     }
 }
 
-// --- Update Story Channel Message (CLOSED Stories Only) ---
-// Only posts when ALL stories for the day are closed
+// --- Update Story Channel Message ---
+// Shows ALL stories for the day, marks closed ones with "Clear"
 // Edits existing message while stories are still open
+// Posts NEW message when ALL stories are closed
 async function updateStoryChannelMessage(data) {
     try {
         const channel = await client.channels.fetch(STORY_CHANNEL_ID);
@@ -933,28 +934,20 @@ async function updateStoryChannelMessage(data) {
         const allStories = data.cases || [];
         const stories = filterTodayItems(allStories);
 
+        // No stories at all - nothing to do
+        if (stories.length === 0) {
+            console.log('📭 No stories to display');
+            return;
+        }
+
         // Check if there are any OPEN (not closed) stories
         const openStories = stories.filter(s => !s.closed);
-        const closedStories = stories.filter(s => s.closed);
-
-        // If there are open stories, don't post/update yet - let bot edit when medics are assigned
-        // Only post when ALL stories for the day are closed
-        if (openStories.length > 0) {
-            console.log(`⏳ ${openStories.length} stories still open, waiting for all to close...`);
-            // Don't post anything - wait until all stories are closed
-            return;
-        }
-
-        // No open stories - either all closed or no stories at all
-        if (closedStories.length === 0) {
-            console.log('📭 No closed stories to post');
-            return;
-        }
+        const allClosed = openStories.length === 0;
 
         // Get date from first story's storyDate, or use current date as fallback
         let dateStr;
-        if (closedStories.length > 0 && closedStories[0].storyDate) {
-            const [year, month, day] = closedStories[0].storyDate.split('-').map(Number);
+        if (stories.length > 0 && stories[0].storyDate) {
+            const [year, month, day] = stories[0].storyDate.split('-').map(Number);
             const storyDateObj = new Date(year, month - 1, day);
             dateStr = storyDateObj.toLocaleDateString('th-TH', {
                 day: 'numeric',
@@ -970,25 +963,29 @@ async function updateStoryChannelMessage(data) {
             });
         }
 
-        // Build message for Story Channel (CLOSED Stories ONLY)
+        // Build message - show ALL stories
         let message = '';
-        message += '**📋 สรุปเคสสตอรี่**\n';
+        message += allClosed ? '**📋 สรุปเคสสตอรี่**\n' : '**📋 แจ้งเคสสตอรี่**\n';
         message += '────────────────────\n';
         message += `📅 ${dateStr}\n`;
         message += '────────────────────\n\n';
 
-        // Show CLOSED stories only
-        message += `⚔️ **สตอรี่ที่ปิดแล้ว (${closedStories.length} เคส):**\n`;
-        closedStories.forEach((c, i) => {
+        // Show ALL stories with status
+        message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
+        stories.forEach((c, i) => {
             const partyA = c.partyA || '?';
             const partyB = c.partyB || '?';
             const location = c.location || '';
             const startTime = c.startTime || '';
             const medics = c.medics || [];
-            const mainMedic = medics[0] ? formatWithMention(medics[0]) : '-';
+            const mainMedic = medics[0] ? formatWithMention(medics[0]) : 'ยังไม่มี';
             const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
+            const isClosed = c.closed;
 
-            message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
+            // Add "✅ Clear" for closed stories
+            const statusLabel = isClosed ? ' ✅ **Clear**' : '';
+
+            message += `**สตอรี่ #${i + 1}**${statusLabel} ${startTime ? `⏰ ${startTime}` : ''}\n`;
             message += `ระหว่าง ${partyA} VS ${partyB}\n`;
             if (location) message += `📍 ${location}\n`;
             message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
@@ -998,12 +995,40 @@ async function updateStoryChannelMessage(data) {
             message += '\n';
         });
 
-        // Post NEW message when all stories are closed
-        const newMsg = await channel.send(message);
-        await db.collection('config').doc('discord_message').set({
-            storyMessageId: newMsg.id
-        }, { merge: true });
-        console.log('✅ Story Channel summary posted (all stories closed)');
+        // Get stored message ID for Story channel
+        const configDoc = await db.collection('config').doc('discord_message').get();
+        const storedMessageId = configDoc.exists ? configDoc.data().storyMessageId : null;
+
+        if (allClosed) {
+            // ALL stories closed - post NEW message (final summary for the day)
+            const newMsg = await channel.send(message);
+            await db.collection('config').doc('discord_message').set({
+                storyMessageId: newMsg.id
+            }, { merge: true });
+            console.log('✅ Story Channel: All closed - new summary posted');
+        } else if (storedMessageId) {
+            // Still have open stories - try to EDIT existing message
+            try {
+                const msg = await channel.messages.fetch(storedMessageId);
+                await msg.edit(message);
+                console.log('✅ Story Channel message edited');
+            } catch (e) {
+                // Message not found - send new
+                const newMsg = await channel.send(message);
+                await db.collection('config').doc('discord_message').set({
+                    ...configDoc.data(),
+                    storyMessageId: newMsg.id
+                }, { merge: true });
+                console.log('✅ Story Channel new message sent');
+            }
+        } else {
+            // No existing message - send new
+            const newMsg = await channel.send(message);
+            await db.collection('config').doc('discord_message').set({
+                storyMessageId: newMsg.id
+            }, { merge: true });
+            console.log('✅ Story Channel initial message sent');
+        }
 
     } catch (error) {
         console.error('❌ updateStoryChannelMessage error:', error);
