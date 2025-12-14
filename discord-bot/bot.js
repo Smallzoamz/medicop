@@ -215,6 +215,9 @@ function startStoryListener() {
 
     // Also listen for shift summaries
     startSummaryListener();
+
+    // Also listen for closed cases (to post history)
+    startClosedCaseListener();
 }
 
 // --- Listen for Shift Summary Posts ---
@@ -242,6 +245,93 @@ function startSummaryListener() {
         }, (error) => {
             console.error('❌ Summary listener error:', error);
         });
+}
+
+// --- Listen for Closed Cases (post history to story channel) ---
+function startClosedCaseListener() {
+    if (!db) return;
+
+    console.log('👀 Starting Firestore listener for closed_cases...');
+
+    // Listen for new closed cases
+    db.collection('closed_cases')
+        .orderBy('closedAt', 'desc')
+        .limit(1)
+        .onSnapshot(async (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added') {
+                    const closedCase = change.doc.data();
+
+                    // Check if already posted to Discord
+                    if (closedCase.postedToDiscord) return;
+
+                    console.log('📖 Closed case detected! Posting history...');
+                    await postClosedCaseHistory(closedCase, change.doc.id);
+                }
+            });
+        }, (error) => {
+            console.error('❌ Closed case listener error:', error);
+        });
+}
+
+// --- Post Closed Case History to Story Channel ---
+async function postClosedCaseHistory(closedCase, docId) {
+    try {
+        const channel = await client.channels.fetch(STORY_CHANNEL_ID);
+        if (!channel) {
+            console.error('❌ Story channel not found');
+            return;
+        }
+
+        const partyA = closedCase.partyA || '?';
+        const partyB = closedCase.partyB || '?';
+        const location = closedCase.location || '';
+        const startTime = closedCase.startTime || '';
+        const medics = closedCase.medics || [];
+        const mainMedic = medics[0] || '-';
+        const supportMedics = medics.slice(1).join(', ');
+        const closedAt = closedCase.closedAt ? new Date(closedCase.closedAt).toLocaleTimeString('th-TH', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Bangkok'
+        }) : '';
+
+        // Format date
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        let message = '';
+        message += '📖 **ประวัติสตอรี่**\n';
+        message += '────────────────────\n';
+        message += `📅 ${dateStr}\n`;
+        message += `⚔️ **${partyA} VS ${partyB}**\n`;
+        if (location) message += `📍 ${location}\n`;
+        if (startTime) message += `⏰ เริ่ม: ${startTime}`;
+        if (closedAt) message += ` → ปิด: ${closedAt}`;
+        message += '\n';
+        message += `👨‍⚕️ แพทย์หลัก: ${mainMedic}\n`;
+        if (supportMedics) {
+            message += `👥 แพทย์ช่วย: ${supportMedics}\n`;
+        }
+        message += '────────────────────';
+
+        // Send to Discord
+        await channel.send(message);
+        console.log('✅ Closed case history posted');
+
+        // Mark as posted
+        await db.collection('closed_cases').doc(docId).update({
+            postedToDiscord: true,
+            postedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+    } catch (error) {
+        console.error('❌ postClosedCaseHistory error:', error);
+    }
 }
 
 // --- Post Shift Summary to Discord ---
@@ -324,15 +414,19 @@ async function postSummaryToDiscord(summary, docId) {
         }
         message += '────────────────────\n\n';
 
-        // Stories
-        message += `⚔️ **สตอรี่ (${storiesList.length} เคส):**\n`;
-        if (storiesList.length > 0) {
-            storiesList.forEach((s, i) => {
+        // Stories - separate ongoing and completed
+        const ongoingStories = (summary.ongoingStories || []);  // Stories still in progress
+        const closedStories = storiesList || []; // Completed stories from this shift
+
+        // Closed Stories (completed during shift)
+        message += `⚔️ **สตอรี่ที่ปิดแล้ว (${closedStories.length} เคส):**\n`;
+        if (closedStories.length > 0) {
+            closedStories.forEach((s, i) => {
                 const partyA = s.partyA || '?';
                 const partyB = s.partyB || '?';
-                const assignedMedics = s.assignedMedics || [];
-                const mainMedic = assignedMedics[0]?.name || assignedMedics[0] || '-';
-                const supportMedics = assignedMedics.slice(1).map(m => m.name || m).join(', ');
+                const medics = s.medics || s.assignedMedics || [];
+                const mainMedic = medics[0]?.name || medics[0] || '-';
+                const supportMedics = medics.slice(1).map(m => m.name || m).join(', ');
 
                 message += `**สตอรี่ #${i + 1}** ระหว่าง ${partyA} VS ${partyB}\n`;
                 message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
@@ -345,7 +439,24 @@ async function postSummaryToDiscord(summary, docId) {
             message += '_ไม่มีสตอรี่_\n';
         }
 
-        message += '════════════════════';
+        // Ongoing Stories (still in progress when shift ended)
+        if (ongoingStories.length > 0) {
+            message += '\n⚠️ **สตอรี่ที่ยังดำเนินอยู่ (' + ongoingStories.length + ' เคส):**\n';
+            ongoingStories.forEach((s, i) => {
+                const partyA = s.partyA || '?';
+                const partyB = s.partyB || '?';
+                const medics = s.medics || [];
+                const mainMedic = medics[0] || 'ยังไม่มี';
+
+                message += `**#${i + 1}** ${partyA} VS ${partyB}`;
+                if (mainMedic !== 'ยังไม่มี') {
+                    message += ` - 👨‍⚕️ ${mainMedic}`;
+                }
+                message += ' _(ยังดำเนินอยู่)_\n';
+            });
+        }
+
+        message += '\n════════════════════';
 
         // Send to Discord
         await channel.send(message);
@@ -413,30 +524,23 @@ async function updateStoryMessage(data) {
         message += '────────────────────\n\n';
 
         // On Duty List - onDuty is array of STRINGS (names), not objects
-        // 📍 = only the FIRST person who is ready (accept or no status)
+        // 📍 = ONLY person who clicked "✓ รับเคส" (accept status), NO default
         message += `✅ **On Duty (${onDuty.length} คน):**\n`;
         if (onDuty.length > 0) {
-            let foundNextInQueue = false; // Track if we've found the person who's next
-
-            onDuty.forEach((name, index) => {
+            onDuty.forEach((name) => {
                 // Get status from medicStatuses object
                 const status = medicStatuses[name] || '';
 
-                // Determine if this person is ready to take a case
-                const isReady = status === 'accept' || status === '';
-
-                // Format status icon
+                // Format status icon - NO default, only explicit status
                 let icon = '';
-                if (status === 'waitfix') {
-                    icon = ' 🔧'; // รอเคสแก้
+                if (status === 'accept') {
+                    icon = ' 📍'; // กด ✓ รับเคส = ถึงคิว
+                } else if (status === 'waitfix') {
+                    icon = ' ⏳'; // รอเคสแก้ (นาฬิกาทราย)
                 } else if (status === 'decline') {
-                    icon = ' 🚫'; // ไม่รับเคส
-                } else if (isReady && !foundNextInQueue) {
-                    // First ready person gets 📍 (next in queue)
-                    icon = ' 📍';
-                    foundNextInQueue = true;
+                    icon = ' ❌'; // ไม่รับเคส (กากบาท)
                 }
-                // Others with 'accept' or '' status don't get any icon
+                // No status = no icon
 
                 message += `• ${name}${icon}\n`;
             });
