@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.5.1 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.5.2 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -450,7 +450,7 @@
     <div id="electron-title-bar" class="electron-title-bar hidden">
         <div class="title-bar-left">
             <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
-            <span class="title-bar-text">Medical OP Systems v.1.5.1</span>
+            <span class="title-bar-text">Medical OP Systems v.1.5.2</span>
         </div>
         <div class="title-bar-controls">
             <button class="title-bar-btn minimize" id="btn-minimize" title="ย่อ">
@@ -6545,7 +6545,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.5.1';
+        const APP_VERSION = '1.5.2';
         function showChangelogModal() { document.getElementById('changelog-modal').classList.remove('hidden'); }
         function closeChangelogModal() { document.getElementById('changelog-modal').classList.add('hidden'); localStorage.setItem('op_last_seen_version', APP_VERSION); }
         function checkShowChangelog() { const lastSeen = localStorage.getItem('op_last_seen_version'); if (lastSeen !== APP_VERSION) { setTimeout(() => showChangelogModal(), 500); } }
@@ -9022,7 +9022,14 @@
             // Preserve pending stories (not yet started)
             const pendingCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart);
             appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: pendingCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, afkWarnings: {}, afkWarnedTimes: {} };
-            saveOpData();
+
+            // CRITICAL: Wait for save to complete before proceeding
+            const saved = await saveOpData();
+            if (!saved) {
+                showNotif('Error', '❌ บันทึกไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');
+                return;
+            }
+
             addOpLog('บังคับปิดกะ', `OP เดิม: ${prevOP || '-'}`);
             closeStaffAdminModal();
             showNotif('Success', 'บังคับปิดกะเรียบร้อย');
@@ -9571,7 +9578,7 @@
         }
 
         // Become OP (when no one is OP)
-        function becomeOP() { if (!currentUser) return; appData.currentOP = currentUser.fullName; saveOpData(); showNotif('Success', 'คุณเป็น OP แล้ว! กด "เริ่มกะ" เพื่อเริ่มนับเวลา'); addNotification(`${currentUser.fullName} เป็น OP แล้ว`, 'info'); renderOPControl(); }
+        async function becomeOP() { if (!currentUser) return; appData.currentOP = currentUser.fullName; const saved = await saveOpData(); if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; } showNotif('Success', 'คุณเป็น OP แล้ว! กด "เริ่มกะ" เพื่อเริ่มนับเวลา'); addNotification(`${currentUser.fullName} เป็น OP แล้ว`, 'info'); renderOPControl(); }
 
         // Force end shift when OP is not registered in the system
         async function forceEndUnregisteredOP() {
@@ -9581,7 +9588,8 @@
             appData.currentOP = null;
             appData.shiftStart = null;
             appData.supOP = null;
-            saveOpData();
+            const saved = await saveOpData();
+            if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
             addOpLog('รีเซ็ต OP (ไม่ลงทะเบียน)', `OP เดิม: ${prevOP}`);
             showNotif('Success', 'รีเซ็ต OP เรียบร้อย');
             renderOPControl();
@@ -9599,7 +9607,8 @@
             appData.offDuty = [];
             appData.afk = [];
             appData.afkTimes = {};
-            saveOpData();
+            const saved = await saveOpData();
+            if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
             renderAll();
             showNotif('Success', 'ออกกะเรียบร้อย');
             addNotification(`${currentUser.fullName} ออกกะ`, 'info');
@@ -9693,7 +9702,8 @@
             appData.opHandoverAt = null;
             appData.handoverNextOP = null;
 
-            saveOpData();
+            const saved = await saveOpData();
+            if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
             addOpLog('ส่งต่อ OP', `${prevOP} → ${prevSupOP}`);
 
             // Show summary to old OP
@@ -9721,9 +9731,9 @@
         function rejectOPRequest(idx) { if (!appData.opPendingRequests?.[idx]) return; const name = appData.opPendingRequests[idx].requester; appData.opPendingRequests.splice(idx, 1); saveOpData(); showNotif('Success', 'ปฏิเสธ Request เรียบร้อย'); addNotification(`❌ ปฏิเสธ Request จาก ${name}`, 'warning'); }
 
         // Perform Handover - shows summary for old OP and adds old OP to On Duty
-        function performHandover() { if (!appData.handoverNextOP) return; const prevOP = appData.currentOP; const prevSupOP = appData.supOP; const shiftDuration = appData.shiftStart ? Date.now() - appData.shiftStart : 0; const afkWarnings = {}; if (appData.afkTimes) { Object.entries(appData.afkTimes).forEach(([name, start]) => { const mins = Math.floor((Date.now() - start) / 60000); if (mins >= 5) afkWarnings[name] = mins; }); } lastShiftSummaryData = { op: prevOP, supOP: prevSupOP, onDuty: [...(appData.onDuty || [])], offDuty: [...(appData.offDuty || [])], closedCases: [...(appData.closedCases || [])], afkWarnings, duration: shiftDuration, startTime: appData.shiftStart, endTime: new Date() }; addOpLog('Handover', `${prevOP} → ${appData.handoverNextOP}`); const prevOPFirstName = prevOP ? prevOP.split(' ')[0] : null; const prevSupOPFirstName = prevSupOP ? prevSupOP.split(' ')[0] : null; const newOPFirstName = appData.handoverNextOP.split(' ')[0]; let newOnDuty = [...(appData.onDuty || [])]; let newOffDuty = [...(appData.offDuty || [])]; if (prevOPFirstName && !newOnDuty.includes(prevOPFirstName)) newOnDuty.push(prevOPFirstName); if (prevSupOPFirstName && !newOnDuty.includes(prevSupOPFirstName)) newOnDuty.push(prevSupOPFirstName); const newOPIdx = newOnDuty.indexOf(newOPFirstName); if (newOPIdx > -1) newOnDuty.splice(newOPIdx, 1); appData = { shiftStart: Date.now(), currentOP: appData.handoverNextOP, supOP: null, onDuty: newOnDuty, offDuty: newOffDuty, afk: appData.afk || [], afkTimes: appData.afkTimes || {}, cases: appData.cases || [], closedCases: [], medicStatuses: appData.medicStatuses || {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null }; saveOpData(); if (currentUser?.fullName === prevOP) showShiftSummary(); applyRoleRestrictions(); renderAllDebounced(); showNotif('Success', `Handover สำเร็จ! ${prevOP || 'ไม่มี'} → ${appData.currentOP}`); addNotification(`🔄 Handover: ${prevOP || '-'} → ${appData.currentOP}`, 'info'); }
+        async function performHandover() { if (!appData.handoverNextOP) return; const prevOP = appData.currentOP; const prevSupOP = appData.supOP; const shiftDuration = appData.shiftStart ? Date.now() - appData.shiftStart : 0; const afkWarnings = {}; if (appData.afkTimes) { Object.entries(appData.afkTimes).forEach(([name, start]) => { const mins = Math.floor((Date.now() - start) / 60000); if (mins >= 5) afkWarnings[name] = mins; }); } lastShiftSummaryData = { op: prevOP, supOP: prevSupOP, onDuty: [...(appData.onDuty || [])], offDuty: [...(appData.offDuty || [])], closedCases: [...(appData.closedCases || [])], afkWarnings, duration: shiftDuration, startTime: appData.shiftStart, endTime: new Date() }; addOpLog('Handover', `${prevOP} → ${appData.handoverNextOP}`); const prevOPFirstName = prevOP ? prevOP.split(' ')[0] : null; const prevSupOPFirstName = prevSupOP ? prevSupOP.split(' ')[0] : null; const newOPFirstName = appData.handoverNextOP.split(' ')[0]; let newOnDuty = [...(appData.onDuty || [])]; let newOffDuty = [...(appData.offDuty || [])]; if (prevOPFirstName && !newOnDuty.includes(prevOPFirstName)) newOnDuty.push(prevOPFirstName); if (prevSupOPFirstName && !newOnDuty.includes(prevSupOPFirstName)) newOnDuty.push(prevSupOPFirstName); const newOPIdx = newOnDuty.indexOf(newOPFirstName); if (newOPIdx > -1) newOnDuty.splice(newOPIdx, 1); appData = { shiftStart: Date.now(), currentOP: appData.handoverNextOP, supOP: null, onDuty: newOnDuty, offDuty: newOffDuty, afk: appData.afk || [], afkTimes: appData.afkTimes || {}, cases: appData.cases || [], closedCases: [], medicStatuses: appData.medicStatuses || {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null }; const saved = await saveOpData(); if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; } if (currentUser?.fullName === prevOP) showShiftSummary(); applyRoleRestrictions(); renderAllDebounced(); showNotif('Success', `Handover สำเร็จ! ${prevOP || 'ไม่มี'} → ${appData.currentOP}`); addNotification(`🔄 Handover: ${prevOP || '-'} → ${appData.currentOP}`, 'info'); }
 
-        function startShift() { if (!appData.currentOP) return showNotif('Error', 'กรุณากด "เข้ากะ" ก่อน'); appData.shiftStart = Date.now(); saveOpData(); addOpLog('เริ่มกะ', `OP: ${appData.currentOP}`); showNotif('Success', 'เริ่มกะเรียบร้อย'); addNotification(`▶ เริ่มกะโดย ${appData.currentOP}`, 'success'); renderOPControl(); }
+        async function startShift() { if (!appData.currentOP) return showNotif('Error', 'กรุณากด "เข้ากะ" ก่อน'); appData.shiftStart = Date.now(); const saved = await saveOpData(); if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; } addOpLog('เริ่มกะ', `OP: ${appData.currentOP}`); showNotif('Success', 'เริ่มกะเรียบร้อย'); addNotification(`▶ เริ่มกะโดย ${appData.currentOP}`, 'success'); renderOPControl(); }
         let lastShiftSummaryData = null;
         async function endShift() {
             // Only check for started stories (not pending) that need to be closed
@@ -9745,7 +9755,8 @@
             // Preserve pending stories (not yet started)
             const pendingCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart);
             appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: pendingCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
-            saveOpData();
+            const saved = await saveOpData();
+            if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
             renderAll();
             addNotification(`⏹️ จบกะโดย ${prevOP}`, 'info');
             renderOPControl();

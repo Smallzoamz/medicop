@@ -7,9 +7,9 @@ echo   Medical OP Systems - Deploy
 echo ========================================
 echo.
 
-cd /d f:\MedicRecruitment
+cd /d f:\medicop
 
-set VERSION=1.5.1
+set VERSION=1.5.2
 
 echo 📦 Version: %VERSION%
 echo.
