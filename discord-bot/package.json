@@ -1,0 +1,17 @@
+{
+    "name": "medic-op-discord-bot",
+    "version": "1.0.0",
+    "description": "Discord Bot for Medical OP Systems - Railway Deployment",
+    "main": "bot.js",
+    "scripts": {
+        "start": "node bot.js"
+    },
+    "dependencies": {
+        "discord.js": "^14.11.0",
+        "dotenv": "^16.3.1",
+        "firebase-admin": "^11.11.0"
+    },
+    "engines": {
+        "node": "20.x"
+    }
+}

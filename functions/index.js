@@ -49,12 +49,25 @@ exports.updateVersion = onRequest({ region: "asia-southeast1" }, async (req, res
 // --- CONFIGURATION (from Environment Variables) ---
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
-const ROLE_ID = process.env.ROLE_ID;
 const LEAVE_CHANNEL_ID = process.env.LEAVE_CHANNEL_ID;
 const APPROVE_CHANNEL_ID = process.env.APPROVE_CHANNEL_ID;
+const OP_CHANNEL_ID = process.env.OP_CHANNEL_ID;
+const STORY_CHANNEL_ID = process.env.STORY_CHANNEL_ID;
+
+// Role IDs for badge display
+const ROLE_IDS = {
+    'SSS+': process.env.ROLE_SSS_PLUS_ID,
+    'SSS': process.env.ROLE_SSS_ID,
+    'SS': process.env.ROLE_SS_ID,
+    'A': process.env.ROLE_A_ID,
+    'B': process.env.ROLE_B_ID,
+    'C': process.env.ROLE_C_ID,
+    'D': process.env.ROLE_D_ID
+};
 
 // --- GLOBAL STATE ---
 let isClientReady = false;
+let storyMessageId = null; // Track the message ID for editing
 
 // Initialize Discord Client
 const client = new Client({
@@ -469,3 +482,220 @@ async function syncAllAvatars(rosterData) {
         return null;
     }
 }
+
+// --- NEW: DISCORD INTEGRATION FUNCTIONS ---
+
+// 6. GET DISCORD MEMBERS (List all members with roles)
+exports.getDiscordMembers = onRequest({ region: "asia-southeast1" }, async (req, res) => {
+    try {
+        if (!await ensureBotLogin()) {
+            return res.status(503).json({ error: 'Bot not available' });
+        }
+
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const members = await guild.members.fetch();
+
+        const memberList = members.map(member => {
+            // Find highest role from ROLE_IDS
+            let badge = null;
+            for (const [roleName, roleId] of Object.entries(ROLE_IDS)) {
+                if (roleId && member.roles.cache.has(roleId)) {
+                    badge = roleName;
+                    break; // Take first (highest) match
+                }
+            }
+
+            return {
+                id: member.id,
+                username: member.user.username,
+                displayName: member.displayName,
+                avatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
+                badge: badge
+            };
+        });
+
+        res.json({ success: true, members: Array.from(memberList) });
+    } catch (error) {
+        console.error("getDiscordMembers Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 7. GET MEMBER ROLES (Get roles for specific Discord ID)
+exports.getMemberRoles = onRequest({ region: "asia-southeast1" }, async (req, res) => {
+    const discordId = req.query.discordId;
+    if (!discordId) {
+        return res.status(400).json({ error: 'Missing discordId parameter' });
+    }
+
+    try {
+        if (!await ensureBotLogin()) {
+            return res.status(503).json({ error: 'Bot not available' });
+        }
+
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const member = await guild.members.fetch(discordId).catch(() => null);
+
+        if (!member) {
+            return res.status(404).json({ error: 'Member not found' });
+        }
+
+        // Find badge from role
+        let badge = null;
+        for (const [roleName, roleId] of Object.entries(ROLE_IDS)) {
+            if (roleId && member.roles.cache.has(roleId)) {
+                badge = roleName;
+                break;
+            }
+        }
+
+        res.json({
+            success: true,
+            id: member.id,
+            username: member.user.username,
+            displayName: member.displayName,
+            avatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
+            badge: badge,
+            roles: member.roles.cache.map(r => ({ id: r.id, name: r.name }))
+        });
+    } catch (error) {
+        console.error("getMemberRoles Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 8. ON STORY UPDATED - Send/Edit message in Discord
+exports.onStoryUpdated = onDocumentUpdated("op_data/current", async (event) => {
+    if (!await isBotEnabled()) return console.log("Bot disabled. Skipping Story Update.");
+
+    const newData = event.data.after.data();
+    const oldData = event.data.before.data();
+
+    // Only process if stories changed
+    if (JSON.stringify(newData.stories) === JSON.stringify(oldData.stories)) return;
+
+    try {
+        if (!await ensureBotLogin()) return;
+
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const channel = await guild.channels.fetch(STORY_CHANNEL_ID);
+
+        if (!channel) {
+            console.error("Story channel not found");
+            return;
+        }
+
+        // Build story embed
+        const stories = newData.stories || [];
+        const currentOP = newData.currentOP || 'ไม่มี';
+        const supOP = newData.supOP || 'ไม่มี';
+
+        const embed = {
+            title: "📋 สรุปสถานะสตอรี่",
+            color: 0x00BFFF,
+            fields: [
+                { name: "👤 OP", value: currentOP, inline: true },
+                { name: "👥 Sup OP", value: supOP || '-', inline: true },
+                { name: "📊 จำนวนสตอรี่", value: `${stories.length} เคส`, inline: true }
+            ],
+            timestamp: new Date()
+        };
+
+        // Add story details
+        if (stories.length > 0) {
+            const storyList = stories.slice(0, 10).map((s, i) => {
+                const medics = (s.assignedMedics || []).map(m => m.name || m).join(', ') || 'ยังไม่มี';
+                return `**${i + 1}. ${s.location || 'ไม่ระบุ'}** - ${s.partyA || '?'} vs ${s.partyB || '?'}\n└ แพทย์: ${medics}`;
+            }).join('\n\n');
+
+            embed.description = storyList;
+        } else {
+            embed.description = "_ไม่มีสตอรี่ในขณะนี้_";
+        }
+
+        // Get stored message ID from Firestore
+        const configDoc = await db.collection('config').doc('discord_message').get();
+        const storedMessageId = configDoc.exists ? configDoc.data().storyMessageId : null;
+
+        if (storedMessageId) {
+            // Try to edit existing message
+            try {
+                const message = await channel.messages.fetch(storedMessageId);
+                await message.edit({ embeds: [embed] });
+                console.log("Story message edited successfully");
+            } catch (e) {
+                // Message not found, send new
+                const newMsg = await channel.send({ embeds: [embed] });
+                await db.collection('config').doc('discord_message').set({ storyMessageId: newMsg.id });
+                console.log("New story message sent");
+            }
+        } else {
+            // No stored message, send new
+            const newMsg = await channel.send({ embeds: [embed] });
+            await db.collection('config').doc('discord_message').set({ storyMessageId: newMsg.id });
+            console.log("Initial story message sent");
+        }
+
+        await logSystem('INFO', `Story update posted to Discord (${stories.length} stories)`);
+    } catch (error) {
+        console.error("onStoryUpdated Error:", error);
+        await logSystem('ERROR', `Story Discord post failed: ${error.message}`);
+    }
+});
+
+// 9. LINK DISCORD ACCOUNT - Store Discord ID for user
+exports.linkDiscordAccount = onCall({ region: "asia-southeast1" }, async (request) => {
+    const uid = request.auth ? request.auth.uid : null;
+    const discordId = request.data.discordId;
+
+    if (!uid) {
+        throw new HttpsError('unauthenticated', 'User must be logged in');
+    }
+
+    if (!discordId) {
+        throw new HttpsError('invalid-argument', 'Discord ID is required');
+    }
+
+    try {
+        if (!await ensureBotLogin()) {
+            throw new HttpsError('unavailable', 'Discord bot not available');
+        }
+
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const member = await guild.members.fetch(discordId).catch(() => null);
+
+        if (!member) {
+            throw new HttpsError('not-found', 'Discord member not found in server');
+        }
+
+        // Find badge
+        let badge = null;
+        for (const [roleName, roleId] of Object.entries(ROLE_IDS)) {
+            if (roleId && member.roles.cache.has(roleId)) {
+                badge = roleName;
+                break;
+            }
+        }
+
+        // Update user document
+        await db.collection('users').doc(uid).update({
+            discordId: discordId,
+            discordUsername: member.user.username,
+            discordAvatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
+            discordBadge: badge
+        });
+
+        await logSystem('INFO', `Discord linked: ${uid} -> ${discordId} (${member.user.username})`);
+
+        return {
+            success: true,
+            username: member.user.username,
+            avatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
+            badge: badge
+        };
+    } catch (error) {
+        console.error("linkDiscordAccount Error:", error);
+        throw new HttpsError('internal', error.message);
+    }
+});
+
