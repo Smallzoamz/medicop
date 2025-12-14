@@ -856,11 +856,31 @@ function renderCallbackPage(success, message) {
     <div class="card">
         <div class="icon">${icon}</div>
         <div class="message">${message}</div>
-        <button class="btn" onclick="window.close()">ปิดหน้านี้</button>
+        <button class="btn" onclick="tryClose()">ปิดหน้านี้</button>
+        <p id="close-hint" style="display:none; font-size: 12px; color: #94a3b8; margin-top: 12px;">
+            หากปิดไม่ได้ กรุณากดปิด Tab ด้วยตนเอง
+        </p>
     </div>
     <script>
+        function tryClose() {
+            window.close();
+            // If window didn't close, show hint
+            setTimeout(() => {
+                document.getElementById('close-hint').style.display = 'block';
+            }, 500);
+        }
+        
         // Auto close after 3 seconds if success
-        ${success ? 'setTimeout(() => window.close(), 3000);' : ''}
+        ${success ? `
+        setTimeout(() => {
+            window.close();
+            // Show hint if couldn't close
+            setTimeout(() => {
+                document.getElementById('close-hint').style.display = 'block';
+            }, 500);
+        }, 3000);
+        ` : ''}
+        
         // Notify parent window
         if (window.opener) {
             window.opener.postMessage({ discordLinked: ${success} }, '*');
