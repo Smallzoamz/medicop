@@ -120,14 +120,38 @@ async function loadDiscordIdCache() {
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            const firstName = data.firstName || data.fullName?.split(' ')[0];
-            if (firstName && data.discordId) {
-                discordIdCache[firstName.toLowerCase()] = data.discordId;
+            const discordId = data.discordId;
+            if (!discordId) return;
+
+            // Store by document ID (username)
+            const username = doc.id;
+            if (username) {
+                discordIdCache[username.toLowerCase()] = discordId;
+            }
+
+            // Store by firstName
+            const firstName = data.firstName;
+            if (firstName) {
+                discordIdCache[firstName.toLowerCase()] = discordId;
+            }
+
+            // Store by fullName
+            const fullName = data.fullName;
+            if (fullName) {
+                discordIdCache[fullName.toLowerCase()] = discordId;
+            }
+
+            // Store by first part of fullName (in case firstName is not set)
+            if (fullName && !firstName) {
+                const firstPart = fullName.split(' ')[0];
+                if (firstPart) {
+                    discordIdCache[firstPart.toLowerCase()] = discordId;
+                }
             }
         });
 
         discordIdCacheTime = now;
-        console.log(`📋 Loaded ${Object.keys(discordIdCache).length} Discord IDs into cache`);
+        console.log(`📋 Loaded ${Object.keys(discordIdCache).length} Discord ID mappings into cache`);
     } catch (error) {
         console.error('❌ Failed to load Discord ID cache:', error);
     }
