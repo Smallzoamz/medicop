@@ -677,13 +677,13 @@ exports.linkDiscordAccount = onCall({ region: "asia-southeast1" }, async (reques
             }
         }
 
-        // Update user document
-        await db.collection('users').doc(uid).update({
+        // Update user document (use set with merge to create if not exists)
+        await db.collection('users').doc(uid).set({
             discordId: discordId,
             discordUsername: member.user.username,
             discordAvatar: member.user.displayAvatarURL({ format: 'png', size: 128 }),
             discordBadge: badge
-        });
+        }, { merge: true });
 
         await logSystem('INFO', `Discord linked: ${uid} -> ${discordId} (${member.user.username})`);
 
@@ -790,14 +790,14 @@ exports.discordCallback = onRequest({ region: "us-central1" }, async (req, res) 
             console.log('Could not get badge:', e.message);
         }
 
-        // Update Firestore user document
-        await db.collection('users').doc(userId).update({
+        // Update Firestore user document (use set with merge to create if not exists)
+        await db.collection('users').doc(userId).set({
             discordId: discordUser.id,
             discordUsername: discordUser.username,
             discordAvatar: `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`,
             discordBadge: badge,
             discordLinkedAt: Date.now()
-        });
+        }, { merge: true });
 
         await logSystem('INFO', `Discord OAuth linked: ${userId} -> ${discordUser.id} (${discordUser.username})`);
 

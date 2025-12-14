@@ -221,7 +221,73 @@ client.once('ready', async () => {
 
     // Start Firestore listener for story updates
     startStoryListener();
+
+    // Start midnight refresh scheduler
+    startMidnightScheduler();
 });
+
+// --- Midnight Scheduler ---
+// Automatically refresh Discord messages at midnight (Bangkok time)
+// This ensures stories for the new day are shown automatically
+function startMidnightScheduler() {
+    console.log('⏰ Starting midnight scheduler...');
+
+    // Calculate time until next midnight (Bangkok time, UTC+7)
+    function scheduleNextMidnight() {
+        const now = new Date();
+        const bangkokOffset = 7 * 60; // UTC+7 in minutes
+        const localOffset = now.getTimezoneOffset();
+        const bangkokTime = new Date(now.getTime() + (bangkokOffset + localOffset) * 60000);
+
+        // Calculate next midnight in Bangkok
+        const nextMidnight = new Date(bangkokTime);
+        nextMidnight.setDate(nextMidnight.getDate() + 1);
+        nextMidnight.setHours(0, 0, 0, 0);
+
+        // Convert back to local time for setTimeout
+        const msUntilMidnight = nextMidnight.getTime() - bangkokTime.getTime();
+
+        console.log(`⏰ Next midnight refresh in ${Math.round(msUntilMidnight / 60000)} minutes`);
+
+        setTimeout(async () => {
+            console.log('🌙 Midnight reached! Refreshing Discord messages...');
+            await refreshDiscordMessages();
+
+            // Schedule next midnight
+            scheduleNextMidnight();
+        }, msUntilMidnight);
+    }
+
+    scheduleNextMidnight();
+}
+
+// Refresh Discord messages by fetching current data and updating
+async function refreshDiscordMessages() {
+    if (!db) {
+        console.log('⚠️ Firebase not available for midnight refresh');
+        return;
+    }
+
+    try {
+        const doc = await db.collection('op_data').doc('current').get();
+        if (!doc.exists) {
+            console.log('⚠️ No op_data/current document for midnight refresh');
+            return;
+        }
+
+        const data = doc.data();
+        console.log('🔄 Midnight refresh: updating Discord messages...');
+
+        await updateOPChannelMessage(data);
+        await updateStoryChannelMessage(data);
+
+        await logToFirestore('INFO', 'Midnight refresh completed - Discord messages updated');
+        console.log('✅ Midnight refresh completed');
+    } catch (error) {
+        console.error('❌ Midnight refresh error:', error);
+        await logToFirestore('ERROR', `Midnight refresh failed: ${error.message}`);
+    }
+}
 
 // --- Event: Error ---
 client.on('error', (error) => {
