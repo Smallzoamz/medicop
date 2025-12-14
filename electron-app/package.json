@@ -1,0 +1,62 @@
+{
+    "name": "medical-op-systems",
+    "version": "1.4.9",
+    "description": "Medical OP Systems - Desktop Application",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder build --win",
+        "build:portable": "electron-builder build --win portable",
+        "publish": "electron-builder build --win --publish always"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Smallzoamz/medicop.git"
+    },
+    "author": "Bonchon-Studio",
+    "license": "MIT",
+    "dependencies": {
+        "electron-updater": "^6.1.7"
+    },
+    "devDependencies": {
+        "electron": "^28.0.0",
+        "electron-builder": "^24.9.1"
+    },
+    "build": {
+        "appId": "com.bonchon.medicalop",
+        "productName": "Medical OP Systems",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "main.js",
+            "preload.js",
+            "src/**/*"
+        ],
+        "publish": {
+            "provider": "github",
+            "owner": "Smallzoamz",
+            "repo": "medicop",
+            "releaseType": "release"
+        },
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ],
+            "icon": "src/icon.ico"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "installerIcon": "src/icon.ico",
+            "uninstallerIcon": "src/icon.ico"
+        }
+    }
+}

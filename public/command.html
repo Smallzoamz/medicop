@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รวมคำสั่งประกาศ - Operator Systems</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .inp-pretty {
+            width: 100%;
+            font-size: 0.875rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            background-color: rgba(30, 41, 59, 0.8);
+            padding: 0.625rem 1rem;
+            color: white;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .inp-pretty::placeholder {
+            color: #64748b;
+        }
+
+        .inp-pretty:focus {
+            border-color: rgba(6, 182, 212, 0.5);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .cmd-card {
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .cmd-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.1);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .copy-btn {
+            padding: 0.5rem 1rem;
+            background-color: #06b6d4;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .copy-btn:hover {
+            background-color: #0891b2;
+        }
+    </style>
+</head>
+
+<body class="text-white p-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">📋 รวมคำสั่งประกาศ</h1>
+                    <p class="text-sm text-slate-400">คำสั่ง /an ที่ใช้บ่อยสำหรับ OP</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commands Section -->
+        <div class="space-y-6">
+            <!-- Coming Soon -->
+            <div class="glass rounded-2xl p-6">
+                <div class="text-center py-12">
+                    <span class="text-6xl mb-4 block">🚧</span>
+                    <p class="text-xl font-bold text-white mb-2">รอการ Update</p>
+                    <p class="text-slate-400 text-sm">คำสั่งประกาศจะเปิดให้บริการในเร็วๆ นี้</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="fixed bottom-6 right-6 hidden">
+        <div class="bg-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+            <span>✅</span> <span id="notif-text">คัดลอกแล้ว!</span>
+        </div>
+    </div>
+
+    <script>
+        function showNotif(text) {
+            const el = document.getElementById('notification');
+            document.getElementById('notif-text').textContent = text;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 1500);
+        }
+
+        function copyCooldown() {
+            const pA = document.getElementById('cooldown-party-a').value.trim();
+            const pB = document.getElementById('cooldown-party-b').value.trim();
+            if (!pA || !pB) return alert('กรุณากรอก Party A และ B');
+            const now = new Date();
+            const later = new Date(now.getTime() + 10 * 60 * 1000);
+            const msg = `/an ประกาศคูลดาวน์สตอรี่ ระหว่าง ${pA} vs ${pB} เป็นเวลา 10 นาที ตั้งแต่เวลา ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} - ${later.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น. หรือหากพร้อม สามารถเริ่มได้ทันที`;
+            navigator.clipboard.writeText(msg);
+            document.getElementById('cooldown-party-a').value = '';
+            document.getElementById('cooldown-party-b').value = '';
+            showNotif('คัดลอกแล้ว!');
+        }
+
+        function copyEnterArea() {
+            const pA = document.getElementById('enter-party-a').value.trim();
+            const pB = document.getElementById('enter-party-b').value.trim();
+            if (!pA || !pB) return alert('กรุณากรอก Party A และ B');
+            const msg = `/an แพทย์กำลังเข้าพื้นที่สตอรี่ ${pA} vs ${pB} ขอให้แก๊งที่ชนะ ออกจากพื้นที่และหยุดการกระทำทุกอย่างภายใน 2 นาที ขออภัยในความไม่สะดวก`;
+            navigator.clipboard.writeText(msg);
+            document.getElementById('enter-party-a').value = '';
+            document.getElementById('enter-party-b').value = '';
+            showNotif('คัดลอกแล้ว!');
+        }
+    </script>
+</body>
+
+</html>

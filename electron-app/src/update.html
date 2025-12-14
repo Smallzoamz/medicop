@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Available</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            -webkit-app-region: drag;
+        }
+
+        .container {
+            text-align: center;
+            padding: 30px;
+            width: 100%;
+        }
+
+        .icon-container {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+        }
+
+        .icon-container svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 50px rgba(139, 92, 246, 0.8);
+            }
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #c084fc, #818cf8, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 24px;
+        }
+
+        .version-info {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .version-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .version-label {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .version-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .version-old {
+            color: #f87171;
+        }
+
+        .version-new {
+            color: #4ade80;
+        }
+
+        .arrow {
+            color: #8b5cf6;
+            font-size: 18px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+            -webkit-app-region: no-drag;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .btn-custom {
+            background: transparent;
+            color: #60a5fa;
+            border: 1px solid #3b82f6;
+        }
+
+        .btn-custom:hover {
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+            border-color: #60a5fa;
+        }
+
+        /* Progress state */
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6, #6366f1, #3b82f6);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="icon-container">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" />
+            </svg>
+        </div>
+
+        <h1 class="title" id="title">พบเวอร์ชันใหม่!</h1>
+        <p class="subtitle" id="subtitle">มีการอัปเดตใหม่พร้อมให้ดาวน์โหลด</p>
+
+        <div class="version-info">
+            <div class="version-row">
+                <span class="version-label">เวอร์ชันปัจจุบัน</span>
+                <span class="version-value version-old" id="currentVersion">1.4.0</span>
+            </div>
+            <div class="version-row">
+                <span class="arrow">↓</span>
+            </div>
+            <div class="version-row">
+                <span class="version-label">เวอร์ชันใหม่</span>
+                <span class="version-value version-new" id="newVersion">1.4.1</span>
+            </div>
+        </div>
+
+        <div class="buttons" id="buttons">
+            <button class="btn btn-secondary" id="btnLater">ไว้ทีหลัง</button>
+            <button class="btn btn-custom" id="btnCustom">→ Custom</button>
+            <button class="btn btn-primary" id="btnDownload">ดาวน์โหลดเลย</button>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-bg">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <p class="progress-text" id="progressText">กำลังดาวน์โหลด... 0%</p>
+        </div>
+    </div>
+
+    <script>
+        // Get version info from URL params
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('currentVersion').textContent = params.get('current') || '1.0.0';
+        document.getElementById('newVersion').textContent = params.get('new') || '1.0.1';
+
+        // Button handlers
+        document.getElementById('btnDownload').addEventListener('click', () => {
+            window.electronAPI.downloadUpdate();
+            document.getElementById('buttons').classList.add('hidden');
+            document.getElementById('progressContainer').classList.add('show');
+            document.getElementById('title').textContent = 'กำลังดาวน์โหลด...';
+            document.getElementById('subtitle').textContent = 'กรุณารอสักครู่';
+        });
+
+        document.getElementById('btnLater').addEventListener('click', () => {
+            window.electronAPI.closeUpdate();
+        });
+
+        // Custom download button - let user choose save location
+        document.getElementById('btnCustom').addEventListener('click', () => {
+            window.electronAPI.customDownload();
+            document.getElementById('buttons').classList.add('hidden');
+            document.getElementById('progressContainer').classList.add('show');
+            document.getElementById('title').textContent = 'กำลังดาวน์โหลด...';
+            document.getElementById('subtitle').textContent = 'บันทึกลงโฟลเดอร์ที่เลือก';
+        });
+
+        // Listen for progress updates
+        window.electronAPI.onProgress((percent) => {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `กำลังดาวน์โหลด... ${Math.round(percent)}%`;
+        });
+
+        // Listen for download complete
+        window.electronAPI.onDownloadComplete(() => {
+            document.getElementById('title').textContent = 'ดาวน์โหลดเสร็จแล้ว!';
+            document.getElementById('subtitle').textContent = 'กำลังติดตั้ง...';
+            document.getElementById('progressText').textContent = 'รีสตาร์ทเพื่อติดตั้ง...';
+        });
+    </script>
+</body>
+
+</html>
