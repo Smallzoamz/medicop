@@ -56,7 +56,9 @@
             "createDesktopShortcut": true,
             "createStartMenuShortcut": true,
             "installerIcon": "src/icon.ico",
-            "uninstallerIcon": "src/icon.ico"
+            "uninstallerIcon": "src/icon.ico",
+            "language": "1033",
+            "unicode": true
         }
     }
 }
