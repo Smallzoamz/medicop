@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.5.3 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.5.5 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -21,6 +21,97 @@
         body {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
             min-height: 100vh;
+        }
+
+        /* Custom Title Bar for Electron */
+        .electron-title-bar {
+            height: 32px;
+            background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+            border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            -webkit-app-region: drag;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+        }
+
+        .title-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .title-bar-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .title-bar-text {
+            font-size: 12px;
+            color: #06b6d4;
+            font-weight: 500;
+        }
+
+        .title-bar-controls {
+            display: flex;
+            gap: 0;
+            -webkit-app-region: no-drag;
+        }
+
+        /* Windows 11 Style Buttons */
+        .title-bar-btn {
+            width: 46px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .title-bar-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .title-bar-btn:active {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .title-bar-btn.close:hover {
+            background: #e81123;
+            color: #ffffff;
+        }
+
+        .title-bar-btn.close:active {
+            background: #f1707a;
+        }
+
+        .title-bar-btn svg {
+            width: 10px;
+            height: 10px;
+        }
+
+        /* Adjust body when title bar is present */
+        body.has-title-bar {
+            padding-top: 32px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body.has-title-bar #app-container,
+        body.has-title-bar .min-h-screen {
+            min-height: calc(100vh - 32px) !important;
+            height: calc(100vh - 32px) !important;
+            overflow-y: auto;
         }
 
         .custom-scrollbar::-webkit-scrollbar {
@@ -364,6 +455,32 @@
 </head>
 
 <body class="text-white">
+    <!-- Custom Title Bar (Electron Only) -->
+    <div id="electron-title-bar" class="electron-title-bar hidden">
+        <div class="title-bar-left">
+            <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
+            <span class="title-bar-text">Medical OP Systems v.1.5.3</span>
+        </div>
+        <div class="title-bar-controls">
+            <button class="title-bar-btn minimize" id="btn-minimize" title="ย่อ">
+                <svg viewBox="0 0 10 1" fill="currentColor">
+                    <rect width="10" height="1"></rect>
+                </svg>
+            </button>
+            <button class="title-bar-btn maximize" id="btn-maximize" title="ขยาย">
+                <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1">
+                    <rect x="0.5" y="0.5" width="9" height="9"></rect>
+                </svg>
+            </button>
+            <button class="title-bar-btn close" id="btn-close" title="ปิด">
+                <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <line x1="0" y1="0" x2="10" y2="10"></line>
+                    <line x1="10" y1="0" x2="0" y2="10"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
     <!-- Welcome Animation Overlay (Electron Only) -->
     <div id="welcome-overlay" class="welcome-overlay hidden">
         <div class="welcome-particles" id="welcome-particles"></div>
@@ -409,96 +526,126 @@
                 <button onclick="closeChangelogModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
             </div>
             <div id="changelog-content" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
-                <!-- v1.5.3 -->
                 <div class="bg-gradient-to-r from-cyan-900/50 to-transparent rounded-xl p-4 border-l-4 border-cyan-500">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-cyan-400 font-bold text-sm">v1.5.3</span>
+                        <span class="text-cyan-400 font-bold text-sm">v1.3.8</span>
                         <span class="text-[10px] bg-cyan-500 text-white px-2 py-0.5 rounded-full">Latest</span>
-                        <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
+                        <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
-                        <li>• 🎨 ปุ่ม Title Bar สไตล์ Windows 11</li>
-                        <li>• 🛠️ แก้ไข Scroll Bar เกินเนื่องจาก Title Bar</li>
+                        <li>• 🔄 Version หน้า Login โหลดจาก Firebase อัตโนมัติ</li>
+                        <li>• 🐛 แก้ไข Event Settings (เข้าร่วม/Restart) ไม่บันทึก</li>
+                        <li>• 🐛 แก้ไข Version ลดลงเมื่อมีคนใช้โค้ดเก่า</li>
+                        <li>• 🐛 แก้ไข Music Player ปุ่มไม่ทำงานตอน Login ครั้งแรก</li>
                     </ul>
                 </div>
-                <!-- v1.5.2 -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-slate-300 font-bold text-sm">v1.5.2</span>
-                        <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
+                        <span class="text-slate-300 font-bold text-sm">v1.3.3</span>
+                        <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
-                        <li>• 🐛 แก้ไข Data Rollback Bug - saveOpData() race condition</li>
-                        <li>• ⏳ เพิ่ม await ใน critical functions ทั้งหมด</li>
-                        <li>• ❌ Error handling เมื่อบันทึกไม่สำเร็จ</li>
+                        <li>• ⏱️ เพิ่มระบบเวลาเข้าร่วม Event</li>
+                        <li>• 🎮 2-Phase Countdown: "เข้าร่วม" → "กำลังเล่น"</li>
+                        <li>• 🔒 บล็อกการ Assign หลังหมดเวลาเข้าร่วม</li>
                     </ul>
                 </div>
-                <!-- v1.5.0 - v1.5.1 -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-slate-300 font-bold text-sm">v1.5.0 - v1.5.1</span>
-                        <span class="text-[10px] text-slate-500">13-14 ธ.ค. 2567</span>
+                        <span class="text-slate-300 font-bold text-sm">v1.3.2</span>
+                        <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
-                        <li>• 🖥️ Electron Desktop App พร้อม Custom Title Bar</li>
-                        <li>• 🎯 Deploy อัตโนมัติผ่าน GitHub Actions</li>
-                        <li>• 📥 ระบบดาวน์โหลด EXE จาก GitHub Releases</li>
-                        <li>• 🔧 แก้ไข Firebase project config</li>
+                        <li>• 🔄 ระบบ Force Refresh ใหม่ - Pop-up กลางจอ นับถอยหลัง 30 วินาที</li>
+                        <li>• ⚡ Real-time Listener - ตรวจจับเวอร์ชั่นใหม่ทันที (ไม่ต้องรอ Owner)</li>
+                        <li>• 🚀 ผู้ใช้คนใดก็ได้ สามารถ Trigger การอัปเดตแจ้งเตือนให้คนอื่น</li>
                     </ul>
                 </div>
-                <!-- v1.4.x -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-slate-300 font-bold text-sm">v1.4.x</span>
-                        <span class="text-[10px] text-slate-500">12-13 ธ.ค. 2567</span>
+                        <span class="text-slate-300 font-bold text-sm">v1.3.1</span>
+                        <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
-                        <li>• 🖱️ ระบบ Custom Cursor (ส่วนตัว + Server Default)</li>
-                        <li>• 💬 Group Chat + Read Count สำหรับห้องแชทกลุ่ม</li>
-                        <li>• 👥 แยก Online/Offline ใน Chat List</li>
-                        <li>• 📊 เรียงลำดับตามข้อความล่าสุด</li>
-                        <li>• 🖼️ Gallery สำหรับ Logo Upload</li>
+                        <li>• 🚨 บังคับปิดกะ (Force End Shift) - ปิดสตอรี่ที่เริ่มแล้วอัตโนมัติ</li>
+                        <li>• 🔁 Server Restart - ปิดสตอรี่ที่เริ่มแล้วอัตโนมัติก่อนจบกะ</li>
+                        <li>• 📝 บันทึก Log เมื่อบังคับปิดสตอรี่</li>
                     </ul>
                 </div>
-                <!-- v1.3.x -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-slate-300 font-bold text-sm">v1.3.x</span>
-                        <span class="text-[10px] text-slate-500">12-13 ธ.ค. 2567</span>
+                        <span class="text-slate-300 font-bold text-sm">v1.3.0</span>
+                        <span class="text-[10px] text-slate-500">12 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
-                        <li>• ⏱️ ระบบเวลาเข้าร่วม Event (2-Phase Countdown)</li>
-                        <li>• 🔄 Force Refresh แบบ Real-time</li>
-                        <li>• 🚨 บังคับปิดกะ (Force End Shift)</li>
-                        <li>• 🟢 แจ้งเตือน Online/Offline สำหรับ Owner</li>
-                        <li>• 💬 ปรับปรุง DM Chat + ปุ่มล้างแชท</li>
+                        <li>• 🟢 แจ้งเตือน Online/Offline สำหรับ Owner เมื่อมีคน Login/Logout</li>
+                        <li>• 💬 ปรับปรุง DM Chat - เพิ่มปุ่มล้างแชท, ปุ่มปิด Bubble</li>
+                        <li>• 🔔 เสียงแจ้งเตือน Online/Offline นุ่มๆ ฟังสบาย</li>
+                        <li>• ⚡ แก้ไข DM Auto Bubble - แจ้งเตือนเมื่อมีข้อความใหม่</li>
+                        <li>• 📴 แก้ไข Offline Status - แสดงสถานะ Offline ทันทีเมื่อ Logout</li>
+                        <li>• 👥 แก้ไขรายชื่อ Offline ไม่แสดง</li>
                     </ul>
                 </div>
-                <!-- v1.2.x -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-slate-300 font-bold text-sm">v1.2.x</span>
+                        <span class="text-slate-300 font-bold text-sm">v1.2.0</span>
                         <span class="text-[10px] text-slate-500">11 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
-                        <li>• 🖼️ กดรูปโปรไฟล์ดูรูปใหญ่</li>
-                        <li>• 💰 Tag โทษ Emoji (💰x2, 💰x5, 🚫💊)</li>
-                        <li>• 📋 Dropdown โทษเพิ่มเติมใน Blacklist</li>
-                        <li>• ⏱️ Shift Timer ข้างชื่อ OP</li>
+                        <li>• 🖼️ กดที่รูปโปรไฟล์ OP / On Duty เพื่อดูรูปใหญ่ได้</li>
+                        <li>• 💰 เปลี่ยน Tag ในสตอรี่เป็น Emoji (💰x2, 💰x5, 🚫💊)</li>
+                        <li>• 📋 เพิ่ม Dropdown โทษเพิ่มเติมใน Blacklist</li>
+                        <li>• 📞 รวม Input คำสั่งโทรศัพท์ให้กระชับขึ้น</li>
+                        <li>• ⏱️ ย้าย Shift Timer มาข้างชื่อ OP</li>
+                        <li>• 💊 รวมค่ารักษาชุบสตอรี่เข้าในการ์ดเคสสุ่มเสี่ยง</li>
                     </ul>
                 </div>
-                <!-- v1.1.x -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-slate-300 font-bold text-sm">v1.1.x</span>
-                        <span class="text-[10px] text-slate-500">9-11 ธ.ค. 2567</span>
+                        <span class="text-slate-300 font-bold text-sm">v1.1.3</span>
+                        <span class="text-[10px] text-slate-500">11 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
-                        <li>• ⚔️ ระบบกำหนดแพทย์สำหรับแต่ละเคส</li>
-                        <li>• 📊 Shift Summary หลังจบกะ</li>
-                        <li>• 🔁 Handover OP อัตโนมัติ</li>
-                        <li>• 🚫 ระบบ Blacklist + ค่ารักษาพยาบาล</li>
-                        <li>• 💀 อุ้มเอ๋อ (ห่อศพ) ฟีเจอร์</li>
+                        <li>• ✅ แก้ไข Confirm Modal ให้แสดงหน้าสุด</li>
+                        <li>• ✅ ปุ่มออกกะ เคลียร์รายชื่อ On Duty, Off Duty, AFK</li>
+                        <li>• ✅ โทษx5 อัปเดต Real-time เมื่อ Blacklist เปลี่ยน</li>
+                        <li>• ✅ ปรับ Spacing การ์ดค่ารักษาพยาบาล</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.1.2</span>
+                        <span class="text-[10px] text-slate-500">11 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• แก้ไข Error classList ใน switchMainTab</li>
+                        <li>• ปรับ styling โทษx5 ให้เล็กลง</li>
+                        <li>• เพิ่มการ์ด ชุบสตอรี่ + หมายเหตุในเคสสุ่มเสี่ยง</li>
+                        <li>• เพิ่มระบบ Changelog Popup</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.1.1</span>
+                        <span class="text-[10px] text-slate-500">10 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• เพิ่ม Badge โทษx5 บน Story Cards</li>
+                        <li>• เพิ่มการ์ดค่ารักษา (เคสปกติ/เคสสุ่มเสี่ยง)</li>
+                        <li>• เพิ่มระบบ Blacklist Menu</li>
+                        <li>• เพิ่ม Badge ห้ามฉีดยา (ถึงวันสตอรี่)</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.1.0</span>
+                        <span class="text-[10px] text-slate-500">9 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• เพิ่มระบบกำหนดแพทย์สำหรับแต่ละเคส</li>
+                        <li>• ปรับปรุง Shift Summary</li>
+                        <li>• ปรับปรุง Real-time Updates</li>
+                        <li>• เพิ่มระบบ Handover OP อัตโนมัติ</li>
                     </ul>
                 </div>
             </div>
@@ -544,118 +691,131 @@
                             ชื่อ-นามสกุล IC</li>
                         <li>• <strong class="text-white">เข้าสู่ระบบ</strong> - Login ด้วย Username/Password ที่สมัครไว้
                         </li>
-                        <li>• <strong class="text-white">Desktop App</strong> - ดาวน์โหลด EXE จาก GitHub Releases
-                            เพื่อใช้งานแบบ Standalone</li>
                         <li>• <strong class="text-white">แก้ไขโปรไฟล์</strong> - กดที่รูปโปรไฟล์มุมขวาบน → เปลี่ยนรูป,
-                            เบอร์ IC, Custom Cursor</li>
+                            เบอร์ IC, สถานะทำงาน</li>
+                        <li>• <strong class="text-white">คลิกรูปดูใหญ่</strong> -
+                            คลิกที่รูปโปรไฟล์ใครก็ได้เพื่อดูรูปขนาดใหญ่</li>
                     </ul>
                 </div>
 
-                <!-- 2. การเป็น OP และจัดการกะ -->
+                <!-- 2. การเป็น OP -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-amber-400 mb-2">👤 2. การเป็น OP และจัดการกะ</h4>
+                    <h4 class="text-sm font-bold text-amber-400 mb-2">👤 2. การเป็น OP (Operator)</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <strong class="text-white">เข้ากะ</strong> - กดปุ่ม "🎯 เข้ากะ" → เลือก Support OP (ถ้ามี)
-                            → กด "▶ เริ่มกะ"</li>
-                        <li>• <strong class="text-white">ส่งต่อ OP</strong> - กด "🔄 ส่งต่อ OP" ให้ Sup OP เป็น OP
-                            คนใหม่</li>
-                        <li>• <strong class="text-white">Request OP</strong> - ผู้ใช้ทั่วไปขอเป็น OP ได้ → OP
-                            ปัจจุบันต้องอนุมัติ</li>
+                        <li>• <strong class="text-white">เข้ากะ</strong> - กดปุ่ม "🎯 เข้ากะ (เป็น OP)"
+                            เพื่อรับหน้าที่เป็น OP</li>
+                        <li>• <strong class="text-white">เลือก Support OP</strong> - เลือกแพทย์ที่จะช่วยดูแลระบบ (Sup OP
+                            สามารถใช้งานได้เหมือน OP)</li>
+                        <li>• <strong class="text-white">เริ่มกะ</strong> - กด "▶ เริ่มกะ" → ระบบจะเริ่มนับเวลากะ</li>
+                        <li>• <strong class="text-white">สุ่ม OP ถัดไป</strong> - กด "🎲 สุ่ม OP" →
+                            ระบบจะเลือกแพทย์คนถัดไปและ Countdown อัตโนมัติ</li>
                         <li>• <strong class="text-white">จบกะ</strong> - กด "⏹️ จบกะ" → แสดง Shift Summary
                             พร้อมปุ่มคัดลอก</li>
-                        <li>• <strong class="text-white">บังคับปิดกะ</strong> - Staff+ สามารถกด Force End Shift ได้ใน
-                            Admin Panel</li>
+                        <li>• <strong class="text-white">ออกกะ</strong> - กด "🚪 ออกกะ" เมื่อยังไม่ได้เริ่มกะ</li>
                     </ul>
                 </div>
 
                 <!-- 3. จัดการแพทย์ -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-cyan-400 mb-2">👨‍⚕️ 3. จัดการแพทย์ (On Duty / AFK / Off Duty)
+                    <h4 class="text-sm font-bold text-cyan-400 mb-2">👨‍⚕️ 3. จัดการแพทย์ (On Duty / Off Duty / AFK)
                     </h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <strong class="text-white">เพิ่มแพทย์</strong> - พิมพ์ชื่อในช่อง "Add Name..." แล้วกด
-                            Enter</li>
-                        <li>• <strong class="text-white">สถานะแพทย์</strong> - กดปุ่ม: <span
-                                class="text-cyan-400">✓</span> = พร้อม, <span class="text-amber-400">⏳</span> = รอซ่อม,
-                            <span class="text-rose-400">❌</span> = ไม่พร้อม</li>
-                        <li>• <strong class="text-white">ย้ายสถานะ</strong> - กด 💤 ไป AFK (นับเวลาอัตโนมัติ) หรือ 📴 ไป
-                            Off Duty</li>
+                        <li>• <strong class="text-white">เพิ่มแพทย์</strong> - พิมพ์ชื่อแพทย์ในช่อง "Add Name..." แล้วกด
+                            Enter หรือ ➕</li>
+                        <li>• <strong class="text-white">เปลี่ยนสถานะ</strong> - กดปุ่มข้างชื่อแพทย์:
+                            <span class="text-cyan-400">✓</span> = พร้อม,
+                            <span class="text-amber-400">⏳</span> = รอซ่อม,
+                            <span class="text-rose-400">❌</span> = ไม่พร้อม
+                        </li>
+                        <li>• <strong class="text-white">ย้ายไป AFK</strong> - ลากชื่อแพทย์ไปโซน AFK → นับเวลา AFK
+                            อัตโนมัติ</li>
+                        <li>• <strong class="text-white">ย้ายไป Off Duty</strong> - ลากชื่อแพทย์ไปโซน Off Duty</li>
                         <li>• <strong class="text-white">AFK Warning</strong> - ถ้า AFK นานจะมี Badge ⚠️ เตือน</li>
                     </ul>
                 </div>
 
-                <!-- 4. เคสสตอรี่และอุ้มเอ๋อ -->
+                <!-- 4. เคสสตอรี่ -->
                 <div
                     class="bg-gradient-to-r from-indigo-900/40 to-transparent rounded-xl p-4 border-l-4 border-indigo-500">
-                    <h4 class="text-sm font-bold text-indigo-400 mb-2">⚔️ 4. เคสสตอรี่ และ อุ้มเอ๋อ</h4>
+                    <h4 class="text-sm font-bold text-indigo-400 mb-2">⚔️ 4. เกี่ยวกับเคสสตอรี่</h4>
                     <div class="text-xs text-slate-300 space-y-3">
                         <div>
                             <p class="font-bold text-white mb-1">🔥 สร้างเคส (นับไฟท์)</p>
                             <ul class="space-y-0.5 pl-4">
-                                <li>เลือกสถานที่ → กรอก Radio → Party A vs Party B → เวลาเริ่ม → วันที่สตอรี่</li>
+                                <li>1. เลือกสถานที่ (สนามบิน, ปั้มเมืองบน, โรงเชือดไก่)</li>
+                                <li>2. กรอก Radio (ถ้ามี)</li>
+                                <li>3. กรอก Party A vs Party B (ชื่อแก๊ง/ครอบครัว)</li>
+                                <li>4. กรอกเวลาเริ่ม (HH:MM)</li>
+                                <li>5. ติ๊ก "ถึงวันสตอรี่" ถ้าห้ามฉีดยา</li>
+                                <li>6. กด "🔥 สร้างสตอรี่"</li>
                             </ul>
                         </div>
                         <div>
-                            <p class="font-bold text-white mb-1">📋 จัดการสตอรี่</p>
+                            <p class="font-bold text-white mb-1">📋 จัดการรายการสตอรี่</p>
                             <ul class="space-y-0.5 pl-4">
-                                <li>• <strong class="text-cyan-400">Assign แพทย์</strong> - กด "+ Assign" →
-                                    เลือกแพทย์สูงสุด 3 คน</li>
-                                <li>• <strong class="text-amber-400">แก้ไข/เลื่อนเวลา</strong> - กด ✏️ หรือ 📅</li>
-                                <li>• <strong class="text-emerald-400">ปิดเคส</strong> - กด ✅ → แพทย์กลับ On Duty
-                                    อัตโนมัติ</li>
-                                <li>• <strong class="text-rose-400">Tag โทษ</strong> - 💰x2, 💰x5, 🚫💊 แสดงอัตโนมัติจาก
-                                    Blacklist</li>
+                                <li>• <strong class="text-cyan-400">กำหนดแพทย์</strong> - กด 👨‍⚕️ → เลือกแพทย์สูงสุด 3
+                                    คน → กดยืนยัน</li>
+                                <li>• <strong class="text-amber-400">แก้ไข</strong> - กด ✏️ เพื่อแก้ไขข้อมูล แล้วกด 💾
+                                    บันทึก</li>
+                                <li>• <strong class="text-emerald-400">ปิดเคส</strong> - กด ✖ เพื่อปิดเคส →
+                                    แพทย์กลับเข้า On Duty อัตโนมัติ</li>
+                                <li>• <strong class="text-rose-400">Tag โทษ</strong> - แสดง 💰x2, 💰x5, 🚫💊
+                                    อัตโนมัติจาก Blacklist</li>
                             </ul>
                         </div>
                         <div class="mt-2 p-3 bg-rose-900/20 rounded-lg border border-rose-500/30">
-                            <p class="font-bold text-rose-400 mb-1">💀 อุ้มเอ๋อ (ห่อศพ)</p>
+                            <p class="font-bold text-rose-400 mb-1">💀 อุ้มเอ๋อ (ห่อศพ) - ฟีเจอร์พิเศษ</p>
                             <ul class="space-y-0.5 pl-4 text-rose-200/80">
-                                <li>• Tab ถูกล็อค → เฉพาะ OP กดเปิดให้ทุกคนเห็นได้</li>
-                                <li>• กำหนดจำนวนศพ → กดเลือกแพทย์ → เสร็จแล้วกด "ปลดแพทย์"</li>
+                                <li>• Tab นี้ถูกล็อคไว้ → เฉพาะ OP กดเปิดให้ทุกคนเห็นได้</li>
+                                <li>• กำหนด "จำนวนศพที่ต้องการ" แล้วกด ➕</li>
+                                <li>• กดเลือกแพทย์ที่จะไปห่อศพ → แพทย์จะย้ายออกจาก On Duty</li>
+                                <li>• เมื่อเสร็จ กด "ปลดแพทย์" → แพทย์กลับเข้า On Duty</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- 5. Chat และ DM -->
+                <!-- 5. คำสั่งโทรศัพท์ -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-purple-400 mb-2">💬 5. Chat และ DM</h4>
+                    <h4 class="text-sm font-bold text-emerald-400 mb-2">📞 5. คำสั่งโทรศัพท์</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <strong class="text-white">Group Chat</strong> - ห้องแชทกลุ่มสำหรับทุกคน แสดง Read Count
-                        </li>
-                        <li>• <strong class="text-white">DM (Direct Message)</strong> -
-                            กดที่ชื่อผู้ใช้เพื่อส่งข้อความส่วนตัว</li>
-                        <li>• <strong class="text-white">Chat Bubble</strong> - แจ้งเตือนเมื่อมีข้อความใหม่</li>
-                        <li>• <strong class="text-white">Online/Offline</strong> - แยกรายชื่อตาม Online
-                            และเรียงตามข้อความล่าสุด</li>
+                        <li>• <strong class="text-white">ไม่พบเคส</strong> - กรอกเบอร์ → กด "ไม่พบเคส" →
+                            คัดลอกคำสั่งโทรแจ้ง</li>
+                        <li>• <strong class="text-white">เข้าไม่ถึง</strong> - กรอกเบอร์ → กด "เข้าไม่ถึง" →
+                            คัดลอกคำสั่งโทรแจ้ง</li>
                     </ul>
                 </div>
 
-                <!-- 6. Blacklist และประกาศ -->
+                <!-- 6. ค่ารักษาพยาบาล -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-rose-400 mb-2">🚫 6. Blacklist และคำสั่งประกาศ</h4>
+                    <h4 class="text-sm font-bold text-amber-400 mb-2">💊 6. ค่ารักษาพยาบาล</h4>
+                    <ul class="text-xs text-slate-300 space-y-1.5">
+                        <li>• <strong class="text-white">เคสปกติ</strong> - แสดงราคาชุบ/ฉีด แต่ละเขต</li>
+                        <li>• <strong class="text-white">เคสสุ่มเสี่ยง/สตอรี่</strong> - แสดงราคาพิเศษ (เขตสุ่มเสี่ยง +
+                            ชุบสตอรี่)</li>
+                        <li>• <strong class="text-white">แก้ไขราคา</strong> - กด ✏️ แก้ไข → กรอกราคาใหม่ → กด 💾 บันทึก
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 7. Blacklist -->
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <h4 class="text-sm font-bold text-rose-400 mb-2">🚫 7. Blacklist</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
                         <li>• <strong class="text-white">ดู Blacklist</strong> - กด "📋 รายการ Blacklist" ที่ Navbar
                         </li>
-                        <li>• <strong class="text-white">ประกาศ Blacklist</strong> - ไปที่ Tab "📢 รวมคำสั่งประกาศ" →
-                            เลือกประเภท → กรอกข้อมูล → คัดลอก+บันทึก</li>
-                        <li>• <strong class="text-white">โทษเพิ่มเติม</strong> - เลือก 💰x2, 💰x5, 🚫ไม่รักษา → แสดงบน
-                            Story Card</li>
+                        <li>• <strong class="text-white">ประกาศ Blacklist</strong> - ไปที่ "📢 รวมคำสั่งประกาศ" → หมวด
+                            Blacklist:
+                            <div class="pl-4 mt-1">
+                                - เลือกประเภท (คนไข้, ประชาชน, แก๊ง, ครอบครัว)<br>
+                                - กรอกชื่อ/เบอร์ และเหตุผล<br>
+                                - กรอกค่าปรับ<br>
+                                - เลือกโทษเพิ่มเติม (💰x2, 💰x5, 🚫ไม่รักษา)<br>
+                                - กด "📋 คัดลอก + บันทึก"
+                            </div>
+                        </li>
                         <li>• <strong class="text-white">ปลด Blacklist</strong> - เลือกรายการ → กด "📋 คัดลอก + ลบออก"
                         </li>
-                    </ul>
-                </div>
-
-                <!-- 7. Admin Settings -->
-                <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-amber-400 mb-2">⚙️ 7. Admin Settings (Staff+)</h4>
-                    <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <strong class="text-white">Force End Shift</strong> - ปิดกะทันทีเมื่อ OP ไม่อยู่</li>
-                        <li>• <strong class="text-white">จัดการ Users</strong> - เปลี่ยนยศ, แก้ไขชื่อ, ลบ Account</li>
-                        <li>• <strong class="text-white">Server Settings</strong> - ตั้งชื่อ Server, Logo, Theme Color,
-                            Custom Cursor</li>
-                        <li>• <strong class="text-white">Event Settings</strong> - ตั้งเวลาเข้าร่วม Event และ Server
-                            Restart</li>
                     </ul>
                 </div>
 
@@ -755,6 +915,21 @@
                             placeholder="ยืนยันรหัสผ่านใหม่">
                         <button type="button" onclick="changePassword()"
                             class="w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition">เปลี่ยนรหัสผ่าน</button>
+                    </div>
+                </div>
+                <!-- Discord Link Section -->
+                <div>
+                    <label class="text-xs text-slate-400 mb-1.5 block font-medium">🔗 เชื่อมต่อ Discord</label>
+                    <div id="discord-link-status" class="flex items-center gap-3">
+                        <button type="button" onclick="linkDiscordOAuth()" id="discord-link-btn"
+                            class="flex-1 text-xs text-indigo-400 hover:text-white border border-indigo-500/50 rounded-lg py-2.5 px-3 bg-indigo-500/10 hover:bg-indigo-500/30 transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+                            </svg>
+                            <span id="discord-link-text">เชื่อมต่อ Discord</span>
+                        </button>
+                        <span id="discord-linked-user" class="hidden text-xs text-emerald-400"></span>
                     </div>
                 </div>
                 <div class="flex gap-3 pt-2">
@@ -6401,8 +6576,9 @@
 
         // Welcome Animation (Electron Only)
         function showWelcomeAnimation() {
-            // Only show in Electron app
-            if (!window.isElectronApp) return;
+            // Only show in Electron app (check both methods)
+            const isElectron = window.isElectronApp || window.electronEnv?.isElectron;
+            if (!isElectron) return;
 
             const overlay = document.getElementById('welcome-overlay');
             const particlesContainer = document.getElementById('welcome-particles');
@@ -6553,6 +6729,14 @@
             sessionStorage.removeItem('op_session_current');
             localStorage.removeItem('op_session');
             currentUser = null;
+
+            // In Electron, go back to separate login window
+            if (window.windowControls && window.windowControls.logout) {
+                window.windowControls.logout();
+                return;
+            }
+
+            // Web version: show embedded login form
             document.getElementById('auth-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('staff-admin-btn').classList.add('hidden');
@@ -8064,12 +8248,6 @@
         }
 
         function initVersionListener() {
-            // Skip Force Refresh on Electron - EXE has its own auto-update system
-            if (window.isElectronApp) {
-                console.log('📦 Electron detected - skipping Force Refresh (use auto-update instead)');
-                return;
-            }
-
             if (versionUnsubscribe) versionUnsubscribe();
 
             // Real-time listener for version changes
@@ -8159,9 +8337,11 @@
             });
         }
 
-        // Initialize version listener after login
+        // Initialize version listener after login - Skip for Electron (EXE has its own auto-updater)
         setTimeout(() => {
-            if (currentUser) initVersionListener();
+            if (currentUser && !window.isElectronApp && !(window.electronEnv && window.electronEnv.isElectron)) {
+                initVersionListener();
+            }
         }, 2000);
 
         function copyCmdCooldown() { const cmd = getAnnounceCmd(); const pA = document.getElementById('cmd-cooldown-a').value.trim(), pB = document.getElementById('cmd-cooldown-b').value.trim(); if (!pA || !pB) return showNotif('Error', 'กรุณากรอก Party A และ B'); const now = new Date(), later = new Date(now.getTime() + 10 * 60 * 1000); const msg = `${cmd} ประกาศคูลดาวน์สตอรี่ ระหว่าง ${pA} vs ${pB} เป็นเวลา 10 นาที ตั้งแต่เวลา ${now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} - ${later.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น. หรือหากพร้อม สามารถเริ่มได้ทันที`; navigator.clipboard.writeText(msg); document.getElementById('cmd-cooldown-a').value = ''; document.getElementById('cmd-cooldown-b').value = ''; showNotif('Success', 'คัดลอกแล้ว'); }
@@ -9807,25 +9987,37 @@
 
         function moveMedic(name, from, to) {
             if (!appData.afkPositions) appData.afkPositions = {};
+            if (!appData.afkTimes) appData.afkTimes = {};
+
+            // FIXED: Save CURRENT position in onDuty BEFORE removing
+            const currentOnDutyIndex = (appData.onDuty || []).indexOf(name);
+
+            // Preserve AFK time and position if coming from AFK
+            const savedAfkTime = appData.afkTimes?.[name];
+            const savedAfkPos = appData.afkPositions?.[name];
 
             // Remove from ALL lists first to prevent duplicates
-            const afkTime = appData.afkTimes?.[name]; // Preserve AFK time if needed
-            const afkPos = appData.afkPositions?.[name]; // Preserve AFK position if needed
             removeFromAllLists(name);
 
             if (to === 'afk') {
-                // Save original position when going AFK
+                // Going TO AFK - save the CURRENT position from onDuty
                 appData.afkTimes[name] = Date.now();
-                appData.afkPositions[name] = afkPos !== undefined ? afkPos : 0;
-            } else if (from === 'afk') {
-                // Restore to original position if returning to onDuty
-                if (to === 'onDuty' && afkPos !== undefined) {
-                    const restorePos = Math.min(afkPos, appData.onDuty.length);
-                    appData.onDuty.splice(restorePos, 0, name);
-                    saveOpData();
-                    return;
-                }
+                // Use current onDuty index, not old afkPos
+                appData.afkPositions[name] = currentOnDutyIndex !== -1 ? currentOnDutyIndex : 0;
+                appData.afk.push(name);
+                saveOpData();
+                return;
+            } else if (from === 'afk' && to === 'onDuty') {
+                // Returning FROM AFK to onDuty - restore to saved position
+                const restorePos = savedAfkPos !== undefined ? Math.min(savedAfkPos, appData.onDuty.length) : 0;
+                appData.onDuty.splice(restorePos, 0, name);
+                // Clean up AFK data
+                delete appData.afkTimes?.[name];
+                delete appData.afkPositions?.[name];
+                saveOpData();
+                return;
             }
+
             if (to === 'offDuty') {
                 delete appData.afkWarnings?.[name];
                 delete appData.afkWarnedTimes?.[name];
@@ -10140,6 +10332,26 @@
         }, 1000);
 
         async function initApp() {
+            // Initialize Electron title bar (if in Electron)
+            const isElectron = window.electronEnv?.isElectron || window.isElectronApp;
+            if (isElectron) {
+                const titleBar = document.getElementById('electron-title-bar');
+                if (titleBar) {
+                    titleBar.classList.remove('hidden');
+                    document.body.classList.add('has-title-bar');
+                }
+                // Setup window control buttons
+                document.getElementById('btn-minimize')?.addEventListener('click', () => {
+                    window.windowControls?.minimize();
+                });
+                document.getElementById('btn-maximize')?.addEventListener('click', () => {
+                    window.windowControls?.maximize();
+                });
+                document.getElementById('btn-close')?.addEventListener('click', () => {
+                    window.windowControls?.close();
+                });
+            }
+
             // Load version from Firebase and display on login page
             try {
                 const versionDoc = await db.collection('settings').doc('appVersion').get();
@@ -10147,10 +10359,24 @@
                     const firestoreVersion = versionDoc.data().version;
                     const loginVersionEl = document.getElementById('login-version-display');
                     if (loginVersionEl) loginVersionEl.textContent = 'v.' + firestoreVersion;
-                    // Also update document title
-                    document.title = `🏥 .:: Medical OP Systems ::. v.${firestoreVersion} by Bonchon-Studio`;
                 }
             } catch (e) { console.log('Version load error:', e); }
+
+            // Check for Electron login data from query params
+            const urlParams = new URLSearchParams(window.location.search);
+            const userDataParam = urlParams.get('userData');
+            if (userDataParam) {
+                try {
+                    const userData = JSON.parse(decodeURIComponent(userDataParam));
+                    if (userData && userData.username) {
+                        currentUser = userData;
+                        sessionStorage.setItem('op_session_current', JSON.stringify(currentUser));
+                        loginSuccess(true); // Show welcome animation
+                        ensureAdminAccount();
+                        return;
+                    }
+                } catch (e) { console.log('Parse user data error:', e); }
+            }
 
             const ss = sessionStorage.getItem('op_session_current');
             if (ss) { try { currentUser = JSON.parse(ss); loginSuccess(false); ensureAdminAccount(); return; } catch (e) { } }
@@ -10249,6 +10475,73 @@
                 }, 100);
             }
         }
+
+        // --- Discord OAuth2 Link Functions ---
+        const DISCORD_AUTH_URL = 'https://us-central1-medic-op.cloudfunctions.net/discordAuth';
+
+        function linkDiscordOAuth() {
+            if (!currentUser?.username) {
+                showNotif('Error', '❌ กรุณาเข้าสู่ระบบก่อน');
+                return;
+            }
+
+            // Open Discord OAuth popup
+            const authUrl = `${DISCORD_AUTH_URL}?userId=${encodeURIComponent(currentUser.username)}`;
+            const popup = window.open(authUrl, 'Discord Link', 'width=500,height=700');
+
+            // Listen for popup close
+            const checkPopup = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkPopup);
+                    // Refresh user data to check if discord was linked
+                    setTimeout(() => refreshDiscordLinkStatus(), 1000);
+                }
+            }, 500);
+        }
+
+        async function refreshDiscordLinkStatus() {
+            if (!currentUser?.username) return;
+
+            try {
+                const userDoc = await db.collection('op_users').doc(currentUser.username).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    if (data.discordId && data.discordUsername) {
+                        updateDiscordLinkUI(true, data.discordUsername);
+                        showNotif('Success', `✅ เชื่อมต่อ Discord สำเร็จ: ${data.discordUsername}`);
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking discord link:', e);
+            }
+        }
+
+        function updateDiscordLinkUI(isLinked, discordUsername = '') {
+            const btn = document.getElementById('discord-link-btn');
+            const text = document.getElementById('discord-link-text');
+            const linkedUser = document.getElementById('discord-linked-user');
+
+            if (isLinked && discordUsername) {
+                if (btn) btn.classList.add('hidden');
+                if (linkedUser) {
+                    linkedUser.classList.remove('hidden');
+                    linkedUser.innerHTML = `✅ เชื่อมต่อแล้ว: <span class="text-white font-medium">${discordUsername}</span>`;
+                }
+            } else {
+                if (btn) btn.classList.remove('hidden');
+                if (text) text.textContent = 'เชื่อมต่อ Discord';
+                if (linkedUser) linkedUser.classList.add('hidden');
+            }
+        }
+
+        // Listen for postMessage from OAuth popup
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.discordLinked !== undefined) {
+                if (event.data.discordLinked) {
+                    refreshDiscordLinkStatus();
+                }
+            }
+        });
     </script>
 </body>
 

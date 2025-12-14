@@ -100,6 +100,47 @@ function formatBadge(badge) {
     return badges[badge] || '';
 }
 
+// Filter items to only show today's items (Bangkok timezone)
+function filterTodayItems(items) {
+    if (!Array.isArray(items) || items.length === 0) return [];
+
+    const now = new Date();
+    const bangkokOffset = 7 * 60; // UTC+7 in minutes
+    const localOffset = now.getTimezoneOffset();
+    const bangkokTime = new Date(now.getTime() + (bangkokOffset + localOffset) * 60000);
+
+    const todayStr = bangkokTime.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    return items.filter(item => {
+        // Check if item has a date/timestamp field
+        let itemDate = null;
+
+        if (item.createdAt) {
+            itemDate = new Date(item.createdAt);
+        } else if (item.startTime && typeof item.startTime === 'string') {
+            // If startTime is just "HH:MM", assume it's today
+            if (item.startTime.match(/^\d{2}:\d{2}$/)) {
+                return true; // No date info, assume today
+            }
+            itemDate = new Date(item.startTime);
+        } else if (item.closedAt) {
+            itemDate = new Date(item.closedAt);
+        } else if (item.storyDate) {
+            // storyDate might be in format "DD/MM/YYYY" or similar
+            itemDate = new Date(item.storyDate);
+        }
+
+        // If we can't determine the date, include it (assume today)
+        if (!itemDate || isNaN(itemDate.getTime())) {
+            return true;
+        }
+
+        // Compare dates
+        const itemDateStr = itemDate.toISOString().split('T')[0];
+        return itemDateStr === todayStr;
+    });
+}
+
 // Format status icons for On Duty users
 // Based on OP System buttons: ✓ รับเคส | 🔧 รอเคสแก้ | ❌ ไม่รับเคส | ⏳ AFK | 📤 Off Duty
 function formatStatus(status) {
@@ -472,13 +513,15 @@ async function updateStoryMessage(data) {
         }
 
         // FIXED: Use correct field names from OP system
-        const stories = data.cases || [];  // OP uses "cases" not "stories"
+        const allStories = data.cases || [];  // OP uses "cases" not "stories"
+        const stories = filterTodayItems(allStories); // Only show today's stories
         const currentOP = data.currentOP || 'ไม่มี';
         const supOP = data.supOP || null;
         const onDuty = data.onDuty || [];  // Array of strings (names)
         const offDuty = data.offDuty || []; // Array of strings (names)
         const afkList = data.afk || [];     // OP uses "afk" not "afkList"
-        const eventList = data.activeEvents || []; // OP uses "activeEvents" not "events"
+        const allEvents = data.activeEvents || []; // OP uses "activeEvents" not "events"
+        const eventList = filterTodayItems(allEvents); // Only show today's events
         // Use _lastModified as shift start time (timestamp when OP started)
         const lastModified = data._lastModified || null;
         const medicStatuses = data.medicStatuses || {}; // Status per medic: { name: 'accept'|'waitfix'|'decline' }
