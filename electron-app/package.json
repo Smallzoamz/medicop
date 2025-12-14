@@ -59,7 +59,7 @@
             "uninstallerIcon": "src/icon.ico",
             "language": "1033",
             "unicode": true,
-            "license": null
+            "license": "LICENSE.txt"
         }
     }
 }
