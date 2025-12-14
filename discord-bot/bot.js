@@ -101,16 +101,18 @@ function formatBadge(badge) {
 }
 
 // Format status icons for On Duty users
+// Based on OP System buttons: ✓ รับเคส | 🔧 รอเคสแก้ | ❌ ไม่รับเคส | ⏳ AFK | 📤 Off Duty
 function formatStatus(status) {
     const statusIcons = {
-        'available': '',                    // พร้อมรับเคส (default)
-        'not_accepting': '🚫',              // ไม่รับเคส
-        'waiting_fix': '🔧',                // รอเคสแก้
+        'available': '',                    // ✓ พร้อมรับเคส (default, no icon needed)
+        'in_queue': '',                     // ถึงคิว - แสดงด้วย 📍 แทน
+        'waiting_fix': '🔧',                // 🔧 รอเคสแก้
+        'not_accepting': '🚫',              // ❌ ไม่รับเคส
+        'afk': '⏳',                        // ⏳ AFK
         'in_story': '⚔️',                  // กำลังไปสตอรี่
         'in_event': '🎉',                   // อยู่ใน Event
-        'afk': '💤',                        // AFK
         'break': '☕',                      // พักเบรค
-        'busy': '⏳'                        // ติดธุระ
+        'busy': '💼'                        // ติดธุระ
     };
     return statusIcons[status] || '';
 }
@@ -209,6 +211,154 @@ function startStoryListener() {
     }, (error) => {
         console.error('❌ Firestore listener error:', error);
     });
+
+    // Also listen for shift summaries
+    startSummaryListener();
+}
+
+// --- Listen for Shift Summary Posts ---
+function startSummaryListener() {
+    if (!db) return;
+
+    console.log('👀 Starting Firestore listener for shift_summaries...');
+
+    // Listen for new summaries added to the collection
+    db.collection('shift_summaries')
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .onSnapshot(async (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added') {
+                    const summary = change.doc.data();
+
+                    // Check if already posted to Discord
+                    if (summary.postedToDiscord) return;
+
+                    console.log('📝 New shift summary detected!');
+                    await postSummaryToDiscord(summary, change.doc.id);
+                }
+            });
+        }, (error) => {
+            console.error('❌ Summary listener error:', error);
+        });
+}
+
+// --- Post Shift Summary to Discord ---
+async function postSummaryToDiscord(summary, docId) {
+    try {
+        const channel = await client.channels.fetch(OP_CHANNEL_ID);
+        if (!channel) {
+            console.error('❌ OP Channel not found');
+            return;
+        }
+
+        // Build summary message
+        const opName = summary.op || 'ไม่ระบุ';
+        const supOP = summary.supOP || '-';
+        const shiftType = summary.type || 'end_shift'; // end_shift, handover, force_end
+        const startTime = summary.startTime || '';
+        const endTime = summary.endTime || '';
+        const duration = summary.duration || '';
+        const onDutyList = summary.onDuty || [];
+        const offDutyList = summary.offDuty || [];
+        const storiesList = summary.stories || [];
+
+        // Type label
+        const typeLabels = {
+            'end_shift': '🏁 จบกะ',
+            'handover': '🔄 ส่งต่อ OP',
+            'force_end': '⚠️ บังคับจบกะ',
+            'request': '📋 Request OP'
+        };
+        const typeLabel = typeLabels[shiftType] || '📋 สรุปกะ';
+
+        // Format date
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        let message = '';
+        message += `**${typeLabel}**\n`;
+        message += '════════════════════\n';
+        message += `📅 วันที่: ${dateStr}\n`;
+        message += `👤 OP: ${opName}\n`;
+        if (supOP && supOP !== '-') {
+            message += `👥 Support OP: ${supOP}\n`;
+        }
+        if (startTime && endTime) {
+            message += `⏰ เวลา: ${startTime} - ${endTime}`;
+            if (duration) message += ` (${duration})`;
+            message += '\n';
+        }
+        message += '════════════════════\n\n';
+
+        // On Duty List
+        message += `✅ **On Duty (${onDutyList.length} คน):**\n`;
+        if (onDutyList.length > 0) {
+            onDutyList.forEach(m => {
+                const name = m.name || m;
+                const badge = formatBadge(m.badge);
+                message += `• ${badge} ${name}\n`;
+            });
+        } else {
+            message += '_ไม่มี_\n';
+        }
+        message += '────────────────────\n\n';
+
+        // Off Duty List
+        message += `❌ **Off Duty (${offDutyList.length} คน):**\n`;
+        if (offDutyList.length > 0) {
+            offDutyList.slice(0, 15).forEach(m => {
+                const name = m.name || m;
+                message += `• ${name}\n`;
+            });
+            if (offDutyList.length > 15) {
+                message += `_...และอีก ${offDutyList.length - 15} คน_\n`;
+            }
+        } else {
+            message += '_ไม่มี_\n';
+        }
+        message += '────────────────────\n\n';
+
+        // Stories
+        message += `⚔️ **สตอรี่ (${storiesList.length} เคส):**\n`;
+        if (storiesList.length > 0) {
+            storiesList.forEach((s, i) => {
+                const partyA = s.partyA || '?';
+                const partyB = s.partyB || '?';
+                const assignedMedics = s.assignedMedics || [];
+                const mainMedic = assignedMedics[0]?.name || assignedMedics[0] || '-';
+                const supportMedics = assignedMedics.slice(1).map(m => m.name || m).join(', ');
+
+                message += `**สตอรี่ #${i + 1}** ระหว่าง ${partyA} VS ${partyB}\n`;
+                message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
+                if (supportMedics) {
+                    message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
+                }
+                message += '\n';
+            });
+        } else {
+            message += '_ไม่มีสตอรี่_\n';
+        }
+
+        message += '════════════════════';
+
+        // Send to Discord
+        await channel.send(message);
+        console.log('✅ Summary posted to Discord');
+
+        // Mark as posted
+        await db.collection('shift_summaries').doc(docId).update({
+            postedToDiscord: true,
+            postedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+    } catch (error) {
+        console.error('❌ postSummaryToDiscord error:', error);
+    }
 }
 
 // --- Update Story Message in Discord ---
@@ -220,15 +370,17 @@ async function updateStoryMessage(data) {
             return;
         }
 
-        const stories = data.stories || [];
+        // FIXED: Use correct field names from OP system
+        const stories = data.cases || [];  // OP uses "cases" not "stories"
         const currentOP = data.currentOP || 'ไม่มี';
         const supOP = data.supOP || null;
-        const onDuty = data.onDuty || [];
-        const offDuty = data.offDuty || [];
-        const afkList = data.afkList || [];
-        const eventList = data.events || [];
-        const shiftStart = data.shiftStart || null;
-        const currentQueue = data.currentQueue || 0; // Index of current person in queue
+        const onDuty = data.onDuty || [];  // Array of strings (names)
+        const offDuty = data.offDuty || []; // Array of strings (names)
+        const afkList = data.afk || [];     // OP uses "afk" not "afkList"
+        const eventList = data.activeEvents || []; // OP uses "activeEvents" not "events"
+        // Use _lastModified as shift start time (timestamp when OP started)
+        const lastModified = data._lastModified || null;
+        const medicStatuses = data.medicStatuses || {}; // Status per medic: { name: 'accept'|'waitfix'|'decline' }
 
         // Format date
         const now = new Date();
@@ -247,26 +399,33 @@ async function updateStoryMessage(data) {
         if (supOP) {
             message += `👥 Support OP: ${supOP}\n`;
         }
-        if (shiftStart) {
-            message += `⏰ เวลา: ${shiftStart}\n`;
+        // Format timestamp as time (HH:MM)
+        if (lastModified && typeof lastModified === 'number') {
+            const shiftDate = new Date(lastModified);
+            const hours = String(shiftDate.getHours()).padStart(2, '0');
+            const mins = String(shiftDate.getMinutes()).padStart(2, '0');
+            message += `⏰ เวลา: ${hours}:${mins}\n`;
         }
         message += '────────────────────\n\n';
 
-        // On Duty List
+        // On Duty List - onDuty is array of STRINGS (names), not objects
         message += `✅ **On Duty (${onDuty.length} คน):**\n`;
         if (onDuty.length > 0) {
-            onDuty.forEach((m, index) => {
-                const name = m.name || m;
-                const badge = formatBadge(m.badge);
-                const status = formatStatus(m.status);
-                // Add 📍 emoji if it's this person's turn in queue
-                const turnEmoji = (index === currentQueue && !m.status) ? ' 📍' : '';
+            onDuty.forEach((name, index) => {
+                // Get status from medicStatuses object
+                const status = medicStatuses[name] || '';
 
-                // Format: • 👑 ชื่อ 🚫 📍
-                let line = `• ${badge} ${name}`;
-                if (status) line += ` ${status}`;
-                if (turnEmoji) line += turnEmoji;
-                message += line + '\n';
+                // Format status icon based on OP system statuses
+                let statusIcon = '';
+                if (status === 'accept') statusIcon = ' 📍';  // ถึงคิว/รับเคส
+                else if (status === 'waitfix') statusIcon = ' 🔧'; // รอเคสแก้
+                else if (status === 'decline') statusIcon = ' 🚫'; // ไม่รับเคส
+
+                // First person without status gets 📍 (next in queue)
+                const isNextInQueue = index === 0 && !status;
+                const queueIcon = isNextInQueue ? ' 📍' : '';
+
+                message += `• ${name}${statusIcon}${queueIcon}\n`;
             });
         } else {
             message += '_ไม่มี_\n';
@@ -288,32 +447,40 @@ async function updateStoryMessage(data) {
         }
         message += '────────────────────\n\n';
 
-        // AFK List (if any)
+        // AFK List (if any) - afk is array of STRINGS (names)
         if (afkList.length > 0) {
-            message += `� **AFK (${afkList.length} คน):**\n`;
-            afkList.forEach(m => {
-                const name = m.name || m;
-                const reason = m.reason ? ` - ${m.reason}` : '';
-                message += `• ${name}${reason}\n`;
+            message += `💤 **AFK (${afkList.length} คน):**\n`;
+            afkList.forEach(name => {
+                // afk is just array of names, check afkTimes for duration
+                const afkTime = data.afkTimes?.[name];
+                let timeStr = '';
+                if (afkTime) {
+                    const mins = Math.floor((Date.now() - afkTime) / 60000);
+                    timeStr = ` (${mins} นาที)`;
+                }
+                message += `• ${name}${timeStr}\n`;
             });
             message += '────────────────────\n\n';
         }
 
-        // Stories
+        // Stories (cases) - OP uses "medics" not "assignedMedics"
         message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
         if (stories.length > 0) {
-            stories.forEach((s, i) => {
-                const partyA = s.partyA || '?';
-                const partyB = s.partyB || '?';
-                const location = s.location || '';
-                const assignedMedics = s.assignedMedics || [];
-                const mainMedic = assignedMedics[0]?.name || assignedMedics[0] || 'ยังไม่มี';
-                const supportMedics = assignedMedics.slice(1).map(m => m.name || m).join(', ') || '-';
+            stories.forEach((c, i) => {
+                const partyA = c.partyA || '?';
+                const partyB = c.partyB || '?';
+                const location = c.location || '';
+                const startTime = c.startTime || '';
+                // OP uses "medics" array, not "assignedMedics"
+                const medics = c.medics || [];
+                const mainMedic = medics[0] || 'ยังไม่มี';
+                const supportMedics = medics.slice(1).join(', ');
 
-                message += `**สตอรี่ #${i + 1}** ${location ? `(${location})` : ''}\n`;
+                message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
                 message += `ระหว่าง ${partyA} VS ${partyB}\n`;
+                if (location) message += `📍 ${location}\n`;
                 message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
-                if (supportMedics !== '-') {
+                if (supportMedics) {
                     message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
                 }
                 message += '\n';
@@ -322,12 +489,13 @@ async function updateStoryMessage(data) {
             message += '_ไม่มีสตอรี่ในขณะนี้_\n';
         }
 
-        // Events (if any)
+        // Events (activeEvents) - if any
         if (eventList.length > 0) {
             message += '────────────────────\n';
             message += `🎉 **Events (${eventList.length}):**\n`;
             eventList.forEach(e => {
-                const participants = (e.participants || []).map(p => p.name || p).join(', ') || 'ยังไม่มี';
+                // OP uses "medics" array for event participants
+                const participants = (e.medics || []).join(', ') || 'ยังไม่มี';
                 message += `**${e.name || 'Event'}**\n`;
                 message += `ผู้เข้าร่วม: ${participants}\n\n`;
             });
