@@ -10507,7 +10507,17 @@
                 if (userDoc.exists) {
                     const data = userDoc.data();
                     if (data.discordId && data.discordUsername) {
-                        updateDiscordLinkUI(true, data.discordUsername);
+                        // Update currentUser with Discord info
+                        currentUser.discordId = data.discordId;
+                        currentUser.discordUsername = data.discordUsername;
+                        currentUser.discordAvatar = data.discordAvatar || '';
+
+                        // Re-render profile modal if open
+                        const profileModal = document.getElementById('profile-modal');
+                        if (profileModal && !profileModal.classList.contains('hidden')) {
+                            showProfileModal(); // Re-render to show Discord status
+                        }
+
                         showNotif('Success', `✅ เชื่อมต่อ Discord สำเร็จ: ${data.discordUsername}`);
                     }
                 }
@@ -10517,20 +10527,24 @@
         }
 
         function updateDiscordLinkUI(isLinked, discordUsername = '') {
-            const btn = document.getElementById('discord-link-btn');
-            const text = document.getElementById('discord-link-text');
-            const linkedUser = document.getElementById('discord-linked-user');
+            const section = document.getElementById('discord-link-section');
+            if (!section) return;
 
             if (isLinked && discordUsername) {
-                if (btn) btn.classList.add('hidden');
-                if (linkedUser) {
-                    linkedUser.classList.remove('hidden');
-                    linkedUser.innerHTML = `✅ เชื่อมต่อแล้ว: <span class="text-white font-medium">${discordUsername}</span>`;
-                }
+                section.innerHTML = `
+                    <div class="flex items-center gap-2 text-emerald-400 text-sm">
+                        <span>✅ เชื่อมต่อแล้ว:</span>
+                        <span class="text-white font-medium">${discordUsername}</span>
+                    </div>
+                `;
             } else {
-                if (btn) btn.classList.remove('hidden');
-                if (text) text.textContent = 'เชื่อมต่อ Discord';
-                if (linkedUser) linkedUser.classList.add('hidden');
+                section.innerHTML = `
+                    <button onclick="linkDiscordOAuth()" class="w-full border-2 border-dashed border-cyan-600 hover:border-cyan-400 rounded-xl p-3 text-center transition group">
+                        <span class="text-cyan-400 group-hover:text-cyan-300 flex items-center justify-center gap-2">
+                            🔗 เชื่อมต่อ Discord
+                        </span>
+                    </button>
+                `;
             }
         }
 
