@@ -970,16 +970,33 @@
                 <!-- Discord Link Section -->
                 <div>
                     <label class="text-xs text-slate-400 mb-1.5 block font-medium">🔗 เชื่อมต่อ Discord</label>
-                    <div id="discord-link-status" class="flex items-center gap-3">
-                        <button type="button" onclick="linkDiscordOAuth()" id="discord-link-btn"
-                            class="flex-1 text-xs text-indigo-400 hover:text-white border border-indigo-500/50 rounded-lg py-2.5 px-3 bg-indigo-500/10 hover:bg-indigo-500/30 transition flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                <path
-                                    d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-                            </svg>
-                            <span id="discord-link-text">เชื่อมต่อ Discord</span>
-                        </button>
-                        <span id="discord-linked-user" class="hidden text-xs text-emerald-400"></span>
+                    <div id="discord-link-container">
+                        <!-- Not linked state -->
+                        <div id="discord-not-linked" class="flex items-center gap-3">
+                            <button type="button" onclick="linkDiscordOAuth()"
+                                class="flex-1 text-xs text-indigo-400 hover:text-white border border-indigo-500/50 rounded-lg py-2.5 px-3 bg-indigo-500/10 hover:bg-indigo-500/30 transition flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+                                </svg>
+                                <span>เชื่อมต่อ Discord</span>
+                            </button>
+                        </div>
+                        <!-- Linked state -->
+                        <div id="discord-linked" class="hidden">
+                            <div
+                                class="flex items-center gap-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                                <img id="discord-linked-avatar" src="" alt="" class="w-8 h-8 rounded-full bg-slate-700">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs text-emerald-400 font-medium">✅ เชื่อมต่อแล้ว</div>
+                                    <div id="discord-linked-username" class="text-sm text-white truncate"></div>
+                                </div>
+                                <button type="button" onclick="unlinkDiscord()"
+                                    class="text-xs text-rose-400 hover:text-rose-300 px-2 py-1 rounded hover:bg-rose-500/20 transition">
+                                    ยกเลิก
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-3 pt-2">
@@ -6847,7 +6864,7 @@
             if (playBtn) playBtn.textContent = '▶️';
         }
         function updateUserAvatar() { if (currentUser) { const themeHex = (serverSettings.themeColor || '#06b6d4').replace('#', ''); const av = currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.fullName || 'U')}&background=${themeHex}&color=fff&size=40`; document.getElementById('user-avatar').src = av; } }
-        function showProfileModal() { if (!currentUser) return; document.getElementById('profile-firstname').value = currentUser.firstName || (currentUser.fullName?.split(' ')[0] || ''); document.getElementById('profile-lastname').value = currentUser.lastName || (currentUser.fullName?.split(' ').slice(1).join(' ') || ''); document.getElementById('profile-avatar').value = currentUser.avatar || ''; document.getElementById('profile-ic-phone').value = currentUser.icPhone || ''; document.getElementById('profile-shift-start').value = currentUser.shiftStart || ''; document.getElementById('profile-shift-end').value = currentUser.shiftEnd || ''; document.getElementById('profile-work-status').value = currentUser.workStatus || 'ทำงาน'; updateProfilePreview(); renderShiftHistoryInProfile(); document.getElementById('profile-modal').classList.remove('hidden'); }
+        function showProfileModal() { if (!currentUser) return; document.getElementById('profile-firstname').value = currentUser.firstName || (currentUser.fullName?.split(' ')[0] || ''); document.getElementById('profile-lastname').value = currentUser.lastName || (currentUser.fullName?.split(' ').slice(1).join(' ') || ''); document.getElementById('profile-avatar').value = currentUser.avatar || ''; document.getElementById('profile-ic-phone').value = currentUser.icPhone || ''; document.getElementById('profile-shift-start').value = currentUser.shiftStart || ''; document.getElementById('profile-shift-end').value = currentUser.shiftEnd || ''; document.getElementById('profile-work-status').value = currentUser.workStatus || 'ทำงาน'; updateProfilePreview(); renderShiftHistoryInProfile(); updateDiscordLinkUI(); document.getElementById('profile-modal').classList.remove('hidden'); }
         function closeProfileModal() { document.getElementById('profile-modal').classList.add('hidden'); document.getElementById('password-change-section').classList.add('hidden'); document.getElementById('profile-current-password').value = ''; document.getElementById('profile-new-password').value = ''; document.getElementById('profile-confirm-password').value = ''; }
         function togglePasswordChange() { document.getElementById('password-change-section').classList.toggle('hidden'); }
         async function changePassword() { const curr = document.getElementById('profile-current-password').value, newP = document.getElementById('profile-new-password').value, conf = document.getElementById('profile-confirm-password').value; if (!curr || !newP || !conf) return showNotif('Error', 'กรุณากรอกข้อมูลให้ครบ'); if (newP !== conf) return showNotif('Error', 'รหัสผ่านใหม่ไม่ตรงกัน'); if (newP.length < 4) return showNotif('Error', 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'); if (curr !== currentUser.password) return showNotif('Error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง'); try { await db.collection('op_users').doc(currentUser.username).update({ password: newP }); currentUser.password = newP; sessionStorage.setItem('op_session_current', JSON.stringify(currentUser)); const sess = localStorage.getItem('op_session'); if (sess) { const s = JSON.parse(sess); s.user.password = newP; localStorage.setItem('op_session', JSON.stringify(s)); } document.getElementById('profile-current-password').value = ''; document.getElementById('profile-new-password').value = ''; document.getElementById('profile-confirm-password').value = ''; document.getElementById('password-change-section').classList.add('hidden'); showNotif('Success', 'เปลี่ยนรหัสผ่านสำเร็จ'); } catch (e) { showNotif('Error', 'เกิดข้อผิดพลาด'); } }
@@ -10609,21 +10626,50 @@
             }
         }
 
-        function updateDiscordLinkUI(isLinked, discordUsername = '') {
-            const btn = document.getElementById('discord-link-btn');
-            const text = document.getElementById('discord-link-text');
-            const linkedUser = document.getElementById('discord-linked-user');
+        function updateDiscordLinkUI() {
+            const notLinked = document.getElementById('discord-not-linked');
+            const linked = document.getElementById('discord-linked');
+            const avatar = document.getElementById('discord-linked-avatar');
+            const username = document.getElementById('discord-linked-username');
 
-            if (isLinked && discordUsername) {
-                if (btn) btn.classList.add('hidden');
-                if (linkedUser) {
-                    linkedUser.classList.remove('hidden');
-                    linkedUser.innerHTML = `✅ เชื่อมต่อแล้ว: <span class="text-white font-medium">${discordUsername}</span>`;
-                }
+            if (!notLinked || !linked) return;
+
+            if (currentUser?.discordId && currentUser?.discordUsername) {
+                notLinked.classList.add('hidden');
+                linked.classList.remove('hidden');
+                if (avatar) avatar.src = currentUser.discordAvatar || `https://cdn.discordapp.com/embed/avatars/0.png`;
+                if (username) username.textContent = currentUser.discordUsername;
             } else {
-                if (btn) btn.classList.remove('hidden');
-                if (text) text.textContent = 'เชื่อมต่อ Discord';
-                if (linkedUser) linkedUser.classList.add('hidden');
+                notLinked.classList.remove('hidden');
+                linked.classList.add('hidden');
+            }
+        }
+
+        async function unlinkDiscord() {
+            if (!currentUser?.username) return;
+
+            const conf = await showConfirm('ยกเลิกการเชื่อมต่อ', 'ต้องการยกเลิกการเชื่อมต่อ Discord หรือไม่?');
+            if (!conf) return;
+
+            try {
+                await db.collection('op_users').doc(currentUser.username).update({
+                    discordId: null,
+                    discordUsername: null,
+                    discordAvatar: null,
+                    discordBadge: null,
+                    discordLinkedAt: null
+                });
+
+                currentUser.discordId = null;
+                currentUser.discordUsername = null;
+                currentUser.discordAvatar = null;
+
+                sessionStorage.setItem('op_session_current', JSON.stringify(currentUser));
+                updateDiscordLinkUI();
+                showNotif('Success', '✅ ยกเลิกการเชื่อมต่อ Discord เรียบร้อย');
+            } catch (e) {
+                console.error('Unlink Discord error:', e);
+                showNotif('Error', '❌ เกิดข้อผิดพลาด');
             }
         }
 
