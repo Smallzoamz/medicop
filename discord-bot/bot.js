@@ -285,39 +285,27 @@ async function postClosedCaseHistory(closedCase, docId) {
 
         const partyA = closedCase.partyA || '?';
         const partyB = closedCase.partyB || '?';
-        const location = closedCase.location || '';
-        const startTime = closedCase.startTime || '';
+        const location = closedCase.location || '-';
+        const startTime = closedCase.startTime || '-';
+        const storyDate = closedCase.storyDate || '';
         const medics = closedCase.medics || [];
         const mainMedic = medics[0] || '-';
-        const supportMedics = medics.slice(1).join(', ');
+        const wardNumber = closedCase.wardNumber || closedCase.ward || '-'; // เลขวอ
+        const council = closedCase.council || closedCase.site || '-'; // สภาที่ดูแล
         const closedAt = closedCase.closedAt ? new Date(closedCase.closedAt).toLocaleTimeString('th-TH', {
             hour: '2-digit',
             minute: '2-digit',
             timeZone: 'Asia/Bangkok'
-        }) : '';
+        }) : '-';
 
-        // Format date
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('th-TH', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
-
+        // Simple one-line format for story history
         let message = '';
-        message += '📖 **ประวัติสตอรี่**\n';
-        message += '────────────────────\n';
-        message += `📅 ${dateStr}\n`;
         message += `⚔️ **${partyA} VS ${partyB}**\n`;
-        if (location) message += `📍 ${location}\n`;
-        if (startTime) message += `⏰ เริ่ม: ${startTime}`;
-        if (closedAt) message += ` → ปิด: ${closedAt}`;
+        message += `📍 ${location} | ⏰ ${startTime}→${closedAt}\n`;
+        message += `👨‍⚕️ ${mainMedic}`;
+        if (wardNumber !== '-') message += ` | � วอ ${wardNumber}`;
+        if (council !== '-') message += ` | 🏛️ ${council}`;
         message += '\n';
-        message += `👨‍⚕️ แพทย์หลัก: ${mainMedic}\n`;
-        if (supportMedics) {
-            message += `👥 แพทย์ช่วย: ${supportMedics}\n`;
-        }
-        message += '────────────────────';
 
         // Send to Discord
         await channel.send(message);
@@ -379,11 +367,12 @@ async function postSummaryToDiscord(summary, docId) {
         if (supOP && supOP !== '-') {
             message += `👥 Support OP: ${supOP}\n`;
         }
-        if (startTime && endTime) {
-            message += `⏰ เวลา: ${startTime} - ${endTime}`;
-            if (duration) message += ` (${duration})`;
-            message += '\n';
-        }
+        // Show times - use current time as end if not provided
+        const displayStartTime = startTime || '-';
+        const displayEndTime = endTime || now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+        message += `⏰ เวลา: ${displayStartTime} - ${displayEndTime}`;
+        if (duration) message += ` (${duration})`;
+        message += '\n';
         message += '════════════════════\n\n';
 
         // On Duty List

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.5.3 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.5.5 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -915,6 +915,21 @@
                             placeholder="ยืนยันรหัสผ่านใหม่">
                         <button type="button" onclick="changePassword()"
                             class="w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition">เปลี่ยนรหัสผ่าน</button>
+                    </div>
+                </div>
+                <!-- Discord Link Section -->
+                <div>
+                    <label class="text-xs text-slate-400 mb-1.5 block font-medium">🔗 เชื่อมต่อ Discord</label>
+                    <div id="discord-link-status" class="flex items-center gap-3">
+                        <button type="button" onclick="linkDiscordOAuth()" id="discord-link-btn"
+                            class="flex-1 text-xs text-indigo-400 hover:text-white border border-indigo-500/50 rounded-lg py-2.5 px-3 bg-indigo-500/10 hover:bg-indigo-500/30 transition flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+                            </svg>
+                            <span id="discord-link-text">เชื่อมต่อ Discord</span>
+                        </button>
+                        <span id="discord-linked-user" class="hidden text-xs text-emerald-400"></span>
                     </div>
                 </div>
                 <div class="flex gap-3 pt-2">
@@ -9972,25 +9987,37 @@
 
         function moveMedic(name, from, to) {
             if (!appData.afkPositions) appData.afkPositions = {};
+            if (!appData.afkTimes) appData.afkTimes = {};
+
+            // FIXED: Save CURRENT position in onDuty BEFORE removing
+            const currentOnDutyIndex = (appData.onDuty || []).indexOf(name);
+
+            // Preserve AFK time and position if coming from AFK
+            const savedAfkTime = appData.afkTimes?.[name];
+            const savedAfkPos = appData.afkPositions?.[name];
 
             // Remove from ALL lists first to prevent duplicates
-            const afkTime = appData.afkTimes?.[name]; // Preserve AFK time if needed
-            const afkPos = appData.afkPositions?.[name]; // Preserve AFK position if needed
             removeFromAllLists(name);
 
             if (to === 'afk') {
-                // Save original position when going AFK
+                // Going TO AFK - save the CURRENT position from onDuty
                 appData.afkTimes[name] = Date.now();
-                appData.afkPositions[name] = afkPos !== undefined ? afkPos : 0;
-            } else if (from === 'afk') {
-                // Restore to original position if returning to onDuty
-                if (to === 'onDuty' && afkPos !== undefined) {
-                    const restorePos = Math.min(afkPos, appData.onDuty.length);
-                    appData.onDuty.splice(restorePos, 0, name);
-                    saveOpData();
-                    return;
-                }
+                // Use current onDuty index, not old afkPos
+                appData.afkPositions[name] = currentOnDutyIndex !== -1 ? currentOnDutyIndex : 0;
+                appData.afk.push(name);
+                saveOpData();
+                return;
+            } else if (from === 'afk' && to === 'onDuty') {
+                // Returning FROM AFK to onDuty - restore to saved position
+                const restorePos = savedAfkPos !== undefined ? Math.min(savedAfkPos, appData.onDuty.length) : 0;
+                appData.onDuty.splice(restorePos, 0, name);
+                // Clean up AFK data
+                delete appData.afkTimes?.[name];
+                delete appData.afkPositions?.[name];
+                saveOpData();
+                return;
             }
+
             if (to === 'offDuty') {
                 delete appData.afkWarnings?.[name];
                 delete appData.afkWarnedTimes?.[name];
@@ -10448,6 +10475,73 @@
                 }, 100);
             }
         }
+
+        // --- Discord OAuth2 Link Functions ---
+        const DISCORD_AUTH_URL = 'https://us-central1-medic-op.cloudfunctions.net/discordAuth';
+
+        function linkDiscordOAuth() {
+            if (!currentUser?.username) {
+                showNotif('Error', '❌ กรุณาเข้าสู่ระบบก่อน');
+                return;
+            }
+
+            // Open Discord OAuth popup
+            const authUrl = `${DISCORD_AUTH_URL}?userId=${encodeURIComponent(currentUser.username)}`;
+            const popup = window.open(authUrl, 'Discord Link', 'width=500,height=700');
+
+            // Listen for popup close
+            const checkPopup = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkPopup);
+                    // Refresh user data to check if discord was linked
+                    setTimeout(() => refreshDiscordLinkStatus(), 1000);
+                }
+            }, 500);
+        }
+
+        async function refreshDiscordLinkStatus() {
+            if (!currentUser?.username) return;
+
+            try {
+                const userDoc = await db.collection('op_users').doc(currentUser.username).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    if (data.discordId && data.discordUsername) {
+                        updateDiscordLinkUI(true, data.discordUsername);
+                        showNotif('Success', `✅ เชื่อมต่อ Discord สำเร็จ: ${data.discordUsername}`);
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking discord link:', e);
+            }
+        }
+
+        function updateDiscordLinkUI(isLinked, discordUsername = '') {
+            const btn = document.getElementById('discord-link-btn');
+            const text = document.getElementById('discord-link-text');
+            const linkedUser = document.getElementById('discord-linked-user');
+
+            if (isLinked && discordUsername) {
+                if (btn) btn.classList.add('hidden');
+                if (linkedUser) {
+                    linkedUser.classList.remove('hidden');
+                    linkedUser.innerHTML = `✅ เชื่อมต่อแล้ว: <span class="text-white font-medium">${discordUsername}</span>`;
+                }
+            } else {
+                if (btn) btn.classList.remove('hidden');
+                if (text) text.textContent = 'เชื่อมต่อ Discord';
+                if (linkedUser) linkedUser.classList.add('hidden');
+            }
+        }
+
+        // Listen for postMessage from OAuth popup
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.discordLinked !== undefined) {
+                if (event.data.discordLinked) {
+                    refreshDiscordLinkStatus();
+                }
+            }
+        });
     </script>
 </body>
 

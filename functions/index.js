@@ -699,3 +699,174 @@ exports.linkDiscordAccount = onCall({ region: "asia-southeast1" }, async (reques
     }
 });
 
+// --- DISCORD OAuth2 LINKING ---
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || '1449745265547546706';
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || 'D4rIo0UmO_bLwBehBFnXz-rzpuhtiDRy';
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://us-central1-medic-op.cloudfunctions.net/discordCallback';
+
+// Step 1: Redirect to Discord OAuth2
+exports.discordAuth = onRequest({ region: "us-central1", cors: true }, async (req, res) => {
+    const userId = req.query.userId;
+
+    if (!userId) {
+        return res.status(400).json({ error: 'Missing userId parameter' });
+    }
+
+    // Store userId in state for callback
+    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
+
+    const authUrl = `https://discord.com/api/oauth2/authorize?` +
+        `client_id=${DISCORD_CLIENT_ID}` +
+        `&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}` +
+        `&response_type=code` +
+        `&scope=identify` +
+        `&state=${state}`;
+
+    res.redirect(authUrl);
+});
+
+// Step 2: Handle OAuth2 Callback
+exports.discordCallback = onRequest({ region: "us-central1" }, async (req, res) => {
+    const code = req.query.code;
+    const state = req.query.state;
+    const error = req.query.error;
+
+    if (error) {
+        return res.send(renderCallbackPage(false, 'การเชื่อมต่อถูกยกเลิก'));
+    }
+
+    if (!code || !state) {
+        return res.send(renderCallbackPage(false, 'Missing code or state'));
+    }
+
+    try {
+        // Decode state to get userId
+        const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+        const userId = stateData.userId;
+
+        // Exchange code for access token
+        const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                client_id: DISCORD_CLIENT_ID,
+                client_secret: DISCORD_CLIENT_SECRET,
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: DISCORD_REDIRECT_URI
+            })
+        });
+
+        const tokenData = await tokenResponse.json();
+
+        if (!tokenData.access_token) {
+            console.error('Token error:', tokenData);
+            return res.send(renderCallbackPage(false, 'ไม่สามารถรับ token ได้'));
+        }
+
+        // Get user info from Discord
+        const userResponse = await fetch('https://discord.com/api/users/@me', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`
+            }
+        });
+
+        const discordUser = await userResponse.json();
+
+        if (!discordUser.id) {
+            return res.send(renderCallbackPage(false, 'ไม่สามารถดึงข้อมูล Discord ได้'));
+        }
+
+        // Get member info from guild for badge
+        let badge = null;
+        try {
+            await ensureClientReady();
+            const guild = await client.guilds.fetch(GUILD_ID);
+            const member = await guild.members.fetch(discordUser.id);
+            badge = getBadgeFromRoles(member);
+        } catch (e) {
+            console.log('Could not get badge:', e.message);
+        }
+
+        // Update Firestore user document
+        await db.collection('users').doc(userId).update({
+            discordId: discordUser.id,
+            discordUsername: discordUser.username,
+            discordAvatar: `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`,
+            discordBadge: badge,
+            discordLinkedAt: Date.now()
+        });
+
+        await logSystem('INFO', `Discord OAuth linked: ${userId} -> ${discordUser.id} (${discordUser.username})`);
+
+        return res.send(renderCallbackPage(true, `เชื่อมต่อ Discord สำเร็จ: ${discordUser.username}`));
+
+    } catch (error) {
+        console.error('Discord callback error:', error);
+        return res.send(renderCallbackPage(false, `เกิดข้อผิดพลาด: ${error.message}`));
+    }
+});
+
+// Helper: Render callback HTML page
+function renderCallbackPage(success, message) {
+    const color = success ? '#10b981' : '#ef4444';
+    const icon = success ? '✅' : '❌';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Discord Link - ${success ? 'สำเร็จ' : 'ผิดพลาด'}</title>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid ${color};
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            max-width: 400px;
+        }
+        .icon { font-size: 64px; margin-bottom: 16px; }
+        .message { font-size: 18px; color: ${color}; margin-bottom: 24px; }
+        .btn {
+            background: ${color};
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">${icon}</div>
+        <div class="message">${message}</div>
+        <button class="btn" onclick="window.close()">ปิดหน้านี้</button>
+    </div>
+    <script>
+        // Auto close after 3 seconds if success
+        ${success ? 'setTimeout(() => window.close(), 3000);' : ''}
+        // Notify parent window
+        if (window.opener) {
+            window.opener.postMessage({ discordLinked: ${success} }, '*');
+        }
+    </script>
+</body>
+</html>
+    `;
+}
