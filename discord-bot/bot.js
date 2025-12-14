@@ -699,6 +699,14 @@ async function postSummaryToDiscord(summary, docId) {
             postedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
+        // Clear stored message IDs to force new messages instead of editing old ones
+        // This ensures the next OP channel update creates a fresh "waiting for OP" message
+        await db.collection('config').doc('discord_message').update({
+            opChannelMessageId: null,
+            storyMessageId: null
+        });
+        console.log('🔄 Cleared message IDs for fresh start');
+
     } catch (error) {
         console.error('❌ postSummaryToDiscord error:', error);
     }
