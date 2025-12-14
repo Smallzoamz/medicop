@@ -828,8 +828,32 @@ async function updateOPChannelMessage(data) {
                 message += '────────────────────\n\n';
             }
 
-            // Stories are now shown ONLY in shift summary (postSummaryToDiscord)
-            // Removed from here to avoid duplicate/confusing messages
+            // Stories (cases) - show in OP Channel during active shift
+            const allStories = data.cases || [];
+            const stories = filterTodayItems(allStories);
+            message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
+            if (stories.length > 0) {
+                stories.forEach((c, i) => {
+                    const partyA = c.partyA || '?';
+                    const partyB = c.partyB || '?';
+                    const location = c.location || '';
+                    const startTime = c.startTime || '';
+                    const medics = c.medics || [];
+                    const mainMedic = medics[0] ? formatWithMention(medics[0]) : 'ยังไม่มี';
+                    const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
+
+                    message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
+                    message += `ระหว่าง ${partyA} VS ${partyB}\n`;
+                    if (location) message += `📍 ${location}\n`;
+                    message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
+                    if (supportMedics) {
+                        message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
+                    }
+                    message += '\n';
+                });
+            } else {
+                message += '_ไม่มีสตอรี่ในขณะนี้_\n';
+            }
 
             // Events (activeEvents) - show in OP Channel too
             const allEvents = data.activeEvents || [];
