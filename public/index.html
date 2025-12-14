@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.5.5 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.5.6 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -459,7 +459,7 @@
     <div id="electron-title-bar" class="electron-title-bar hidden">
         <div class="title-bar-left">
             <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
-            <span class="title-bar-text">Medical OP Systems v.1.5.3</span>
+            <span class="title-bar-text">Medical OP Systems v.1.5.6</span>
         </div>
         <div class="title-bar-controls">
             <button class="title-bar-btn minimize" id="btn-minimize" title="ย่อ">
@@ -528,8 +528,57 @@
             <div id="changelog-content" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 <div class="bg-gradient-to-r from-cyan-900/50 to-transparent rounded-xl p-4 border-l-4 border-cyan-500">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-cyan-400 font-bold text-sm">v1.3.8</span>
+                        <span class="text-cyan-400 font-bold text-sm">v1.5.6</span>
                         <span class="text-[10px] bg-cyan-500 text-white px-2 py-0.5 rounded-full">Latest</span>
+                        <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 💬 DM Chat ลิงค์คลิกได้ + ตัดบรรทัดอัตโนมัติ</li>
+                        <li>• 🔗 ปุ่มเชื่อมต่อ Discord ในฟอร์มสมัครสมาชิก (EXE)</li>
+                        <li>• ✖️ ปุ่มปิดโปรแกรม + Confirm Dialog (EXE)</li>
+                        <li>• 👋 หน้า Goodbye เมื่อ Logout (EXE)</li>
+                        <li>• 🌙 หน้า Goodbye เมื่อปิดโปรแกรม (EXE)</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.5.5</span>
+                        <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 🔗 Discord Account Linking (OAuth2)</li>
+                        <li>• 📌 Discord Mention สำหรับ OP/Story (ถ้า Linked)</li>
+                        <li>• 🤖 Discord Bot แสดง Story ของวันนี้เท่านั้น</li>
+                        <li>• 📝 Autocomplete สำหรับชื่อ On Duty</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.5.0</span>
+                        <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 🖥️ EXE Desktop App (Windows)</li>
+                        <li>• 🔄 Auto Update สำหรับ EXE</li>
+                        <li>• 🎵 Music Player ในแอป</li>
+                        <li>• 🎨 Custom Title Bar</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.4.0</span>
+                        <span class="text-[10px] text-slate-500">12 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 🎯 Custom Cursor สำหรับ User/Server</li>
+                        <li>• 💬 Group Chat สำหรับทีมแพทย์</li>
+                        <li>• 💌 DM Chat Bubble แบบ Facebook</li>
+                        <li>• ✅ Read Receipt (อ่านแล้ว)</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.3.8</span>
                         <span class="text-[10px] text-slate-500">13 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
@@ -1487,147 +1536,119 @@
             <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 <!-- OP Control -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">🎯 การจัดการ OP</h4>
+                    <h4 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">🎯 การจัดการ OP & กะ</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">เข้ากะ (เป็น OP)</span> - กดเพื่อตั้งตัวเองเป็น
-                            OP
-                            ประจำกะ</li>
-                        <li>• <span class="text-white font-medium">🎲 สุ่ม OP</span> - สุ่มเลือก OP ใหม่จากรายชื่อใน
-                            On
-                            Duty, AFK หรือแพทย์ที่ไปสตอรี่</li>
-                        <li>• <span class="text-white font-medium">▶ เริ่มกะ</span> - เริ่มนับเวลากะ (ต้องเป็น OP
-                            ก่อน)
+                        <li>• <span class="text-white font-medium">เข้ากะ</span> - กดเพื่อตั้งตัวเองเป็น OP / <span
+                                class="text-purple-300">🎲 สุ่ม OP</span> - สุ่มจากรายชื่อ</li>
+                        <li>• <span class="text-white font-medium">Sup OP</span> - เลือกผู้ช่วย OP มีสิทธิ์เหมือน OP
                         </li>
-                        <li>• <span class="text-white font-medium">⏹️ จบกะ</span> - จบกะและแสดงสรุปการทำงาน</li>
-                        <li>• <span class="text-white font-medium">📋 Request OP</span> - ส่งคำขอเป็น OP
-                            ในเวลาที่ต้องการ</li>
+                        <li>• <span class="text-white font-medium">▶ เริ่มกะ / ⏹️ จบกะ</span> - เริ่มนับเวลา
+                            และแสดงสรุปกะเมื่อจบ</li>
+                        <li>• <span class="text-white font-medium">⏰ Handover</span> - ระบบส่งต่อเวร OP อัตโนมัติ</li>
+                        <li>• <span class="text-rose-300">🚫 บังคับปิดกะ</span> - ใช้เฉพาะกรณีฉุกเฉิน
+                            (ปิดสตอรี่อัตโนมัติ)</li>
                     </ul>
                 </div>
 
-                <!-- Support OP -->
+                <!-- On Duty & AFK -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-purple-400 mb-2 flex items-center gap-2">👥 Support OP</h4>
+                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">✅ On Duty / AFK / Off
+                        Duty</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• เลือก Sup OP จาก Dropdown เพื่อแต่งตั้งผู้ช่วย OP</li>
-                        <li>• Sup OP มีสิทธิ์จัดการ On Duty, Dispatch และฟังก์ชั่นเหมือน OP</li>
-                        <li>• Sup OP จะถูกนับรวมในจำนวนหมอ On Duty</li>
-                    </ul>
-                </div>
-
-                <!-- Medic Management -->
-                <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">✅ On Duty / Off Duty
-                        /
-                        AFK</h4>
-                    <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">Add Name...</span> - พิมพ์ชื่อเพื่อเพิ่มแพทย์ใน
-                            On
-                            Duty</li>
-                        <li>• <span class="text-cyan-300">✓ รับเคส</span> - ระบุว่าหมอพร้อมรับเคส</li>
-                        <li>• <span class="text-amber-300">⏳ รอเคสแก้</span> - รอเคสแก้
-                            สำหรับแพทย์ที่ไปรับเคสแล้วไม่ได้เคส
+                        <li>• <span class="text-white font-medium">Add Name...</span> - พิมพ์ชื่อเพื่อเพิ่มแพทย์ (มี
+                            Autocomplete!</li>
+                        <li>• <span class="text-cyan-300">✓ รับเคส</span> / <span class="text-amber-300">⏳
+                                รอเคสแก้</span> / <span class="text-rose-300">❌ ไม่รับ</span> - สถานะพร้อมรับงาน</li>
+                        <li>• <span class="text-yellow-300">💤 AFK</span> - ย้ายไป AFK พร้อมนับเวลา (Warning 5+ นาที)
                         </li>
-                        <li>• <span class="text-rose-300">❌ ไม่รับเคส</span> - ระบุว่าหมอไม่รับเคส (ใหม่!)</li>
-                        <li>• <span class="text-yellow-300">💤 AFK</span> - ย้ายหมอไป AFK พร้อมนับเวลา</li>
-                        <li>• <span class="text-slate-300">📴 Off</span> - ย้ายหมอไป Off Duty</li>
-                        <li>• <span class="text-emerald-300">🔄 คืนตำแหน่ง AFK</span> - หมอที่กลับจาก AFK
-                            จะกลับไปอยู่ตำแหน่งเดิมในรายชื่อ (ไม่ต่อท้าย)</li>
-                        <li>• <span class="text-red-400">⚠️ Warning</span> - หมอที่ AFK นาน 5+ นาทีจะได้รับ Warning
-                        </li>
+                        <li>• <span class="text-emerald-300">🔄 คืนตำแหน่ง</span> - กลับจาก AFK จะอยู่ตำแหน่งเดิม</li>
                     </ul>
                 </div>
 
-                <!-- Dispatch -->
+                <!-- Story Management -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-blue-400 mb-2 flex items-center gap-2">⚡ สร้างเคสสตอรี่
-                    </h4>
+                    <h4 class="text-sm font-bold text-blue-400 mb-2 flex items-center gap-2">⚡ สร้าง & จัดการสตอรี่</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• กรอก <span class="text-white">วันที่, เวลา, Party A vs B</span></li>
-                        <li>• กด <span class="text-emerald-400">+ สร้าง</span> เพื่อสร้างเคสสตอรี่</li>
-                        <li>• <span class="text-amber-300">⏳ รอเริ่ม</span> - แสดงเมื่อเวลาเริ่มยังไม่ถึง</li>
-                        <li>• <span class="text-rose-300">🚫 ห้ามฉีดยา</span> - แสดงเมื่อถึงวันสตอรี่แล้ว</li>
-                        <li>• กดปุ่ม <span class="text-white">👨‍⚕️ กำหนดแพทย์</span> เพื่อเลือกแพทย์ 1-3 คนสำหรับเคส
-                        </li>
-                        <li>• เมื่อถึงเวลาเริ่ม + มีแพทย์แล้ว จะย้ายแพทย์ออกจาก On Duty อัตโนมัติ</li>
-                        <li>• สตอรี่ที่ยังไม่มีแพทย์จะไม่ถูกบังคับปิดเมื่อจบกะ</li>
+                        <li>• กรอก <span class="text-white">วันที่, เวลา, Party A vs B</span> แล้วกด <span
+                                class="text-emerald-400">+ สร้าง</span></li>
+                        <li>• <span class="text-white font-medium">👨‍⚕️ กำหนดแพทย์</span> - เลือกแพทย์ 1-3 คน
+                            (ย้ายออกจาก On Duty อัตโนมัติ)</li>
+                        <li>• <span class="text-amber-300">⏳ รอเริ่ม</span> เมื่อยังไม่ถึงเวลา / <span
+                                class="text-rose-300">🚫 ห้ามฉีดยา</span> เมื่อถึงวันแล้ว</li>
+                        <li>• <span class="text-rose-300">💰x5</span> - แสดงเมื่อ Party เป็นแก๊ง Blacklist</li>
+                        <li>• สตอรี่ที่ไม่มีแพทย์จะไม่บังคับปิดเมื่อจบกะ</li>
                     </ul>
                 </div>
 
-                <!-- Case Management -->
+                <!-- Medical Fees & Blacklist -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-rose-400 mb-2 flex items-center gap-2">📋 รายการสตอรี่</h4>
+                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">💊 ค่ารักษา & 🚫
+                        Blacklist</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">✏️ แก้ไข</span> - แก้ไขข้อมูลเคส</li>
-                        <li>• <span class="text-white font-medium">❌ ปิดเคส</span> - ปิดเคสและนำแพทย์กลับ On Duty</li>
-                        <li>• <span class="text-white font-medium">👨‍⚕️ กำหนดแพทย์</span> - เลือกแพทย์ 1-3
-                            คนสำหรับแต่ละเคส (ใหม่!)</li>
-                        <li>• <span class="text-rose-300">🚫 ห้ามฉีดยา</span> - แสดงเมื่อถึงวันสตอรี่แล้ว (ใหม่!)</li>
-                        <li>• <span class="text-rose-300">โทษx5</span> - แสดงเมื่อ Party เป็นแก๊ง Blacklist (ใหม่!)</li>
-                        <li>• ประวัติสตอรี่จะเก็บไว้สำหรับสรุปกะ</li>
-                    </ul>
-                </div>
-
-                <!-- Medical Fees -->
-                <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">💊 ค่ารักษาพยาบาล
-                        (ใหม่!)</h4>
-                    <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">💊 เคสปกติ</span> - ราคาชุบ/ฉีด แยกตามเขต (ในเมือง,
+                        <li>• <span class="text-white font-medium">ค่ารักษา</span> - ชุบ/ฉีด แยกตามเขต (ในเมือง,
                             ทะเลทราย, เมืองบน, เข้าถึงยาก)</li>
-                        <li>• <span class="text-white font-medium">⚠️ เคสสุ่มเสี่ยง</span> -
-                            ราคาชุบสำหรับพื้นที่สุ่มเสี่ยง (ไม่ฉีดยา)</li>
-                        <li>• <span class="text-white font-medium">🎬 ชุบสตอรี่</span> - ราคาชุบสำหรับพื้นที่สตอรี่
-                            (ไม่ฉีดยา)</li>
-                        <li>• กดปุ่ม ✏️ แก้ไข เพื่อปรับราคา และ 💾 บันทึก เพื่อบันทึก</li>
-                        <li>• ข้อมูลจะอัปเดต Real-time ให้ทุกคนเห็นทันที</li>
+                        <li>• <span class="text-white font-medium">เคสสุ่มเสี่ยง/สตอรี่</span> -
+                            ราคาชุบสำหรับพื้นที่พิเศษ</li>
+                        <li>• <span class="text-white font-medium">Blacklist</span> - เพิ่ม/ลบแก๊ง → แสดง 💰x5 บน Story
+                            Card อัตโนมัติ</li>
+                        <li>• ข้อมูลอัปเดต Real-time ให้ทุกคนเห็นทันที</li>
                     </ul>
                 </div>
 
-                <!-- Blacklist -->
+                <!-- Chat & Communication -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-red-400 mb-2 flex items-center gap-2">🚫 รายการ Blacklist (ใหม่!)
-                    </h4>
+                    <h4 class="text-sm font-bold text-purple-400 mb-2 flex items-center gap-2">💬 ระบบแชท & สื่อสาร</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• กดปุ่ม <span class="text-white font-medium">🚫 Blacklist</span> ที่แถบเมนูเพื่อเปิด Modal
-                        </li>
-                        <li>• <span class="text-white font-medium">เพิ่มแก๊ง</span> - พิมพ์ชื่อแก๊งแล้วกด "เพิ่ม"</li>
-                        <li>• <span class="text-white font-medium">ลบแก๊ง</span> - กดปุ่ม ❌ หลังชื่อแก๊ง</li>
-                        <li>• <span class="text-rose-300">โทษx5</span> - แสดงบน Story Card เมื่อ Party A หรือ B เป็นแก๊ง
-                            Blacklist</li>
-                        <li>• ข้อมูลจะบันทึกใน Firebase และอัปเดต Real-time</li>
+                        <li>• <span class="text-white font-medium">Group Chat</span> - แชทรวมสำหรับทีมแพทย์ (กดปุ่ม 💬
+                            ด้านล่างขวา)</li>
+                        <li>• <span class="text-white font-medium">DM Chat</span> - แชทส่วนตัวแบบ Bubble
+                            กดที่รายชื่อออนไลน์</li>
+                        <li>• <span class="text-cyan-300">🔗 ลิงค์คลิกได้</span> - URL
+                            ในแชทจะกลายเป็นลิงค์คลิกได้อัตโนมัติ ใหม่!</li>
+                        <li>• <span class="text-emerald-300">✓ อ่านแล้ว</span> - แสดงเมื่อคู่สนทนาอ่านข้อความแล้ว</li>
+                        <li>• <span class="text-slate-300">🗑️ ล้างแชท</span> - ล้างประวัติแชทส่วนตัว</li>
                     </ul>
                 </div>
 
-                <!-- Command Announcement Modal -->
+                <!-- Discord Integration -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-teal-400 mb-2 flex items-center gap-2">📋 รวมคำสั่งประกาศ
-                    </h4>
+                    <h4 class="text-sm font-bold text-indigo-400 mb-2 flex items-center gap-2">🔗 Discord Integration
+                        ใหม่!</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• กดปุ่ม <span class="text-white font-medium">📋 รวมคำสั่งประกาศ</span> ที่แถบเมนูเพื่อเปิด
-                            Modal</li>
-                        <li>• <span class="text-cyan-300">🏥 ประกาศจากโรงพยาบาล</span> - รับสมัคร/ปิดรับ</li>
-                        <li>• <span class="text-purple-300">🚪 ประกาศเชิญออกจากพื้นที่</span> -
-                            คูลดาวน์/เข้าพื้นที่สตอรี่</li>
-                        <li>• <span class="text-blue-300">📞 ประกาศตามตัว</span> - ไม่พบคนไข้/เข้าไม่ถึง</li>
-                        <li>• <span class="text-rose-300">🚫 ประกาศ Blacklist</span> - แบนแก๊ง/ครอบครัว</li>
-                        <li>• <span class="text-red-300">🚨 ประกาศฉุกเฉิน</span> - ประกาศวิกฤต</li>
-                        <li>• <span class="text-purple-300">📝 ประกาศอื่นๆ</span> - พิมพ์เองได้</li>
-                        <li>• คลิกที่หัวข้อเพื่อขยาย/ยุบแต่ละหมวด</li>
+                        <li>• <span class="text-white font-medium">เชื่อมต่อ Discord</span> - กดที่โปรไฟล์ → "🔗
+                            เชื่อมต่อ Discord"</li>
+                        <li>• <span class="text-cyan-300">📌 Discord Mention</span> - เมื่อถูก Assign เป็น OP จะ Tag ใน
+                            Discord อัตโนมัติ</li>
+                        <li>• <span class="text-cyan-300">📌 Story Mention</span> - เมื่อถูกกำหนดแพทย์ในสตอรี่จะ Tag ใน
+                            Discord</li>
+                        <li>• ดู Discord ID ที่เชื่อมต่อได้ในหน้าโปรไฟล์</li>
                     </ul>
                 </div>
 
-                <!-- Special Features -->
+                <!-- Commands -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-amber-400 mb-2 flex items-center gap-2">⚙️ ฟังก์ชั่นพิเศษ</h4>
+                    <h4 class="text-sm font-bold text-teal-400 mb-2 flex items-center gap-2">📋 รวมคำสั่งประกาศ</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">📊 สรุปกะ</span> - แสดงเมื่อจบกะหรือ Handover
+                        <li>• กดปุ่ม <span class="text-white font-medium">📋 รวมคำสั่ง</span> ที่แถบเมนู</li>
+                        <li>• <span class="text-cyan-300">🏥 ประกาศโรงพยาบาล</span> / <span class="text-purple-300">🚪
+                                เชิญออกพื้นที่</span> / <span class="text-blue-300">📞 ตามตัว</span></li>
+                        <li>• <span class="text-rose-300">🚫 Blacklist</span> / <span class="text-red-300">🚨
+                                ฉุกเฉิน</span> / <span class="text-purple-300">📝 อื่นๆ</span></li>
+                        <li>• คลิกหัวข้อเพื่อขยาย/ยุบ → คัดลอกคำสั่งได้ทันที</li>
+                    </ul>
+                </div>
+
+                <!-- Personalization -->
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <h4 class="text-sm font-bold text-pink-400 mb-2 flex items-center gap-2">🎨 ปรับแต่งส่วนตัว</h4>
+                    <ul class="text-xs text-slate-300 space-y-1.5">
+                        <li>• <span class="text-white font-medium">รูปโปรไฟล์</span> - อัปโหลดรูปที่โปรไฟล์
+                            กดรูปเพื่อดูขนาดใหญ่</li>
+                        <li>• <span class="text-white font-medium">🎯 Custom Cursor</span> - อัปโหลดเคอร์เซอร์ส่วนตัวได้
                         </li>
-                        <li>• <span class="text-white font-medium">🚫 บังคับปิดกะ</span> - ใช้เมื่อ OP
-                            ไม่ได้ลงทะเบียน
-                            (⚠️ สีเหลือง)</li>
-                        <li>• <span class="text-white font-medium">⏰ Handover</span> - ระบบส่งต่อเวร OP อัตโนมัติ
-                        </li>
-                        <li>• <span class="text-white font-medium">รูปโปรไฟล์</span> - แสดงรูปของผู้ใช้ที่ลงทะเบียน
+                        <li>• <span class="text-white font-medium">🎵 Music Player</span> - เล่นเพลง Lo-Fi หรือใส่
+                            YouTube URL</li>
+                        <li>• <span class="text-white font-medium">⚙️ Theme</span> - Owner ปรับ Theme สีและ Logo ได้
                         </li>
                     </ul>
                 </div>
@@ -1635,54 +1656,37 @@
                 <!-- Tips - OP Benefits -->
                 <div
                     class="bg-gradient-to-r from-amber-900/40 to-transparent rounded-xl p-4 border-l-4 border-amber-500">
-                    <h4 class="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">🌟 ใช้ระบบ OP
-                        ตัวนี้ดีอย่างไร?
+                    <h4 class="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">🌟 ทำไมต้องใช้ระบบนี้?
                     </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="space-y-2">
-                            <div class="text-[10px] font-bold text-amber-400 uppercase">📡 Real-time Features</div>
-                            <ul class="text-xs text-amber-200/80 space-y-1">
-                                <li>• <span class="text-white">Real-time Update</span> - ข้อมูลอัพเดททันที ไม่ต้อง
-                                    Refresh</li>
-                                <li>• <span class="text-white">Live Status</span> - ดูสถานะ On Duty / AFK แบบ Real-time
-                                </li>
-                                <li>• <span class="text-white">Instant Sync</span> - ทุกคนเห็นข้อมูลเดียวกันพร้อมกัน
-                                </li>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <div class="text-[10px] font-bold text-amber-400 uppercase">📡 Real-time</div>
+                            <ul class="text-[10px] text-amber-200/80 space-y-0.5">
+                                <li>• ข้อมูลอัพเดททันที ไม่ต้อง Refresh</li>
+                                <li>• ทุกคนเห็นข้อมูลเดียวกันพร้อมกัน</li>
                             </ul>
                         </div>
-                        <div class="space-y-2">
-                            <div class="text-[10px] font-bold text-amber-400 uppercase">💬 ระบบสื่อสาร</div>
-                            <ul class="text-xs text-amber-200/80 space-y-1">
-                                <li>• <span class="text-white">Group Chat</span> - แชทรวมสำหรับทีมแพทย์</li>
-                                <li>• <span class="text-white">DM Chat</span> - แชทส่วนตัวแบบ Bubble</li>
-                                <li>• <span class="text-white">Voice Calls</span> - โทรหากันได้ผ่านเว็บ</li>
+                        <div class="space-y-1">
+                            <div class="text-[10px] font-bold text-amber-400 uppercase">💬 สื่อสาร</div>
+                            <ul class="text-[10px] text-amber-200/80 space-y-0.5">
+                                <li>• Group Chat / DM แบบ Bubble</li>
+                                <li>• Discord Mention อัตโนมัติ</li>
                             </ul>
                         </div>
-                        <div class="space-y-2">
-                            <div class="text-[10px] font-bold text-amber-400 uppercase">📊 ระบบบริหารจัดการ</div>
-                            <ul class="text-xs text-amber-200/80 space-y-1">
-                                <li>• <span class="text-white">Shift Summary</span> - สรุปกะอัตโนมัติพร้อมคัดลอก</li>
-                                <li>• <span class="text-white">Handover</span> - ระบบส่งต่อเวร OP อัตโนมัติ</li>
-                                <li>• <span class="text-white">Request OP</span> - ขอเป็น OP ล่วงหน้าได้</li>
+                        <div class="space-y-1">
+                            <div class="text-[10px] font-bold text-amber-400 uppercase">📊 บริหารจัดการ</div>
+                            <ul class="text-[10px] text-amber-200/80 space-y-0.5">
+                                <li>• สรุปกะอัตโนมัติ / Handover</li>
+                                <li>• Request OP ล่วงหน้า</li>
                             </ul>
                         </div>
-                        <div class="space-y-2">
-                            <div class="text-[10px] font-bold text-amber-400 uppercase">🎯 ความสะดวกสบาย</div>
-                            <ul class="text-xs text-amber-200/80 space-y-1">
-                                <li>• <span class="text-white">คำสั่งสำเร็จรูป</span> - คัดลอกคำสั่งประกาศได้ทันที</li>
-                                <li>• <span class="text-white">เบอร์ IC ในคิว</span> - รู้เบอร์โทรทันทีเมื่อหมอสลบ</li>
-                                <li>• <span class="text-white">รูปโปรไฟล์</span> - โชว์รูปให้เพื่อนๆ แพทย์เห็น</li>
+                        <div class="space-y-1">
+                            <div class="text-[10px] font-bold text-amber-400 uppercase">🎯 สะดวก</div>
+                            <ul class="text-[10px] text-amber-200/80 space-y-0.5">
+                                <li>• คำสั่งสำเร็จรูป / เบอร์ IC</li>
+                                <li>• EXE App สำหรับ Windows</li>
                             </ul>
                         </div>
-                    </div>
-                    <div class="mt-3 pt-3 border-t border-amber-500/30">
-                        <div class="text-[10px] font-bold text-amber-400 uppercase mb-2">🔔 สำหรับ Owner</div>
-                        <ul class="text-xs text-amber-200/80 space-y-1">
-                            <li>• <span class="text-white">Online/Offline Notification</span> - รู้ทันทีเมื่อมีคน
-                                Login/Logout</li>
-                            <li>• <span class="text-white">User Management</span> - จัดการยศและลบผู้ใช้ได้</li>
-                            <li>• <span class="text-white">Server Settings</span> - ปรับแต่ง Theme และ Logo ได้</li>
-                        </ul>
                     </div>
                 </div>
             </div>
@@ -1867,7 +1871,7 @@
                 <div class="px-5 py-3 border-b border-white/10 flex justify-between items-center">
                     <span class="text-sm text-slate-300 flex items-center gap-2"><span
                             class="w-2 h-2 rounded-full bg-cyan-500"></span> Operator Systems Login</span>
-                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.3.8</span>
+                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.5.6</span>
                 </div>
                 <div class="flex border-b border-white/10">
                     <button onclick="showAuthTab('login')" id="tab-login"
@@ -6569,7 +6573,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.5.3';
+        const APP_VERSION = '1.5.6';
         function showChangelogModal() { document.getElementById('changelog-modal').classList.remove('hidden'); }
         function closeChangelogModal() { document.getElementById('changelog-modal').classList.add('hidden'); localStorage.setItem('op_last_seen_version', APP_VERSION); }
         function checkShowChangelog() { const lastSeen = localStorage.getItem('op_last_seen_version'); if (lastSeen !== APP_VERSION) { setTimeout(() => showChangelogModal(), 500); } }
