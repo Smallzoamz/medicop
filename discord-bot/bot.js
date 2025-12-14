@@ -860,13 +860,26 @@ async function updateStoryChannelMessage(data) {
         const allStories = data.cases || [];
         const stories = filterTodayItems(allStories);
 
-        // Format date
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('th-TH', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
+        // Get date from first story's storyDate, or use current date as fallback
+        let dateStr;
+        if (stories.length > 0 && stories[0].storyDate) {
+            // storyDate is in YYYY-MM-DD format, convert to Thai display
+            const [year, month, day] = stories[0].storyDate.split('-').map(Number);
+            const storyDateObj = new Date(year, month - 1, day);
+            dateStr = storyDateObj.toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        } else {
+            // Fallback to current date
+            const now = new Date();
+            dateStr = now.toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
 
         // Build message for Story Channel (Stories ONLY - NO Events)
         let message = '';
