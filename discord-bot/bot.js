@@ -100,6 +100,36 @@ function formatBadge(badge) {
     return badges[badge] || '';
 }
 
+// Thai month abbreviations to month number (0-indexed)
+const THAI_MONTHS = {
+    'ม.ค.': 0, 'ก.พ.': 1, 'มี.ค.': 2, 'เม.ย.': 3,
+    'พ.ค.': 4, 'มิ.ย.': 5, 'ก.ค.': 6, 'ส.ค.': 7,
+    'ก.ย.': 8, 'ต.ค.': 9, 'พ.ย.': 10, 'ธ.ค.': 11
+};
+
+// Parse Thai date format "อ. 15 ธ.ค. 2568" or "15 ธ.ค. 2568"
+function parseThaiDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+
+    // Match pattern: optional day name + day number + thai month + thai year
+    // e.g., "อ. 15 ธ.ค. 2568" or "15 ธ.ค. 2568"
+    const match = dateStr.match(/(\d{1,2})\s+(\S+\.?)\s+(\d{4})/);
+    if (!match) return null;
+
+    const day = parseInt(match[1], 10);
+    const monthStr = match[2];
+    const thaiYear = parseInt(match[3], 10);
+
+    // Convert Thai month to number
+    const month = THAI_MONTHS[monthStr];
+    if (month === undefined) return null;
+
+    // Convert Thai year (พ.ศ.) to AD year (ค.ศ.)
+    const year = thaiYear - 543;
+
+    return new Date(year, month, day);
+}
+
 // Filter items to only show today's items (Bangkok timezone)
 function filterTodayItems(items) {
     if (!Array.isArray(items) || items.length === 0) return [];
@@ -109,35 +139,45 @@ function filterTodayItems(items) {
     const localOffset = now.getTimezoneOffset();
     const bangkokTime = new Date(now.getTime() + (bangkokOffset + localOffset) * 60000);
 
-    const todayStr = bangkokTime.toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayDay = bangkokTime.getDate();
+    const todayMonth = bangkokTime.getMonth();
+    const todayYear = bangkokTime.getFullYear();
 
     return items.filter(item => {
-        // Check if item has a date/timestamp field
         let itemDate = null;
 
-        if (item.createdAt) {
-            itemDate = new Date(item.createdAt);
-        } else if (item.startTime && typeof item.startTime === 'string') {
-            // If startTime is just "HH:MM", assume it's today
-            if (item.startTime.match(/^\d{2}:\d{2}$/)) {
-                return true; // No date info, assume today
-            }
-            itemDate = new Date(item.startTime);
-        } else if (item.closedAt) {
-            itemDate = new Date(item.closedAt);
-        } else if (item.storyDate) {
-            // storyDate might be in format "DD/MM/YYYY" or similar
-            itemDate = new Date(item.storyDate);
+        // Priority 1: Check storyDate (Thai format "อ. 15 ธ.ค. 2568")
+        if (item.storyDate && typeof item.storyDate === 'string') {
+            itemDate = parseThaiDate(item.storyDate);
         }
 
-        // If we can't determine the date, include it (assume today)
+        // Priority 2: Check createdAt timestamp
+        if (!itemDate && item.createdAt) {
+            itemDate = new Date(item.createdAt);
+        }
+
+        // Priority 3: Check startTime (if it's just "HH:MM", assume today)
+        if (!itemDate && item.startTime && typeof item.startTime === 'string') {
+            if (item.startTime.match(/^\d{2}:\d{2}$/)) {
+                return true; // No date info in startTime, need to check storyDate
+            }
+            itemDate = new Date(item.startTime);
+        }
+
+        // Priority 4: Check closedAt
+        if (!itemDate && item.closedAt) {
+            itemDate = new Date(item.closedAt);
+        }
+
+        // If we can't determine the date, DON'T include it (might be future date)
         if (!itemDate || isNaN(itemDate.getTime())) {
-            return true;
+            return false;
         }
 
         // Compare dates
-        const itemDateStr = itemDate.toISOString().split('T')[0];
-        return itemDateStr === todayStr;
+        return itemDate.getDate() === todayDay &&
+            itemDate.getMonth() === todayMonth &&
+            itemDate.getFullYear() === todayYear;
     });
 }
 
@@ -596,7 +636,47 @@ async function updateOPChannelMessage(data) {
                 }
                 message += `• ${name}${timeStr}\n`;
             });
+            message += '────────────────────\n\n';
+        }
+
+        // Stories (cases) - show in OP Channel too
+        const allStories = data.cases || [];
+        const stories = filterTodayItems(allStories);
+        message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
+        if (stories.length > 0) {
+            stories.forEach((c, i) => {
+                const partyA = c.partyA || '?';
+                const partyB = c.partyB || '?';
+                const location = c.location || '';
+                const startTime = c.startTime || '';
+                const medics = c.medics || [];
+                const mainMedic = medics[0] || 'ยังไม่มี';
+                const supportMedics = medics.slice(1).join(', ');
+
+                message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
+                message += `ระหว่าง ${partyA} VS ${partyB}\n`;
+                if (location) message += `📍 ${location}\n`;
+                message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
+                if (supportMedics) {
+                    message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
+                }
+                message += '\n';
+            });
+        } else {
+            message += '_ไม่มีสตอรี่ในขณะนี้_\n';
+        }
+
+        // Events (activeEvents) - show in OP Channel too
+        const allEvents = data.activeEvents || [];
+        const eventList = filterTodayItems(allEvents);
+        if (eventList.length > 0) {
             message += '────────────────────\n';
+            message += `🎉 **Events (${eventList.length}):**\n`;
+            eventList.forEach(e => {
+                const participants = (e.medics || []).join(', ') || 'ยังไม่มี';
+                message += `**${e.name || 'Event'}**\n`;
+                message += `ผู้เข้าร่วม: ${participants}\n\n`;
+            });
         }
 
         // Get stored message ID for OP channel
@@ -639,8 +719,6 @@ async function updateStoryChannelMessage(data) {
 
         const allStories = data.cases || [];
         const stories = filterTodayItems(allStories);
-        const allEvents = data.activeEvents || [];
-        const eventList = filterTodayItems(allEvents);
 
         // Format date
         const now = new Date();
@@ -650,14 +728,14 @@ async function updateStoryChannelMessage(data) {
             year: 'numeric'
         });
 
-        // Build message for Story Channel (Stories & Events ONLY)
+        // Build message for Story Channel (Stories ONLY - NO Events)
         let message = '';
         message += '**📋 แจ้งเคสสตอรี่**\n';
         message += '────────────────────\n';
         message += `📅 ${dateStr}\n`;
         message += '────────────────────\n\n';
 
-        // Stories Only
+        // Stories ONLY
         message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
         if (stories.length > 0) {
             stories.forEach((c, i) => {
@@ -681,17 +759,7 @@ async function updateStoryChannelMessage(data) {
         } else {
             message += '_ไม่มีสตอรี่ในขณะนี้_\n';
         }
-
-        // Events (if any)
-        if (eventList.length > 0) {
-            message += '────────────────────\n';
-            message += `🎉 **Events (${eventList.length}):**\n`;
-            eventList.forEach(e => {
-                const participants = (e.medics || []).join(', ') || 'ยังไม่มี';
-                message += `**${e.name || 'Event'}**\n`;
-                message += `ผู้เข้าร่วม: ${participants}\n\n`;
-            });
-        }
+        // NO Events in Story Channel
 
         // Get stored message ID for Story channel
         const configDoc = await db.collection('config').doc('discord_message').get();
