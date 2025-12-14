@@ -157,10 +157,25 @@ async function loadDiscordIdCache() {
     }
 }
 
-// Get Discord ID by name (case-insensitive)
+// Get Discord ID by name (case-insensitive, tries multiple strategies)
 function getDiscordIdByName(name) {
     if (!name) return null;
-    return discordIdCache[name.toLowerCase()] || null;
+
+    const nameLower = name.toLowerCase();
+
+    // Strategy 1: Direct lookup (exact match)
+    if (discordIdCache[nameLower]) {
+        return discordIdCache[nameLower];
+    }
+
+    // Strategy 2: Try first name only (split by space)
+    const firstName = name.split(' ')[0].toLowerCase();
+    if (firstName && discordIdCache[firstName]) {
+        return discordIdCache[firstName];
+    }
+
+    // Strategy 3: Not found
+    return null;
 }
 
 // Format name as Discord mention if linked, otherwise plain text
