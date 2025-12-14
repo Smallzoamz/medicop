@@ -9724,6 +9724,38 @@
                 history = history.slice(0, 3);
 
                 localStorage.setItem(key, JSON.stringify(history));
+
+                // Also save to Firestore for Discord bot to post
+                saveShiftSummaryToFirestore(summaryData);
+            }
+
+            // Save shift summary to Firestore for Discord bot
+            async function saveShiftSummaryToFirestore(summaryData) {
+                try {
+                    const now = new Date();
+                    const startTime = summaryData.startTime ? new Date(summaryData.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '-';
+                    const endTime = summaryData.endTime instanceof Date ? summaryData.endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '-';
+                    const dur = summaryData.duration || 0;
+                    const h = Math.floor(dur / 3600000), m = Math.floor((dur % 3600000) / 60000);
+                    const durStr = `${h}ชม. ${m}นาที`;
+
+                    await db.collection('shift_summaries').add({
+                        type: 'end_shift',
+                        op: summaryData.op || '-',
+                        supOP: summaryData.supOP || '-',
+                        startTime: startTime,
+                        endTime: endTime,
+                        duration: durStr,
+                        onDuty: (summaryData.onDuty || []).map(name => ({ name })),
+                        offDuty: (summaryData.offDuty || []).map(name => ({ name })),
+                        stories: summaryData.closedCases || [],
+                        postedToDiscord: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    console.log('✅ Shift summary saved to Firestore for Discord');
+                } catch (e) {
+                    console.error('❌ Failed to save shift summary to Firestore:', e);
+                }
             }
 
             function getShiftHistory() {
