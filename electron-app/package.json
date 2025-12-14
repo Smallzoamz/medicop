@@ -58,7 +58,8 @@
             "installerIcon": "src/icon.ico",
             "uninstallerIcon": "src/icon.ico",
             "language": "1033",
-            "unicode": true
+            "unicode": true,
+            "license": null
         }
     }
 }
