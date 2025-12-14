@@ -1,2 +1,16 @@
+# Electron
 /electron-app/dist
 /electron-app/node_modules
+
+# Functions
+/functions/node_modules
+/functions/.env
+
+# Environment variables (NEVER commit secrets!)
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config();
+
 const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
@@ -43,12 +46,12 @@ exports.updateVersion = onRequest({ region: "asia-southeast1" }, async (req, res
     }
 });
 
-// --- CONFIGURATION ---
-const DISCORD_TOKEN = "MTQ0NzU3MzM2MTA1MDc3OTc3OA.Gv6-Em.6b1utgligjltzxF5dijPfEtibbC7CSbxnlfYas";
-const GUILD_ID = "1222589275611074672";
-const ROLE_ID = "1447576257607762053";
-const LEAVE_CHANNEL_ID = "1447591447032234115";
-const APPROVE_CHANNEL_ID = "1447309584950624327";
+// --- CONFIGURATION (from Environment Variables) ---
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const GUILD_ID = process.env.GUILD_ID;
+const ROLE_ID = process.env.ROLE_ID;
+const LEAVE_CHANNEL_ID = process.env.LEAVE_CHANNEL_ID;
+const APPROVE_CHANNEL_ID = process.env.APPROVE_CHANNEL_ID;
 
 // --- GLOBAL STATE ---
 let isClientReady = false;
