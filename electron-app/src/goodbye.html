@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical OP Systems - Goodbye</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        html,
+        body {
+            background: transparent;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .goodbye-container {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .logo {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 50%;
+            filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.5));
+            margin-bottom: 20px;
+            animation: goodbye-logo-anim 1s ease-out forwards;
+        }
+
+        @keyframes goodbye-logo-anim {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.9) rotate(10deg);
+                opacity: 0.8;
+            }
+        }
+
+        .goodbye-text {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #f87171, #fb923c, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: goodbye-text-anim 0.8s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+
+        @keyframes goodbye-text-anim {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .goodbye-subtext {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #94a3b8;
+            opacity: 0;
+            animation: goodbye-text-anim 0.8s ease-out 0.6s forwards;
+        }
+
+        .goodbye-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .goodbye-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: linear-gradient(135deg, #f87171, #fbbf24);
+            border-radius: 50%;
+            animation: particle-fall 2s ease-in infinite;
+        }
+
+        @keyframes particle-fall {
+            0% {
+                transform: translateY(0) scale(1) rotate(0deg);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(100px) scale(0) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+        .wave-emoji {
+            font-size: 48px;
+            animation: wave-anim 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes wave-anim {
+            0% {
+                transform: rotate(-10deg);
+            }
+
+            100% {
+                transform: rotate(20deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="text-white">
+    <div class="goodbye-container">
+        <div class="goodbye-particles" id="goodbye-particles"></div>
+        <img src="logo.jpg" alt="Logo" class="logo">
+        <span class="wave-emoji">👋</span>
+        <h1 class="goodbye-text">ลาก่อน!</h1>
+        <p class="goodbye-subtext">หวังว่าจะได้พบกันอีก...</p>
+    </div>
+
+    <script>
+        // Create particles
+        const particlesContainer = document.getElementById('goodbye-particles');
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'goodbye-particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 50 + '%';
+            particle.style.animationDelay = Math.random() * 2 + 's';
+            particlesContainer.appendChild(particle);
+        }
+    </script>
+</body>
+
+</html>

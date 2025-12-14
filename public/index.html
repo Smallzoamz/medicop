@@ -4794,21 +4794,21 @@
             newMsgs.forEach(m => {
                 const isMe = m.sender === myName;
                 const imageHtml = m.image ? `<img src="${m.image}" class="max-w-full rounded-lg mt-1 max-h-40 cursor-pointer" onclick="showImagePopup('${m.image}')" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=Image+Expired';">` : '';
-                const textHtml = m.text ? escapeHtml(m.text) : '';
+                const textHtml = m.text ? linkifyText(escapeHtml(m.text)) : '';
                 const msgTime = m.timestamp?.toDate?.() || null;
                 const time = msgTime ? new Date(msgTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
 
                 const msgHtml = isMe ?
                     `<div class="flex justify-end mb-1">
                         <div class="max-w-[80%]">
-                            <div class="bg-purple-500 text-white px-3 py-1.5 rounded-2xl rounded-br-md text-xs">${textHtml}${imageHtml}</div>
+                            <div class="bg-purple-500 text-white px-3 py-1.5 rounded-2xl rounded-br-md text-xs break-all">${textHtml}${imageHtml}</div>
                             <div class="text-[9px] text-slate-500 text-right mt-0.5">${time}</div>
                         </div>
                     </div>` :
                     `<div class="flex gap-1.5 mb-1">
                         <img src="${recipientAvatar || fallbackAvatarUrl}" class="w-6 h-6 rounded-full mt-1" onerror="this.onerror=null;this.src='${fallbackAvatarUrl}';">
                         <div class="max-w-[75%]">
-                            <div class="bg-slate-600 text-white px-3 py-1.5 rounded-2xl rounded-bl-md text-xs">${textHtml}${imageHtml}</div>
+                            <div class="bg-slate-600 text-white px-3 py-1.5 rounded-2xl rounded-bl-md text-xs break-all">${textHtml}${imageHtml}</div>
                             <div class="text-[9px] text-slate-500 mt-0.5">${time}</div>
                         </div>
                     </div>`;
@@ -4905,7 +4905,7 @@
                     // Image with popup viewer
                     const imageHtml = m.image ? `<img src="${m.image}" class="max-w-full rounded-lg mt-1 max-h-40 cursor-pointer" onclick="showImagePopup('${m.image}')" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=Image+Expired';this.alt='รูปภาพหมดอายุ';">` : '';
 
-                    const textHtml = m.text ? escapeHtml(m.text) : '';
+                    const textHtml = m.text ? linkifyText(escapeHtml(m.text)) : '';
                     const msgTime = m.timestamp?.toDate?.() || null;
                     const time = msgTime ? new Date(msgTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -4919,14 +4919,14 @@
                     return isMe ?
                         `<div class="flex justify-end mb-1">
                             <div class="max-w-[80%]">
-                                <div class="bg-purple-500 text-white px-3 py-1.5 rounded-2xl rounded-br-md text-xs">${textHtml}${imageHtml}</div>
+                                <div class="bg-purple-500 text-white px-3 py-1.5 rounded-2xl rounded-br-md text-xs break-all">${textHtml}${imageHtml}</div>
                                 <div class="text-[9px] text-slate-500 text-right mt-0.5">${time}${readIndicator}</div>
                             </div>
                         </div>` :
                         `<div class="flex gap-1.5 mb-1">
                             <img src="${recipientAvatar || fallbackAvatarUrl}" class="w-6 h-6 rounded-full mt-1" onerror="this.onerror=null;this.src='${fallbackAvatarUrl}';">
                             <div class="max-w-[75%]">
-                                <div class="bg-slate-600 text-white px-3 py-1.5 rounded-2xl rounded-bl-md text-xs">${textHtml}${imageHtml}</div>
+                                <div class="bg-slate-600 text-white px-3 py-1.5 rounded-2xl rounded-bl-md text-xs break-all">${textHtml}${imageHtml}</div>
                                 <div class="text-[9px] text-slate-500 mt-0.5">${time}</div>
                             </div>
                         </div>`;
@@ -9962,16 +9962,173 @@
         function showHowToModal() { document.getElementById('how-to-modal').classList.remove('hidden'); }
         function closeHowToModal() { document.getElementById('how-to-modal').classList.add('hidden'); }
         function copyShiftSummary() { const data = lastShiftSummaryData; if (!data) return; const dur = data.duration; const h = Math.floor(dur / 3600000), m = Math.floor((dur % 3600000) / 60000); const durStr = `${h}ชม. ${m}นาที`; const startTime = data.startTime ? new Date(data.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '-'; const endTime = data.endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); const dateStr = data.endTime.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }); let text = `📊 สรุปการเข้าเวร OP\n━━━━━━━━━━━━━━━━━━━━\n📅 วันที่: ${dateStr}\n👨‍⚕️ OP: ${data.op || '-'}\n👨‍⚕️ Support OP: ${data.supOP || '-'}\n⏰ เวลา: ${startTime} - ${endTime} (${durStr})\n━━━━━━━━━━━━━━━━━━━━\n✅ On Duty (${data.onDuty.length} คน):\n${data.onDuty.length ? data.onDuty.map(n => `- ${n}`).join('\n') : '- ไม่มี'}\n━━━━━━━━━━━━━━━━━━━━\n❌ Off Duty (${data.offDuty.length} คน):\n${data.offDuty.length ? data.offDuty.map(n => `- ${n}`).join('\n') : '- ไม่มี'}`; if (data.afkWarnings && Object.keys(data.afkWarnings).length) { text += `\n━━━━━━━━━━━━━━━━━━━━\n⚠️ คนที่โดน Warning:\n${Object.entries(data.afkWarnings).map(([name, mins]) => `- ${name} (เหม่อ ${mins} นาที)`).join('\n')}`; } if (data.closedCases?.length) { text += `\n━━━━━━━━━━━━━━━━━━━━\n⚔️ สตอรี่ (${data.closedCases.length} เคส):\n${data.closedCases.map((cs, i) => { let storyText = `สตอรี่ #${i + 1} ระหว่าง ${cs.partyA} VS ${cs.partyB}\nแพทย์ผู้รับผิดชอบ : ${cs.medics?.[0] || '-'}`; if (cs.medics?.length > 1) storyText += `\nแพทย์ช่วยเหลือ : ${cs.medics.slice(1).join(' , ')}`; return storyText; }).join('\n\n')}`; } if (data.umaeHelped > 0 || data.umaeExpired > 0) { text += `\n━━━━━━━━━━━━━━━━━━━━\n💀 อุ้มเอ๋อ:\n- ช่วยเหลือได้: ${data.umaeHelped} เบอร์\n- เอ๋อ: ${data.umaeExpired} เบอร์`; } navigator.clipboard.writeText(text); showNotif('Success', 'คัดลอกสรุปกะแล้ว'); }
+        // Levenshtein distance for fuzzy name matching
+        function levenshteinDistance(a, b) {
+            const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+            for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+            for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+            for (let j = 1; j <= b.length; j++) {
+                for (let i = 1; i <= a.length; i++) {
+                    const cost = a[i - 1].toLowerCase() === b[j - 1].toLowerCase() ? 0 : 1;
+                    matrix[j][i] = Math.min(
+                        matrix[j][i - 1] + 1,
+                        matrix[j - 1][i] + 1,
+                        matrix[j - 1][i - 1] + cost
+                    );
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        // Find similar names from registered users (returns array for autocomplete)
+        function findSimilarNames(inputName) {
+            if (!inputName || inputName.length < 2) return [];
+            const registeredNames = (allUsers || []).map(u => u.firstName || u.fullName?.split(' ')[0]).filter(Boolean);
+            const inputLower = inputName.toLowerCase();
+            const results = [];
+
+            for (const name of registeredNames) {
+                const nameLower = name.toLowerCase();
+                // Exact match (case-insensitive)
+                if (nameLower === inputLower) {
+                    results.unshift({ name, type: 'exact', distance: 0 });
+                    continue;
+                }
+                // Starts with input
+                if (nameLower.startsWith(inputLower)) {
+                    results.push({ name, type: 'prefix', distance: 0 });
+                    continue;
+                }
+                // Fuzzy match (Levenshtein distance ≤ 2)
+                const distance = levenshteinDistance(inputName, name);
+                if (distance <= 2) {
+                    results.push({ name, type: 'similar', distance });
+                }
+            }
+
+            // Sort: exact first, then prefix, then by distance
+            return results.sort((a, b) => {
+                if (a.type === 'exact') return -1;
+                if (b.type === 'exact') return 1;
+                if (a.type === 'prefix' && b.type !== 'prefix') return -1;
+                if (b.type === 'prefix' && a.type !== 'prefix') return 1;
+                return a.distance - b.distance;
+            }).slice(0, 5); // Max 5 suggestions
+        }
+
+        // Autocomplete state
+        let autocompleteSelectedIndex = -1;
+        let autocompleteItems = [];
+
+        // Setup autocomplete for manual add input
+        function setupManualAddAutocomplete() {
+            const input = document.getElementById('manual-add-name');
+            if (!input) return;
+
+            // Create dropdown container if not exists
+            let dropdown = document.getElementById('manual-add-autocomplete');
+            if (!dropdown) {
+                dropdown = document.createElement('div');
+                dropdown.id = 'manual-add-autocomplete';
+                dropdown.className = 'absolute z-50 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-40 overflow-y-auto hidden';
+                dropdown.style.top = '100%';
+                dropdown.style.left = '0';
+                input.parentElement.style.position = 'relative';
+                input.parentElement.appendChild(dropdown);
+            }
+
+            // Input event - show suggestions
+            input.addEventListener('input', () => {
+                const value = input.value.trim();
+                autocompleteItems = findSimilarNames(value);
+                autocompleteSelectedIndex = -1;
+                renderAutocomplete(dropdown);
+            });
+
+            // Keyboard navigation
+            input.addEventListener('keydown', (e) => {
+                if (autocompleteItems.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    autocompleteSelectedIndex = Math.min(autocompleteSelectedIndex + 1, autocompleteItems.length - 1);
+                    renderAutocomplete(dropdown);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    autocompleteSelectedIndex = Math.max(autocompleteSelectedIndex - 1, -1);
+                    renderAutocomplete(dropdown);
+                } else if (e.key === 'Enter') {
+                    if (autocompleteSelectedIndex >= 0) {
+                        e.preventDefault();
+                        selectAutocompleteItem(autocompleteItems[autocompleteSelectedIndex].name);
+                    }
+                } else if (e.key === 'Escape') {
+                    hideAutocomplete(dropdown);
+                }
+            });
+
+            // Hide on blur (with delay to allow click)
+            input.addEventListener('blur', () => {
+                setTimeout(() => hideAutocomplete(dropdown), 200);
+            });
+        }
+
+        function renderAutocomplete(dropdown) {
+            if (autocompleteItems.length === 0) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            dropdown.classList.remove('hidden');
+            dropdown.innerHTML = autocompleteItems.map((item, i) => {
+                const isSelected = i === autocompleteSelectedIndex;
+                const bgClass = isSelected ? 'bg-cyan-600' : 'hover:bg-slate-700';
+                const typeIcon = item.type === 'exact' ? '✓' : item.type === 'prefix' ? '→' : '~';
+                return `
+                    <div class="px-3 py-2 cursor-pointer text-sm ${bgClass} text-white flex items-center gap-2"
+                         onmousedown="selectAutocompleteItem('${escapeHtml(item.name)}')"
+                         onmouseenter="autocompleteSelectedIndex=${i}; renderAutocomplete(document.getElementById('manual-add-autocomplete'))">
+                        <span class="text-xs text-slate-400">${typeIcon}</span>
+                        <span>${escapeHtml(item.name)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function hideAutocomplete(dropdown) {
+            if (dropdown) dropdown.classList.add('hidden');
+            autocompleteItems = [];
+            autocompleteSelectedIndex = -1;
+        }
+
+        function selectAutocompleteItem(name) {
+            const input = document.getElementById('manual-add-name');
+            if (input) {
+                input.value = name;
+                hideAutocomplete(document.getElementById('manual-add-autocomplete'));
+            }
+        }
+
         function addManualMedic() {
             const input = document.getElementById('manual-add-name');
-            const n = input.value.trim();
-            if (!n) return;
+            const inputName = input.value.trim();
+            if (!inputName) return;
+
+            // Check for exact case-insensitive match and auto-correct silently
+            const registeredNames = (allUsers || []).map(u => u.firstName || u.fullName?.split(' ')[0]).filter(Boolean);
+            const exactMatch = registeredNames.find(n => n.toLowerCase() === inputName.toLowerCase());
+            const nameToAdd = exactMatch || inputName;
+
             // Remove from all lists first to prevent duplicates
-            removeFromAllLists(n);
-            appData.onDuty.push(n);
+            removeFromAllLists(nameToAdd);
+            appData.onDuty.push(nameToAdd);
             input.value = '';
+            hideAutocomplete(document.getElementById('manual-add-autocomplete'));
             saveOpData();
         }
+
+        // Initialize autocomplete after page loads
+        setTimeout(setupManualAddAutocomplete, 1000);
 
         // Helper: Remove name from all lists (prevents duplicates)
         function removeFromAllLists(name) {

@@ -2991,7 +2991,14 @@
         let musicMuted = false;
         let musicVolume = 1; // Default 1%
         let musicSettings = { source: 'lofi', youtubeUrl: '', songTitle: 'Lo-Fi Radio' };
-        const LOFI_STREAM_URL = 'https://streams.ilovemusic.de/iloveradio17.mp3';
+        // Lo-Fi Radio Stream - multiple fallback URLs
+        const LOFI_STREAM_URLS = [
+            'https://stream.radioparadise.com/mellow-320', // Radio Paradise Mellow - reliable
+            'https://streams.ilovemusic.de/iloveradio17.mp3', // Original Lo-Fi
+            'https://ice1.somafm.com/groovesalad-256-mp3' // SomaFM GrooveSalad
+        ];
+        let currentStreamIndex = 0;
+        const LOFI_STREAM_URL = LOFI_STREAM_URLS[0];
 
         // YouTube IFrame Player API
         let ytPlayer = null;
@@ -3067,9 +3074,35 @@
                 return;
             }
             if (!musicAudio) {
-                musicAudio = new Audio(LOFI_STREAM_URL);
+                musicAudio = new Audio();
+                musicAudio.preload = 'auto';
+                musicAudio.src = LOFI_STREAM_URLS[currentStreamIndex];
                 musicAudio.loop = true;
                 musicAudio.volume = musicVolume / 100;
+
+                // Add error handling with fallback to next stream
+                musicAudio.onerror = (e) => {
+                    console.error('🔇 Music Audio Error on stream:', LOFI_STREAM_URLS[currentStreamIndex]);
+                    console.error('Audio error code:', musicAudio.error?.code, musicAudio.error?.message);
+
+                    // Try next stream URL
+                    currentStreamIndex++;
+                    if (currentStreamIndex < LOFI_STREAM_URLS.length) {
+                        console.log('🔄 Trying fallback stream:', LOFI_STREAM_URLS[currentStreamIndex]);
+                        musicAudio.src = LOFI_STREAM_URLS[currentStreamIndex];
+                        musicAudio.load();
+                        musicAudio.play().catch(err => console.error('Fallback play error:', err));
+                    } else {
+                        console.error('❌ All audio streams failed');
+                        currentStreamIndex = 0; // Reset for next try
+                    }
+                };
+                musicAudio.onloadeddata = () => {
+                    console.log('🎵 Music audio loaded successfully from:', musicAudio.src);
+                };
+                musicAudio.onplay = () => {
+                    console.log('🎵 Music playing, volume:', musicAudio.volume, 'src:', musicAudio.src);
+                };
             }
         }
 
@@ -4905,7 +4938,7 @@
                     // Image with popup viewer
                     const imageHtml = m.image ? `<img src="${m.image}" class="max-w-full rounded-lg mt-1 max-h-40 cursor-pointer" onclick="showImagePopup('${m.image}')" onerror="this.onerror=null;this.src='https://placehold.co/400x300?text=Image+Expired';this.alt='รูปภาพหมดอายุ';">` : '';
 
-                    const textHtml = m.text ? escapeHtml(m.text) : '';
+                    const textHtml = m.text ? linkifyText(escapeHtml(m.text)) : '';
                     const msgTime = m.timestamp?.toDate?.() || null;
                     const time = msgTime ? new Date(msgTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -4919,14 +4952,14 @@
                     return isMe ?
                         `<div class="flex justify-end mb-1">
                             <div class="max-w-[80%]">
-                                <div class="bg-purple-500 text-white px-3 py-1.5 rounded-2xl rounded-br-md text-xs">${textHtml}${imageHtml}</div>
+                                <div class="bg-purple-500 text-white px-3 py-1.5 rounded-2xl rounded-br-md text-xs break-all">${textHtml}${imageHtml}</div>
                                 <div class="text-[9px] text-slate-500 text-right mt-0.5">${time}${readIndicator}</div>
                             </div>
                         </div>` :
                         `<div class="flex gap-1.5 mb-1">
                             <img src="${recipientAvatar || fallbackAvatarUrl}" class="w-6 h-6 rounded-full mt-1" onerror="this.onerror=null;this.src='${fallbackAvatarUrl}';">
                             <div class="max-w-[75%]">
-                                <div class="bg-slate-600 text-white px-3 py-1.5 rounded-2xl rounded-bl-md text-xs">${textHtml}${imageHtml}</div>
+                                <div class="bg-slate-600 text-white px-3 py-1.5 rounded-2xl rounded-bl-md text-xs break-all">${textHtml}${imageHtml}</div>
                                 <div class="text-[9px] text-slate-500 mt-0.5">${time}</div>
                             </div>
                         </div>`;

@@ -11,7 +11,23 @@ contextBridge.exposeInMainWorld('windowControls', {
     maximize: () => ipcRenderer.send('window-maximize'),
     close: () => ipcRenderer.send('window-close'),
     isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
-    logout: () => ipcRenderer.send('user-logout')
+    logout: () => ipcRenderer.send('user-logout'),
+    // Logout with confirmation - use this from UI
+    confirmLogout: () => {
+        // Ask user for confirmation before logout
+        if (window.showConfirm) {
+            window.showConfirm('ออกจากระบบ', 'คุณต้องการออกจากระบบใช่หรือไม่?').then(confirmed => {
+                if (confirmed) {
+                    ipcRenderer.send('user-logout');
+                }
+            });
+        } else {
+            // Fallback to native confirm
+            if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+                ipcRenderer.send('user-logout');
+            }
+        }
+    }
 });
 
 // Also try to set directly (for backward compatibility)

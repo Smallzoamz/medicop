@@ -1,11 +1,15 @@
-const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, dialog, ipcMain, session } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+
+// Enable autoplay for audio/video without user gesture
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // Keep a global reference of windows
 let splashWindow;
 let loginWindow;
 let mainWindow;
+let goodbyeWindow;
 let loggedInUser = null;
 
 // Create splash screen
@@ -33,7 +37,7 @@ function createSplashWindow() {
 function createLoginWindow() {
     loginWindow = new BrowserWindow({
         width: 400,
-        height: 500,
+        height: 580,
         frame: false,
         resizable: false,
         center: true,
@@ -58,6 +62,113 @@ function createLoginWindow() {
     });
 }
 
+// Create goodbye window (shown when logging out)
+function createGoodbyeWindow() {
+    // Close main window first
+    if (mainWindow) {
+        mainWindow.close();
+        mainWindow = null;
+    }
+
+    goodbyeWindow = new BrowserWindow({
+        width: 400,
+        height: 350,
+        frame: false,
+        resizable: false,
+        center: true,
+        alwaysOnTop: true,
+        icon: path.join(__dirname, 'src', 'icon.ico'),
+        backgroundColor: '#0f172a',
+        roundedCorners: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'src', 'goodbye-preload.js')
+        }
+    });
+
+    goodbyeWindow.loadFile(path.join(__dirname, 'src', 'goodbye.html'));
+
+    // Auto close after 2.5 seconds and show login
+    setTimeout(() => {
+        if (goodbyeWindow) {
+            goodbyeWindow.close();
+            goodbyeWindow = null;
+        }
+        createLoginWindow();
+    }, 2500);
+}
+
+// Create goodbye-close window (shown when closing the app)
+function createGoodbyeCloseWindow() {
+    // Close confirm window if open
+    if (confirmCloseWindow) {
+        confirmCloseWindow.close();
+        confirmCloseWindow = null;
+    }
+
+    // Close main window
+    if (mainWindow) {
+        mainWindow.close();
+        mainWindow = null;
+    }
+
+    goodbyeWindow = new BrowserWindow({
+        width: 350,
+        height: 300,
+        frame: false,
+        resizable: false,
+        center: true,
+        alwaysOnTop: true,
+        icon: path.join(__dirname, 'src', 'icon.ico'),
+        backgroundColor: '#0f172a',
+        roundedCorners: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+
+    goodbyeWindow.loadFile(path.join(__dirname, 'src', 'goodbye-close.html'));
+
+    // Auto quit after 2 seconds
+    setTimeout(() => {
+        app.quit();
+    }, 2000);
+}
+
+// Create custom confirm close window
+let confirmCloseWindow = null;
+
+function createConfirmCloseWindow() {
+    if (confirmCloseWindow) return; // Already open
+
+    confirmCloseWindow = new BrowserWindow({
+        width: 340,
+        height: 240,
+        frame: false,
+        resizable: false,
+        center: true,
+        alwaysOnTop: true,
+        parent: mainWindow,
+        modal: true,
+        icon: path.join(__dirname, 'src', 'icon.ico'),
+        backgroundColor: '#0f172a',
+        roundedCorners: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'src', 'confirm-close-preload.js')
+        }
+    });
+
+    confirmCloseWindow.loadFile(path.join(__dirname, 'src', 'confirm-close.html'));
+
+    confirmCloseWindow.on('closed', () => {
+        confirmCloseWindow = null;
+    });
+}
+
 // Create main window
 function createMainWindow() {
     mainWindow = new BrowserWindow({
@@ -72,7 +183,14 @@ function createMainWindow() {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            // Enable external content for YouTube iframe API
+            webSecurity: true,
+            allowRunningInsecureContent: false,
+            // Allow iframes from external sources (YouTube)
+            webviewTag: false,
+            // Enable media features
+            plugins: true
         },
         autoHideMenuBar: true,
         backgroundColor: '#0f172a'
@@ -337,30 +455,81 @@ ipcMain.on('window-maximize', () => {
 });
 
 ipcMain.on('window-close', () => {
-    if (mainWindow) mainWindow.close();
+    if (mainWindow) {
+        // Show custom confirmation window
+        createConfirmCloseWindow();
+    }
+});
+
+// Handle confirm close dialog responses
+ipcMain.on('confirm-close-cancel', () => {
+    if (confirmCloseWindow) {
+        confirmCloseWindow.close();
+        confirmCloseWindow = null;
+    }
+});
+
+ipcMain.on('confirm-close-confirm', () => {
+    createGoodbyeCloseWindow();
 });
 
 ipcMain.handle('window-is-maximized', () => {
     return mainWindow ? mainWindow.isMaximized() : false;
 });
 
-// Handle user logout - close main window and show login
+// Handle close login window (X button on login page)
+ipcMain.on('close-login-window', () => {
+    console.log('❌ Closing login window');
+    app.quit();
+});
+
+// Handle open external URL (for Discord OAuth)
+ipcMain.on('open-external', (event, url) => {
+    shell.openExternal(url);
+});
+
+// Handle user logout - show goodbye then return to login
 ipcMain.on('user-logout', () => {
-    console.log('🔓 User logout - returning to login window');
+    console.log('🔓 User logout - showing goodbye screen');
     loggedInUser = null;
 
-    if (mainWindow) {
-        mainWindow.close();
-        mainWindow = null;
-    }
-
-    // Show login window again
-    createLoginWindow();
+    // Show goodbye window
+    createGoodbyeWindow();
 });
 // ========== END AUTO UPDATE ==========
 
 // App ready
 app.whenReady().then(() => {
+    // Configure session to allow YouTube iframe API and audio streams
+    const filter = {
+        urls: [
+            '*://*.youtube.com/*',
+            '*://*.googlevideo.com/*',
+            '*://www.youtube.com/*',
+            '*://s.ytimg.com/*',
+            // Audio streaming domain for Lo-Fi radio
+            '*://*.ilovemusic.de/*',
+            '*://streams.ilovemusic.de/*'
+        ]
+    };
+
+    // Allow cross-origin requests for YouTube
+    session.defaultSession.webRequest.onHeadersReceived(filter, (details, callback) => {
+        // Remove restrictive headers that block iframes
+        const responseHeaders = { ...details.responseHeaders };
+
+        // Allow embedding in iframes
+        delete responseHeaders['x-frame-options'];
+        delete responseHeaders['X-Frame-Options'];
+
+        // Allow cross-origin requests
+        responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+
+        callback({ responseHeaders });
+    });
+
+    console.log('🎵 YouTube iframe API CORS bypass enabled');
+
     // Show splash first
     createSplashWindow();
 

@@ -100,6 +100,52 @@ function formatBadge(badge) {
     return badges[badge] || '';
 }
 
+// --- Discord ID Lookup Cache ---
+let discordIdCache = {};
+let discordIdCacheTime = 0;
+const DISCORD_ID_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Load all Discord IDs from op_users collection
+async function loadDiscordIdCache() {
+    if (!db) return;
+
+    const now = Date.now();
+    if (now - discordIdCacheTime < DISCORD_ID_CACHE_TTL && Object.keys(discordIdCache).length > 0) {
+        return; // Cache still valid
+    }
+
+    try {
+        const snapshot = await db.collection('op_users').get();
+        discordIdCache = {};
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const firstName = data.firstName || data.fullName?.split(' ')[0];
+            if (firstName && data.discordId) {
+                discordIdCache[firstName.toLowerCase()] = data.discordId;
+            }
+        });
+
+        discordIdCacheTime = now;
+        console.log(`📋 Loaded ${Object.keys(discordIdCache).length} Discord IDs into cache`);
+    } catch (error) {
+        console.error('❌ Failed to load Discord ID cache:', error);
+    }
+}
+
+// Get Discord ID by name (case-insensitive)
+function getDiscordIdByName(name) {
+    if (!name) return null;
+    return discordIdCache[name.toLowerCase()] || null;
+}
+
+// Format name as Discord mention if linked, otherwise plain text
+function formatWithMention(name, forceText = false) {
+    if (forceText || !name) return name || '';
+    const discordId = getDiscordIdByName(name);
+    return discordId ? `<@${discordId}>` : name;
+}
+
 // Thai month abbreviations to month number (0-indexed)
 const THAI_MONTHS = {
     'ม.ค.': 0, 'ก.พ.': 1, 'มี.ค.': 2, 'เม.ย.': 3,
@@ -218,6 +264,9 @@ client.once('ready', async () => {
 
     // Set status
     client.user.setActivity('Medical OP Systems', { type: 3 }); // Watching
+
+    // Load Discord ID cache for mentions
+    await loadDiscordIdCache();
 
     // Start Firestore listener for story updates
     startStoryListener();
@@ -432,7 +481,9 @@ async function postClosedCaseHistory(closedCase, docId) {
         const startTime = closedCase.startTime || '-';
         const storyDate = closedCase.storyDate || '';
         const medics = closedCase.medics || [];
-        const mainMedic = medics[0] || '-';
+        // Use Discord mentions for story medics (if linked)
+        const mainMedicRaw = medics[0] || '-';
+        const mainMedic = mainMedicRaw !== '-' ? formatWithMention(mainMedicRaw) : '-';
         const wardNumber = closedCase.wardNumber || closedCase.ward || '-'; // เลขวอ
         const council = closedCase.council || closedCase.site || '-'; // สภาที่ดูแล
         const closedAt = closedCase.closedAt ? new Date(closedCase.closedAt).toLocaleTimeString('th-TH', {
@@ -446,7 +497,7 @@ async function postClosedCaseHistory(closedCase, docId) {
         message += `⚔️ **${partyA} VS ${partyB}**\n`;
         message += `📍 ${location} | ⏰ ${startTime}→${closedAt}\n`;
         message += `👨‍⚕️ ${mainMedic}`;
-        if (wardNumber !== '-') message += ` | � วอ ${wardNumber}`;
+        if (wardNumber !== '-') message += ` |  วอ ${wardNumber}`;
         if (council !== '-') message += ` | 🏛️ ${council}`;
         message += '\n';
 
@@ -502,13 +553,17 @@ async function postSummaryToDiscord(summary, docId) {
             year: 'numeric'
         });
 
+        // Use Discord mentions for OP and Sup OP (if linked)
+        const opDisplay = formatWithMention(opName);
+        const supOPDisplay = supOP && supOP !== '-' ? formatWithMention(supOP) : null;
+
         let message = '';
         message += `**${typeLabel}**\n`;
         message += '════════════════════\n';
         message += `📅 วันที่: ${dateStr}\n`;
-        message += `👤 OP: ${opName}\n`;
-        if (supOP && supOP !== '-') {
-            message += `👥 Support OP: ${supOP}\n`;
+        message += `👤 OP: ${opDisplay}\n`;
+        if (supOPDisplay) {
+            message += `👥 Support OP: ${supOPDisplay}\n`;
         }
         // Show times - use current time as end if not provided
         const displayStartTime = startTime || '-';
@@ -557,8 +612,13 @@ async function postSummaryToDiscord(summary, docId) {
                 const partyA = s.partyA || '?';
                 const partyB = s.partyB || '?';
                 const medics = s.medics || s.assignedMedics || [];
-                const mainMedic = medics[0]?.name || medics[0] || '-';
-                const supportMedics = medics.slice(1).map(m => m.name || m).join(', ');
+                const rawMainMedic = medics[0]?.name || medics[0] || '-';
+                // Use Discord mentions for story medics (if linked)
+                const mainMedic = rawMainMedic !== '-' ? formatWithMention(rawMainMedic) : '-';
+                const supportMedics = medics.slice(1).map(m => {
+                    const name = m.name || m;
+                    return formatWithMention(name);
+                }).join(', ');
 
                 message += `**สตอรี่ #${i + 1}** ระหว่าง ${partyA} VS ${partyB}\n`;
                 message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
@@ -614,6 +674,9 @@ async function updateOPChannelMessage(data) {
             return;
         }
 
+        // Reload Discord ID cache to get latest linked accounts
+        await loadDiscordIdCache();
+
         const currentOP = data.currentOP || 'ไม่มี';
         const supOP = data.supOP || null;
         const onDuty = data.onDuty || [];  // Array of strings (names)
@@ -630,115 +693,131 @@ async function updateOPChannelMessage(data) {
             year: 'numeric'
         });
 
-        // Build message for OP Channel (Queue info)
         let message = '';
-        message += '**สรุปการเข้าเวร OP**\n';
-        message += '────────────────────\n';
-        message += `📅 วันที่: ${dateStr}\n`;
-        message += `👤 OP: ${currentOP}\n`;
-        if (supOP) {
-            message += `👥 Support OP: ${supOP}\n`;
-        }
-        if (lastModified && typeof lastModified === 'number') {
-            const shiftDate = new Date(lastModified);
-            const timeStr = shiftDate.toLocaleTimeString('th-TH', {
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'Asia/Bangkok'
-            });
-            message += `⏰ เวลา: ${timeStr}\n`;
-        }
-        message += '────────────────────\n\n';
 
-        // On Duty List
-        message += `✅ **On Duty (${onDuty.length} คน):**\n`;
-        if (onDuty.length > 0) {
-            onDuty.forEach((name) => {
-                const status = medicStatuses[name] || '';
-                let icon = '';
-                if (status === 'accept') {
-                    icon = ' 📍'; // กด ✓ รับเคส = ถึงคิว
-                } else if (status === 'waitfix') {
-                    icon = ' ⏳'; // รอเคสแก้
-                } else if (status === 'decline') {
-                    icon = ' ❌'; // ไม่รับเคส
-                }
-                message += `• ${name}${icon}\n`;
-            });
+        // Check if no active shift (OP = 'ไม่มี')
+        if (currentOP === 'ไม่มี') {
+            message = '**📋 สรุปการเข้าเวร OP**\\n';
+            message += '────────────────────\\n';
+            message += `📅 ${dateStr}\\n`;
+            message += '────────────────────\\n\\n';
+            message += '🚫 **ไม่มีกะ ณ ขณะนี้**\\n\\n';
+            message += '_รอ OP เปิดกะ..._\\n';
         } else {
-            message += '_ไม่มี_\n';
-        }
-        message += '────────────────────\n\n';
+            // Format OP and Sup OP with Discord mentions (if linked)
+            const opDisplay = formatWithMention(currentOP);
+            const supOPDisplay = supOP ? formatWithMention(supOP) : null;
 
-        // Off Duty List
-        message += `❌ **Off Duty (${offDuty.length} คน):**\n`;
-        if (offDuty.length > 0) {
-            offDuty.slice(0, 20).forEach(m => {
-                const name = m.name || m;
-                message += `• ${name}\n`;
-            });
-            if (offDuty.length > 20) {
-                message += `_...และอีก ${offDuty.length - 20} คน_\n`;
-            }
-        } else {
-            message += '_ไม่มี_\n';
-        }
-        message += '────────────────────\n\n';
-
-        // AFK List
-        if (afkList.length > 0) {
-            message += `💤 **AFK (${afkList.length} คน):**\n`;
-            afkList.forEach(name => {
-                const afkTime = data.afkTimes?.[name];
-                let timeStr = '';
-                if (afkTime) {
-                    const mins = Math.floor((Date.now() - afkTime) / 60000);
-                    timeStr = ` (${mins} นาที)`;
-                }
-                message += `• ${name}${timeStr}\n`;
-            });
-            message += '────────────────────\n\n';
-        }
-
-        // Stories (cases) - show in OP Channel too
-        const allStories = data.cases || [];
-        const stories = filterTodayItems(allStories);
-        message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
-        if (stories.length > 0) {
-            stories.forEach((c, i) => {
-                const partyA = c.partyA || '?';
-                const partyB = c.partyB || '?';
-                const location = c.location || '';
-                const startTime = c.startTime || '';
-                const medics = c.medics || [];
-                const mainMedic = medics[0] || 'ยังไม่มี';
-                const supportMedics = medics.slice(1).join(', ');
-
-                message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
-                message += `ระหว่าง ${partyA} VS ${partyB}\n`;
-                if (location) message += `📍 ${location}\n`;
-                message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
-                if (supportMedics) {
-                    message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
-                }
-                message += '\n';
-            });
-        } else {
-            message += '_ไม่มีสตอรี่ในขณะนี้_\n';
-        }
-
-        // Events (activeEvents) - show in OP Channel too
-        const allEvents = data.activeEvents || [];
-        const eventList = filterTodayItems(allEvents);
-        if (eventList.length > 0) {
+            // Build message for OP Channel (Queue info)
+            message = '**สรุปการเข้าเวร OP**\n';
             message += '────────────────────\n';
-            message += `🎉 **Events (${eventList.length}):**\n`;
-            eventList.forEach(e => {
-                const participants = (e.medics || []).join(', ') || 'ยังไม่มี';
-                message += `**${e.name || 'Event'}**\n`;
-                message += `ผู้เข้าร่วม: ${participants}\n\n`;
-            });
-        }
+            message += `📅 วันที่: ${dateStr}\n`;
+            message += `👤 OP: ${opDisplay}\n`;
+            if (supOPDisplay) {
+                message += `👥 Support OP: ${supOPDisplay}\n`;
+            }
+            if (lastModified && typeof lastModified === 'number') {
+                const shiftDate = new Date(lastModified);
+                const timeStr = shiftDate.toLocaleTimeString('th-TH', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Asia/Bangkok'
+                });
+                message += `⏰ เวลา: ${timeStr}\n`;
+            }
+            message += '────────────────────\n\n';
+
+            // On Duty List
+            message += `✅ **On Duty (${onDuty.length} คน):**\n`;
+            if (onDuty.length > 0) {
+                onDuty.forEach((name) => {
+                    const status = medicStatuses[name] || '';
+                    let icon = '';
+                    if (status === 'accept') {
+                        icon = ' 📍'; // กด ✓ รับเคส = ถึงคิว
+                    } else if (status === 'waitfix') {
+                        icon = ' ⏳'; // รอเคสแก้
+                    } else if (status === 'decline') {
+                        icon = ' ❌'; // ไม่รับเคส
+                    }
+                    message += `• ${name}${icon}\n`;
+                });
+            } else {
+                message += '_ไม่มี_\n';
+            }
+            message += '────────────────────\n\n';
+
+            // Off Duty List
+            message += `❌ **Off Duty (${offDuty.length} คน):**\n`;
+            if (offDuty.length > 0) {
+                offDuty.slice(0, 20).forEach(m => {
+                    const name = m.name || m;
+                    message += `• ${name}\n`;
+                });
+                if (offDuty.length > 20) {
+                    message += `_...และอีก ${offDuty.length - 20} คน_\n`;
+                }
+            } else {
+                message += '_ไม่มี_\n';
+            }
+            message += '────────────────────\n\n';
+
+            // AFK List
+            if (afkList.length > 0) {
+                message += `💤 **AFK (${afkList.length} คน):**\n`;
+                afkList.forEach(name => {
+                    const afkTime = data.afkTimes?.[name];
+                    let timeStr = '';
+                    if (afkTime) {
+                        const mins = Math.floor((Date.now() - afkTime) / 60000);
+                        timeStr = ` (${mins} นาที)`;
+                    }
+                    message += `• ${name}${timeStr}\n`;
+                });
+                message += '────────────────────\n\n';
+            }
+
+            // Stories (cases) - show in OP Channel too
+            const allStories = data.cases || [];
+            const stories = filterTodayItems(allStories);
+            message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
+            if (stories.length > 0) {
+                stories.forEach((c, i) => {
+                    const partyA = c.partyA || '?';
+                    const partyB = c.partyB || '?';
+                    const location = c.location || '';
+                    const startTime = c.startTime || '';
+                    const medics = c.medics || [];
+                    // Use Discord mentions for story medics (if linked)
+                    const mainMedic = medics[0] ? formatWithMention(medics[0]) : 'ยังไม่มี';
+                    const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
+
+                    message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
+                    message += `ระหว่าง ${partyA} VS ${partyB}\n`;
+                    if (location) message += `📍 ${location}\n`;
+                    message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
+                    if (supportMedics) {
+                        message += `แพทย์ช่วยเหลือ : ${supportMedics}\n`;
+                    }
+                    message += '\n';
+                });
+            } else {
+                message += '_ไม่มีสตอรี่ในขณะนี้_\n';
+            }
+
+            // Events (activeEvents) - show in OP Channel too
+            const allEvents = data.activeEvents || [];
+            const eventList = filterTodayItems(allEvents);
+            if (eventList.length > 0) {
+                message += '────────────────────\n';
+                message += `🎉 **Events (${eventList.length}):**\n`;
+                eventList.forEach(e => {
+                    const participants = (e.medics || []).join(', ') || 'ยังไม่มี';
+                    message += `**${e.name || 'Event'}**\n`;
+                    message += `ผู้เข้าร่วม: ${participants}\n\n`;
+                });
+            }
+        } // End of else block
 
         // Get stored message ID for OP channel
         const configDoc = await db.collection('config').doc('discord_message').get();
@@ -805,8 +884,9 @@ async function updateStoryChannelMessage(data) {
                 const location = c.location || '';
                 const startTime = c.startTime || '';
                 const medics = c.medics || [];
-                const mainMedic = medics[0] || 'ยังไม่มี';
-                const supportMedics = medics.slice(1).join(', ');
+                // Use Discord mentions for story medics (if linked)
+                const mainMedic = medics[0] ? formatWithMention(medics[0]) : 'ยังไม่มี';
+                const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
 
                 message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
                 message += `ระหว่าง ${partyA} VS ${partyB}\n`;

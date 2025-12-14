@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical OP Systems - ปิดโปรแกรม</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        html,
+        body {
+            background: transparent;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .close-container {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 50%;
+            filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.5));
+            margin-bottom: 16px;
+            animation: close-logo-anim 1.5s ease-out forwards;
+        }
+
+        @keyframes close-logo-anim {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(0.8) rotate(-10deg);
+            }
+
+            100% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+        }
+
+        .close-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #8b5cf6, #6366f1, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: close-text-anim 0.8s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+
+        @keyframes close-text-anim {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.9);
+                opacity: 0.8;
+            }
+        }
+
+        .close-subtext {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #94a3b8;
+            opacity: 0;
+            animation: fade-in 0.5s ease-out 0.5s forwards;
+        }
+
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .close-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .close-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+            border-radius: 50%;
+            animation: particle-fade 1.5s ease-out forwards;
+        }
+
+        @keyframes particle-fade {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(0) translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        .moon-icon {
+            font-size: 40px;
+            animation: moon-anim 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes moon-anim {
+            0% {
+                transform: translateY(20px) rotate(-30deg);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="text-white">
+    <div class="close-container">
+        <div class="close-particles" id="close-particles"></div>
+        <img src="logo.jpg" alt="Logo" class="logo">
+        <span class="moon-icon">🌙</span>
+        <h1 class="close-text">ปิดโปรแกรมแล้ว</h1>
+        <p class="close-subtext">ขอบคุณที่ใช้งาน Medical OP Systems</p>
+    </div>
+
+    <script>
+        // Create particles
+        const particlesContainer = document.getElementById('close-particles');
+        for (let i = 0; i < 15; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'close-particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = 50 + Math.random() * 30 + '%';
+            particle.style.animationDelay = Math.random() * 0.5 + 's';
+            particlesContainer.appendChild(particle);
+        }
+    </script>
+</body>
+
+</html>
