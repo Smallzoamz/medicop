@@ -689,7 +689,16 @@ async function postSummaryToDiscord(summary, docId) {
 
         message += '\n════════════════════';
 
-        // Send to Discord
+        // IMPORTANT: Clear stored message IDs FIRST (before posting summary)
+        // This prevents race condition with updateOPChannelMessage which might run in parallel
+        // By clearing IDs first, any parallel update will create a new message instead of editing
+        await db.collection('config').doc('discord_message').update({
+            opChannelMessageId: null,
+            storyMessageId: null
+        });
+        console.log('🔄 Cleared message IDs for fresh start');
+
+        // Send summary to Discord
         await channel.send(message);
         console.log('✅ Summary posted to Discord');
 
@@ -698,14 +707,6 @@ async function postSummaryToDiscord(summary, docId) {
             postedToDiscord: true,
             postedAt: admin.firestore.FieldValue.serverTimestamp()
         });
-
-        // Clear stored message IDs to force new messages instead of editing old ones
-        // This ensures the next OP channel update creates a fresh "waiting for OP" message
-        await db.collection('config').doc('discord_message').update({
-            opChannelMessageId: null,
-            storyMessageId: null
-        });
-        console.log('🔄 Cleared message IDs for fresh start');
 
     } catch (error) {
         console.error('❌ postSummaryToDiscord error:', error);
