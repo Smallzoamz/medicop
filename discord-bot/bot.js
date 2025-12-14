@@ -707,16 +707,41 @@ async function postSummaryToDiscord(summary, docId) {
             }
         }
 
-        // Clear stored message IDs
+        // Clear OP channel message ID only (NOT story - story channel manages its own)
         await db.collection('config').doc('discord_message').update({
             opChannelMessageId: null,
-            storyMessageId: null
+            summaryJustPosted: true  // Flag to prevent duplicate "waiting" message
         });
-        console.log('🔄 Cleared message IDs for fresh start');
+        console.log('🔄 Cleared OP message ID for fresh start');
 
         // Send summary to Discord
         await channel.send(message);
         console.log('✅ Summary posted to Discord');
+
+        // Format date for waiting message
+        const waitNow = new Date();
+        const waitDateStr = waitNow.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+
+        // Send "waiting for OP" message right after summary (correct order)
+        let waitingMessage = '**📋 สรุปการเข้าเวร OP**\n';
+        waitingMessage += '────────────────────\n';
+        waitingMessage += `📅 ${waitDateStr}\n`;
+        waitingMessage += '────────────────────\n\n';
+        waitingMessage += '🚫 **ไม่มีกะ ณ ขณะนี้**\n\n';
+        waitingMessage += '_รอ OP เปิดกะ..._\n';
+
+        const waitingMsg = await channel.send(waitingMessage);
+        console.log('✅ Waiting message posted after summary');
+
+        // Store the new message ID
+        await db.collection('config').doc('discord_message').update({
+            opChannelMessageId: waitingMsg.id,
+            summaryJustPosted: false  // Clear the flag
+        });
 
         // Mark as posted
         await db.collection('shift_summaries').doc(docId).update({
@@ -749,18 +774,27 @@ async function updateOPChannelMessage(data) {
         const lastModified = data._lastModified || null;
         const medicStatuses = data.medicStatuses || {}; // Status per medic
 
-        // Format date
+        // Format date (use Bangkok timezone)
         const now = new Date();
         const dateStr = now.toLocaleDateString('th-TH', {
             day: 'numeric',
             month: 'short',
-            year: 'numeric'
+            year: 'numeric',
+            timeZone: 'Asia/Bangkok'
         });
 
         let message = '';
 
         // Check if no active shift (OP = 'ไม่มี')
         if (currentOP === 'ไม่มี') {
+            // Check if summary was just posted (to avoid duplicate "waiting" message)
+            const configDoc = await db.collection('config').doc('discord_message').get();
+            if (configDoc.exists && configDoc.data().opChannelMessageId) {
+                // Already have a waiting message from postSummaryToDiscord, skip
+                console.log('⏭️ Waiting message already posted by summary function, skipping...');
+                return;
+            }
+
             message = '**📋 สรุปการเข้าเวร OP**\n';
             message += '────────────────────\n';
             message += `📅 ${dateStr}\n`;
