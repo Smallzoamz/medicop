@@ -873,7 +873,15 @@ async function updateOPChannelMessage(data) {
         const configDoc = await db.collection('config').doc('discord_message').get();
         const storedMessageId = configDoc.exists ? configDoc.data().opChannelMessageId : null;
 
-        if (storedMessageId) {
+        // When shift ends (no OP), ALWAYS send a NEW message
+        // This ensures "รอ OP เปิดกะ" is a fresh message after the summary
+        if (currentOP === 'ไม่มี') {
+            const newMsg = await channel.send(message);
+            await db.collection('config').doc('discord_message').set({
+                opChannelMessageId: newMsg.id
+            }, { merge: true });
+            console.log('✅ OP Channel: New "waiting" message sent (shift ended)');
+        } else if (storedMessageId) {
             try {
                 const msg = await channel.messages.fetch(storedMessageId);
                 await msg.edit(message);
