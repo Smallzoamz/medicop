@@ -139,45 +139,40 @@ function filterTodayItems(items) {
     const localOffset = now.getTimezoneOffset();
     const bangkokTime = new Date(now.getTime() + (bangkokOffset + localOffset) * 60000);
 
-    const todayDay = bangkokTime.getDate();
-    const todayMonth = bangkokTime.getMonth();
-    const todayYear = bangkokTime.getFullYear();
+    // Get today's date string in YYYY-MM-DD format for comparison
+    const todayStr = bangkokTime.toISOString().split('T')[0]; // e.g., "2025-12-14"
+
+    console.log(`📅 Filtering for today: ${todayStr}`);
 
     return items.filter(item => {
-        let itemDate = null;
-
-        // Priority 1: Check storyDate (Thai format "อ. 15 ธ.ค. 2568")
+        // Priority 1: Check storyDate (stored as YYYY-MM-DD from input type="date")
         if (item.storyDate && typeof item.storyDate === 'string') {
-            itemDate = parseThaiDate(item.storyDate);
+            // storyDate is in YYYY-MM-DD format (e.g., "2025-12-15")
+            const itemDateStr = item.storyDate;
+            const isToday = itemDateStr === todayStr;
+            console.log(`  Story: ${item.partyA} vs ${item.partyB}, storyDate: ${itemDateStr}, isToday: ${isToday}`);
+            return isToday;
         }
 
         // Priority 2: Check createdAt timestamp
-        if (!itemDate && item.createdAt) {
-            itemDate = new Date(item.createdAt);
-        }
-
-        // Priority 3: Check startTime (if it's just "HH:MM", assume today)
-        if (!itemDate && item.startTime && typeof item.startTime === 'string') {
-            if (item.startTime.match(/^\d{2}:\d{2}$/)) {
-                return true; // No date info in startTime, need to check storyDate
+        if (item.createdAt) {
+            const itemDate = new Date(item.createdAt);
+            if (!isNaN(itemDate.getTime())) {
+                const itemDateStr = itemDate.toISOString().split('T')[0];
+                return itemDateStr === todayStr;
             }
-            itemDate = new Date(item.startTime);
         }
 
-        // Priority 4: Check closedAt
-        if (!itemDate && item.closedAt) {
-            itemDate = new Date(item.closedAt);
+        // Priority 3: If only startTime (HH:MM) without storyDate, assume it's old/today
+        if (item.startTime && typeof item.startTime === 'string') {
+            if (item.startTime.match(/^\d{2}:\d{2}$/)) {
+                // No storyDate means older story, include it
+                return true;
+            }
         }
 
-        // If we can't determine the date, DON'T include it (might be future date)
-        if (!itemDate || isNaN(itemDate.getTime())) {
-            return false;
-        }
-
-        // Compare dates
-        return itemDate.getDate() === todayDay &&
-            itemDate.getMonth() === todayMonth &&
-            itemDate.getFullYear() === todayYear;
+        // If we can't determine the date, don't include it
+        return false;
     });
 }
 
