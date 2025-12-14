@@ -692,9 +692,22 @@ async function postSummaryToDiscord(summary, docId) {
 
         message += '\n════════════════════';
 
-        // IMPORTANT: Clear stored message IDs FIRST (before posting summary)
-        // This prevents race condition with updateOPChannelMessage which might run in parallel
-        // By clearing IDs first, any parallel update will create a new message instead of editing
+        // Get old message ID to delete it
+        const configDoc = await db.collection('config').doc('discord_message').get();
+        const oldMessageId = configDoc.exists ? configDoc.data().opChannelMessageId : null;
+
+        // Delete old OP status message (so only Summary and Waiting remain)
+        if (oldMessageId) {
+            try {
+                const oldMsg = await channel.messages.fetch(oldMessageId);
+                await oldMsg.delete();
+                console.log('🗑️ Old OP status message deleted');
+            } catch (e) {
+                console.log('⚠️ Could not delete old message (might already be deleted)');
+            }
+        }
+
+        // Clear stored message IDs
         await db.collection('config').doc('discord_message').update({
             opChannelMessageId: null,
             storyMessageId: null
