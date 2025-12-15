@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตารางค่ารักษา</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            background: transparent;
+            -webkit-app-region: no-drag;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .drag-region {
+            -webkit-app-region: drag;
+        }
+
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glass rounded-xl shadow-2xl overflow-hidden">
+        <div id="title-bar"
+            class="drag-region p-2 border-b border-white/10 flex justify-between items-center cursor-move">
+            <span class="text-emerald-400 text-xs font-bold">💰 ตารางค่ารักษา</span>
+            <div class="flex gap-1 no-drag">
+                <button id="lock-btn" onclick="toggleLock()" title="ล็อคตำแหน่ง"
+                    class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-amber-400 rounded text-[10px]">🔓</button>
+                <button onclick="window.panelAPI.close('price')"
+                    class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-red-400 text-xs">✕</button>
+            </div>
+        </div>
+        <div id="price-content" class="p-3 text-[11px] text-slate-300">
+            <div class="text-center text-slate-500 py-2">กำลังโหลด...</div>
+        </div>
+    </div>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPnd6bmpPe0cbWXbNh2LsYaeGcFHZNNsU",
+            authDomain: "medic-op.firebaseapp.com",
+            projectId: "medic-op",
+            storageBucket: "medic-op.firebasestorage.app",
+            messagingSenderId: "628357107384",
+            appId: "1:628357107384:web:3050de54d5a84d10ae75e2"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let isLocked = false;
+        let announceCmd = '/an';
+
+        // Load server settings for announce command
+        db.collection('op_settings').doc('server').get().then(doc => {
+            if (doc.exists && doc.data().announceCmd) {
+                announceCmd = doc.data().announceCmd;
+            }
+        });
+
+        function toggleLock() {
+            isLocked = !isLocked;
+            const btn = document.getElementById('lock-btn');
+            const titleBar = document.getElementById('title-bar');
+            if (isLocked) {
+                btn.textContent = '🔒';
+                btn.classList.add('text-amber-400');
+                titleBar.classList.remove('drag-region');
+                titleBar.classList.remove('cursor-move');
+            } else {
+                btn.textContent = '🔓';
+                btn.classList.remove('text-amber-400');
+                titleBar.classList.add('drag-region');
+                titleBar.classList.add('cursor-move');
+            }
+        }
+
+        function copyPhoneNotFound() {
+            const phone = document.getElementById('phone-input').value.trim();
+            if (!phone) return alert('กรุณากรอกเบอร์โทร');
+            const msg = `${announceCmd} ขณะนี้แพทย์กำลังติดต่อคนไข้เบอร์ ${phone} แต่ไม่พบผู้รับ รบกวนติดต่อกลับมาที่ห้องติดต่อหมอในนิตยสารประเทศ ขอบคุณครับ/ค่ะ`;
+            navigator.clipboard.writeText(msg);
+            document.getElementById('phone-input').value = '';
+            showStatus('✅ คัดลอกแล้ว!');
+        }
+
+        function copyPhoneUnreachable() {
+            const phone = document.getElementById('phone-input').value.trim();
+            if (!phone) return alert('กรุณากรอกเบอร์โทร');
+            const msg = `${announceCmd} คนไข้เบอร์ ${phone} หมอไม่สามารถเข้าถึงพื้นที่ได้ รบกวนเข้าห้องติดต่อหมอในนิตยสารประเทศ ขอบคุณครับ/ค่ะ`;
+            navigator.clipboard.writeText(msg);
+            document.getElementById('phone-input').value = '';
+            showStatus('✅ คัดลอกแล้ว!');
+        }
+
+        function showStatus(text) {
+            const el = document.getElementById('copy-status');
+            el.textContent = text;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 1500);
+        }
+
+        function renderFees(data) {
+            const content = document.getElementById('price-content');
+            const normal = data.normal || {};
+            const risky = data.risky || {};
+            const story = data.story || {};
+
+            content.innerHTML = `
+                <div class="mb-3">
+                    <div class="text-emerald-400 font-bold mb-2 text-xs">💊 เคสปกติ</div>
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-slate-500 text-[10px]">
+                                <th class="text-left py-1 w-24">เขต</th>
+                                <th class="text-center py-1 w-14">ชุบ</th>
+                                <th class="text-center py-1 w-14">ฉีด</th>
+                                <th class="text-left py-1">หมายเหตุ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="py-1">🏙️ ในเมือง</td><td class="text-center text-emerald-400">${normal.cityChub || '-'}</td><td class="text-center text-cyan-400">${normal.cityChit || '-'}</td><td class="text-slate-500 text-[9px]">-</td></tr>
+                            <tr><td class="py-1">🏜️ ทะเลทราย</td><td class="text-center text-emerald-400">${normal.desertChub || '-'}</td><td class="text-center text-cyan-400">${normal.desertChit || '-'}</td><td class="text-slate-500 text-[9px]">-</td></tr>
+                            <tr><td class="py-1">⛰️ เมืองบน</td><td class="text-center text-emerald-400">${normal.upperChub || '-'}</td><td class="text-center text-cyan-400">${normal.upperChit || '-'}</td><td class="text-slate-500 text-[9px]">-</td></tr>
+                            <tr><td class="py-1">🚧 เข้าถึงยาก</td><td class="text-center text-emerald-400">${normal.hardChub || '-'}</td><td class="text-center text-cyan-400">${normal.hardChit || '-'}</td><td class="text-amber-400 text-[9px]">ตามพื้นที่</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="border-t border-white/10 pt-3">
+                    <div class="text-amber-400 font-bold mb-2 text-xs">⚠️ เคสพิเศษ</div>
+                    <table class="w-full">
+                        <tbody>
+                            <tr><td class="py-1 w-24">🔥 สุ่มเสี่ยง</td><td class="text-amber-400 w-14">${risky.areaChub || '-'}</td><td class="text-rose-400 text-[9px]">ชุบอย่างเดียว</td></tr>
+                            <tr><td class="py-1">🎬 สตอรี่</td><td class="text-rose-400">${story.areaChub || '-'}</td><td class="text-rose-400 text-[9px]">ห้ามฉีดยา</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="border-t border-white/10 pt-2 mt-3 bg-amber-900/30 rounded-lg p-2">
+                    <div class="text-amber-400 font-bold text-[10px] mb-1">📝 หมายเหตุ :</div>
+                    <div class="text-amber-200/80 text-[9px] space-y-1">
+                        <div>• เคสเรเบล → นำกลับมาชุบโรงพยาบาลที่ใกล้ที่สุด</div>
+                        <div>• เคสงานผิดกฎหมาย → นำกลับไปชุบที่สถานีตำรวจ</div>
+                        <div>• ชุบที่ สน. = ชุบได้อย่างเดียว ห้ามฉีดยา</div>
+                    </div>
+                </div>
+                <!-- Phone Commands -->
+                <div class="border-t border-white/10 pt-3 mt-3">
+                    <div class="text-cyan-400 font-bold mb-2 text-xs flex items-center gap-1">📞 คำสั่งโทรศัพท์</div>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="phone-input" placeholder="เบอร์โทร..."
+                            class="no-drag flex-1 text-[10px] rounded border border-slate-600 bg-slate-800 px-2 py-1.5 text-white">
+                        <button onclick="copyPhoneNotFound()"
+                            class="no-drag text-[10px] bg-slate-600 hover:bg-slate-500 text-white px-2 py-1.5 rounded transition whitespace-nowrap">ไม่พบ</button>
+                        <button onclick="copyPhoneUnreachable()"
+                            class="no-drag text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1.5 rounded transition whitespace-nowrap">เข้าไม่ถึง</button>
+                    </div>
+                    <div id="copy-status" class="hidden text-emerald-400 text-[10px] text-center mt-1"></div>
+                </div>
+            `;
+        }
+
+        // Real-time listener
+        db.collection('op_settings').doc('medical_fees').onSnapshot(doc => {
+            if (doc.exists) {
+                renderFees(doc.data());
+            } else {
+                document.getElementById('price-content').innerHTML = '<div class="text-slate-500 text-center py-2">ยังไม่มีข้อมูลค่ารักษา</div>';
+            }
+        }, err => {
+            document.getElementById('price-content').innerHTML = '<div class="text-red-400 text-center py-2">โหลดไม่สำเร็จ</div>';
+        });
+    </script>
+</body>
+
+</html>

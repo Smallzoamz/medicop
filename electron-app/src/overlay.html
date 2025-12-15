@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OP Mini Overlay</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            background: transparent !important;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .drag-region {
+            -webkit-app-region: drag;
+        }
+
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .scroll-area {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        /* Custom Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #06b6d4 0%, #3b82f6 100%);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #22d3ee 0%, #60a5fa 100%);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="overlay" class="glass rounded-lg shadow-2xl overflow-hidden" style="width: 100%;">
+
+        <!-- Title Bar with controls -->
+        <div id="title-bar" class="p-2 drag-region border-b border-white/10 flex items-center justify-between">
+            <span class="text-cyan-400 text-xs font-bold">🏥 OP Systems</span>
+            <div class="flex gap-0.5 no-drag">
+                <button onclick="showAddMenu()" id="add-panel-btn" title="เพิ่มหน้าต่าง"
+                    class="w-5 h-5 flex items-center justify-center text-white bg-cyan-600 hover:bg-cyan-500 rounded text-xs font-bold">+</button>
+                <button onclick="showSettingsMenu()" id="settings-btn" title="ตั้งค่า"
+                    class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-cyan-400 rounded text-[10px]">⚙️</button>
+                <button id="lock-btn" onclick="toggleLock()" title="ล็อคตำแหน่ง"
+                    class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-amber-400 rounded text-[10px]">🔓</button>
+                <button onclick="exitOverlay()" title="ปิด"
+                    class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-red-400 rounded text-[10px]">✕</button>
+            </div>
+        </div>
+
+        <!-- Settings Menu -->
+        <div id="settings-menu"
+            class="hidden absolute left-2 top-10 w-[200px] glass rounded-lg p-2 z-50 border border-white/20">
+            <div class="text-[10px] text-slate-400 mb-1">⚙️ ตั้งค่า Overlay</div>
+            <div class="space-y-2">
+                <div>
+                    <label class="text-[9px] text-slate-500">Opacity (ความโปร่งใส)</label>
+                    <input type="range" id="opacity-slider" min="30" max="100" value="95"
+                        class="w-full h-1 rounded-lg appearance-none cursor-pointer bg-slate-700"
+                        oninput="changeOpacity(this.value)">
+                    <div class="flex justify-between text-[8px] text-slate-500">
+                        <span>30%</span>
+                        <span id="opacity-value">95%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+                <button onclick="saveCurrentPosition()"
+                    class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-[10px] text-emerald-400">
+                    💾 บันทึกตำแหน่งนี้
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Add Menu Dropdown -->
+        <div id="add-menu"
+            class="hidden absolute left-2 top-10 w-[200px] glass rounded-lg p-1 z-50 border border-white/20">
+            <button onclick="openPanelWindow('price')"
+                class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-xs text-emerald-400">💰
+                ตารางค่ารักษา</button>
+            <button onclick="openPanelWindow('copy')"
+                class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-xs text-blue-400">📋
+                รวมคำสั่งประกาศ</button>
+            <button onclick="openPanelWindow('blacklist')"
+                class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-xs text-red-400">🚫 Blacklist</button>
+        </div>
+
+        <!-- OP Info Header -->
+        <div class="p-2 border-b border-white/10 text-[11px]">
+            <div class="flex justify-between items-center">
+                <span class="text-white">OP: <span id="op-name" class="text-cyan-400 font-bold">-</span> <span
+                        id="op-ic" class="text-slate-500">-</span></span>
+                <span id="op-timer" class="text-emerald-400 font-mono">00:00:00</span>
+            </div>
+            <div class="flex items-center mt-1">
+                <span class="text-white">Sup OP: <span id="sup-op-name" class="text-purple-400 font-bold">-</span> <span
+                        id="sup-op-ic" class="text-slate-500">-</span></span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="p-2 space-y-2 pb-3">
+            <!-- On Duty Section -->
+            <div>
+                <div class="text-emerald-400 text-[11px] font-bold mb-1">🟢 On Duty (<span id="on-duty-count">0</span>)
+                </div>
+                <div id="on-duty-list"
+                    class="text-[10px] text-slate-300 space-y-0.5 max-h-[150px] overflow-y-auto pr-1">
+                </div>
+            </div>
+
+            <!-- AFK Section -->
+            <div>
+                <div class="text-amber-400 text-[11px] font-bold mb-1">💤 AFK (<span id="afk-count">0</span>)</div>
+                <div id="afk-list" class="text-[10px] text-slate-400 space-y-0.5"></div>
+            </div>
+
+            <!-- Off Duty Section -->
+            <div>
+                <div class="text-slate-400 text-[11px] font-bold mb-1">⚫ Off Duty (<span id="off-duty-count">0</span>)
+                </div>
+                <div id="off-duty-list" class="text-[10px] text-slate-500 space-y-0.5"></div>
+            </div>
+
+            <!-- Stories Section -->
+            <div class="border-t border-white/10 pt-2">
+                <div class="text-rose-400 text-[11px] font-bold mb-1">⚔️ สตอรี่วันนี้ (<span id="story-count">0</span>)
+                </div>
+                <div id="story-list" class="text-[10px] text-slate-300 space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+                </div>
+            </div>
+        </div>
+        <!-- Bottom Border -->
+        <div class="h-[3px] bg-gradient-to-r from-cyan-500/50 via-purple-500/50 to-rose-500/50"></div>
+    </div>
+    <!-- OP Controls Panel (for OP users only) -->
+    <div id="panel-opcontrols" class="glass rounded-xl shadow-lg p-3 hidden"
+        style="position: fixed; top: 200px; left: 10px; width: 260px; z-index: 9999;">
+        <div class="text-purple-400 text-xs font-bold mb-2">👨‍💼 OP Controls</div>
+        <div class="text-xs font-medium text-slate-300 mb-2">On Duty List:</div>
+        <div id="op-onduty-list" class="space-y-1 text-xs max-h-[150px] overflow-y-auto"></div>
+        <div class="border-t border-white/10 mt-2 pt-2">
+            <div class="text-xs font-medium text-slate-300 mb-1">AFK List:</div>
+            <div id="op-afk-list" class="space-y-1 text-xs max-h-[60px] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config (same as main app)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPnd6bmpPe0cbWXbNh2LsYaeGcFHZNNsU",
+            authDomain: "medic-op.firebaseapp.com",
+            projectId: "medic-op",
+            storageBucket: "medic-op.firebasestorage.app",
+            messagingSenderId: "628357107384",
+            appId: "1:628357107384:web:3050de54d5a84d10ae75e2"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let isExpanded = false;
+
+        function toggleExpand() {
+            isExpanded = !isExpanded;
+            document.getElementById('collapsed-view').classList.toggle('hidden', isExpanded);
+            document.getElementById('expanded-view').classList.toggle('hidden', !isExpanded);
+
+            if (isExpanded) {
+                window.overlayAPI.expand();
+            } else {
+                window.overlayAPI.collapse();
+            }
+        }
+
+        function hideOverlay() {
+            window.overlayAPI.hide();
+        }
+
+        function exitOverlay() {
+            window.overlayAPI.exit();
+        }
+
+        let isLocked = false;
+        function toggleLock() {
+            isLocked = !isLocked;
+            const titleBar = document.getElementById('title-bar');
+            const lockBtn = document.getElementById('lock-btn');
+
+            if (isLocked) {
+                titleBar.classList.remove('drag-region');
+                lockBtn.textContent = '🔒';
+                lockBtn.classList.add('text-amber-400');
+            } else {
+                titleBar.classList.add('drag-region');
+                lockBtn.textContent = '🔓';
+                lockBtn.classList.remove('text-amber-400');
+            }
+        }
+
+        // Add Menu
+        function showAddMenu() {
+            const menu = document.getElementById('add-menu');
+            document.getElementById('settings-menu').classList.add('hidden');
+            menu.classList.toggle('hidden');
+            // Close when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', closeAddMenu, { once: true });
+            }, 10);
+        }
+        function closeAddMenu(e) {
+            const menu = document.getElementById('add-menu');
+            if (!menu.contains(e.target) && e.target.id !== 'add-panel-btn') {
+                menu.classList.add('hidden');
+            }
+        }
+
+        // Settings Menu
+        function showSettingsMenu() {
+            const menu = document.getElementById('settings-menu');
+            document.getElementById('add-menu').classList.add('hidden');
+            menu.classList.toggle('hidden');
+            // Load current opacity from shared settings
+            if (window.overlayAPI?.getAllOpacity) {
+                window.overlayAPI.getAllOpacity().then(opacity => {
+                    const slider = document.getElementById('opacity-slider');
+                    const value = document.getElementById('opacity-value');
+                    if (opacity) {
+                        slider.value = Math.round(opacity * 100);
+                        value.textContent = slider.value + '%';
+                    }
+                });
+            }
+            setTimeout(() => {
+                document.addEventListener('click', closeSettingsMenu, { once: true });
+            }, 10);
+        }
+        function closeSettingsMenu(e) {
+            const menu = document.getElementById('settings-menu');
+            if (!menu.contains(e.target) && e.target.id !== 'settings-btn') {
+                menu.classList.add('hidden');
+            }
+        }
+        function changeOpacity(value) {
+            document.getElementById('opacity-value').textContent = value + '%';
+            if (window.overlayAPI?.setAllOpacity) {
+                window.overlayAPI.setAllOpacity(value / 100);
+            }
+        }
+        function saveCurrentPosition() {
+            if (window.overlayAPI?.savePosition) {
+                window.overlayAPI.savePosition();
+                // Visual feedback
+                const btn = event.target;
+                btn.textContent = '✅ บันทึกแล้ว!';
+                setTimeout(() => btn.textContent = '💾 บันทึกตำแหน่งนี้', 1500);
+            }
+        }
+
+        // Open panel as separate window
+        function openPanelWindow(panelType) {
+            window.overlayAPI.openPanel(panelType);
+            document.getElementById('add-menu').classList.add('hidden');
+        }
+
+        // Floating Panels
+        const panelLocks = {};
+
+        function showFloatingPanel(panelName) {
+            const panel = document.getElementById(`floating-${panelName}`);
+            if (panel) {
+                panel.classList.remove('hidden');
+                if (panelName === 'blacklist') loadFloatingBlacklist();
+            }
+            document.getElementById('add-menu').classList.add('hidden');
+        }
+
+        function hideFloatingPanel(panelId) {
+            const panel = document.getElementById(panelId);
+            if (panel) panel.classList.add('hidden');
+        }
+
+        function togglePanelLock(panelId) {
+            panelLocks[panelId] = !panelLocks[panelId];
+            const panel = document.getElementById(panelId);
+            const lockBtn = panel.querySelector('.panel-lock');
+            const header = panel.querySelector('.panel-header');
+
+            if (panelLocks[panelId]) {
+                lockBtn.textContent = '🔒';
+                lockBtn.classList.add('text-amber-400');
+                header.classList.remove('cursor-move');
+            } else {
+                lockBtn.textContent = '🔓';
+                lockBtn.classList.remove('text-amber-400');
+                header.classList.add('cursor-move');
+            }
+        }
+
+        // Drag functionality for floating panels
+        let dragPanel = null;
+        let dragOffset = { x: 0, y: 0 };
+
+        function startDrag(e, panelId) {
+            if (panelLocks[panelId]) return;
+            e.preventDefault();
+            dragPanel = document.getElementById(panelId);
+            const rect = dragPanel.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function onDrag(e) {
+            if (!dragPanel) return;
+            dragPanel.style.left = (e.clientX - dragOffset.x) + 'px';
+            dragPanel.style.top = (e.clientY - dragOffset.y) + 'px';
+        }
+
+        function stopDrag() {
+            dragPanel = null;
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+        function loadFloatingBlacklist() {
+            db.collection('blacklist').limit(10).get().then(snapshot => {
+                const content = document.getElementById('floating-blacklist-content');
+                if (snapshot.empty) {
+                    content.innerHTML = '<div class="text-slate-500">ไม่มีข้อมูล</div>';
+                    return;
+                }
+                content.innerHTML = snapshot.docs.map(doc => {
+                    const d = doc.data();
+                    return `<div class="flex justify-between py-1 border-b border-white/5">
+                        <span>${d.name || 'ไม่ระบุ'}</span>
+                        <span class="text-red-400 text-[10px]">${d.reason || '-'}</span>
+                    </div>`;
+                }).join('');
+            }).catch(() => {
+                document.getElementById('floating-blacklist-content').innerHTML = '<div class="text-red-400">โหลดไม่สำเร็จ</div>';
+            });
+        }
+
+        // Feature Panels
+        let activePanel = null;
+        function togglePanel(panelName) {
+            const panels = ['price', 'copy', 'blacklist', 'opcontrols'];
+            panels.forEach(p => {
+                const panel = document.getElementById(`panel-${p}`);
+                if (p === panelName && activePanel !== panelName) {
+                    panel.classList.remove('hidden');
+                    if (p === 'blacklist') loadBlacklist();
+                    if (p === 'opcontrols') renderOPControls();
+                } else {
+                    panel.classList.add('hidden');
+                }
+            });
+            activePanel = activePanel === panelName ? null : panelName;
+
+            // Resize window based on active panel
+            if (activePanel) {
+                window.overlayAPI.expandPanel();
+            } else {
+                window.overlayAPI.collapsePanel();
+            }
+        }
+
+        function copyCommand(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Visual feedback
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.classList.add('bg-emerald-600');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('bg-emerald-600');
+                }, 1000);
+            });
+        }
+
+        function loadBlacklist() {
+            db.collection('blacklist').limit(10).get().then(snapshot => {
+                const content = document.getElementById('blacklist-content');
+                if (snapshot.empty) {
+                    content.innerHTML = '<div class="text-slate-500">ไม่มีข้อมูล</div>';
+                    return;
+                }
+                content.innerHTML = snapshot.docs.map(doc => {
+                    const d = doc.data();
+                    return `<div class="flex justify-between py-1 border-b border-white/5">
+                        <span>${d.name || 'ไม่ระบุ'}</span>
+                        <span class="text-red-400">${d.reason || '-'}</span>
+                    </div>`;
+                }).join('');
+            }).catch(err => {
+                document.getElementById('blacklist-content').innerHTML = '<div class="text-red-400">โหลดไม่สำเร็จ</div>';
+            });
+        }
+
+        // OP Controls Functions
+        let currentData = null;
+        let isOP = false;
+        let allUsers = []; // Store user data for IC phones
+
+        // Load all users for IC phone lookup
+        db.collection('op_users').onSnapshot(snap => {
+            allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        });
+
+        // OP Timer - Update every second (like Desktop)
+        setInterval(() => {
+            const timerEl = document.getElementById('op-timer');
+            if (!timerEl || !currentData?.shiftStart) {
+                if (timerEl) timerEl.textContent = '00:00:00';
+                return;
+            }
+            const d = Date.now() - currentData.shiftStart;
+            const h = String(Math.floor(d / 3600000)).padStart(2, '0');
+            const m = String(Math.floor((d % 3600000) / 60000)).padStart(2, '0');
+            const s = String(Math.floor((d % 60000) / 1000)).padStart(2, '0');
+            timerEl.textContent = `${h}:${m}:${s}`;
+        }, 1000);
+
+        function checkIfOP(data) {
+            // Get username from URL params
+            const params = new URLSearchParams(window.location.search);
+            const userData = params.get('userData');
+            if (!userData) return false;
+            try {
+                const user = JSON.parse(decodeURIComponent(userData));
+                return data.currentOP === user.username || data.supOP === user.username;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function renderOPControls() {
+            if (!currentData) return;
+
+            const onDuty = currentData.onDuty || [];
+            const afk = currentData.afk || [];
+
+            // On Duty List
+            const onDutyEl = document.getElementById('op-onduty-list');
+            if (onDuty.length > 0) {
+                onDutyEl.innerHTML = onDuty.map((name, idx) => `
+                    <div class="flex justify-between items-center bg-slate-800/50 px-2 py-1 rounded">
+                        <span class="flex-1">${idx + 1}. ${name}</span>
+                        <div class="flex gap-1">
+                            <button onclick="moveToAFK('${name}')" class="text-amber-400 hover:bg-amber-500/20 px-1 rounded" title="ย้ายไป AFK">💤</button>
+                            <button onclick="removeFromDuty('${name}')" class="text-red-400 hover:bg-red-500/20 px-1 rounded" title="ออกจากเวร">❌</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                onDutyEl.innerHTML = '<div class="text-slate-500 text-center">ไม่มี</div>';
+            }
+
+            // AFK List
+            const afkEl = document.getElementById('op-afk-list');
+            if (afk.length > 0) {
+                afkEl.innerHTML = afk.map(name => `
+                    <div class="flex justify-between items-center bg-slate-800/50 px-2 py-1 rounded">
+                        <span class="flex-1">${name}</span>
+                        <button onclick="moveToOnDuty('${name}')" class="text-emerald-400 hover:bg-emerald-500/20 px-1 rounded" title="กลับ On Duty">✅</button>
+                    </div>
+                `).join('');
+            } else {
+                afkEl.innerHTML = '<div class="text-slate-500 text-center">ไม่มี</div>';
+            }
+        }
+
+        function moveToAFK(name) {
+            if (!currentData) return;
+            const onDuty = currentData.onDuty || [];
+            const afk = currentData.afk || [];
+
+            // Remove from onDuty, add to afk
+            const newOnDuty = onDuty.filter(n => n !== name);
+            const newAfk = [...afk, name];
+
+            db.collection('op_data').doc('current').update({
+                onDuty: newOnDuty,
+                afk: newAfk
+            });
+        }
+
+        function moveToOnDuty(name) {
+            if (!currentData) return;
+            const onDuty = currentData.onDuty || [];
+            const afk = currentData.afk || [];
+
+            // Remove from afk, add to onDuty
+            const newAfk = afk.filter(n => n !== name);
+            const newOnDuty = [...onDuty, name];
+
+            db.collection('op_data').doc('current').update({
+                onDuty: newOnDuty,
+                afk: newAfk
+            });
+        }
+
+        function removeFromDuty(name) {
+            if (!currentData) return;
+            const onDuty = currentData.onDuty || [];
+
+            // Remove from onDuty completely
+            const newOnDuty = onDuty.filter(n => n !== name);
+
+            db.collection('op_data').doc('current').update({
+                onDuty: newOnDuty
+            });
+        }
+
+        // Real-time listener
+        db.collection('op_data').doc('current').onSnapshot(doc => {
+            if (!doc.exists) return;
+            const data = doc.data();
+
+            // Store data for OP controls
+            currentData = data;
+
+            // Check if user is OP and show button
+            isOP = checkIfOP(data);
+            const opBtn = document.getElementById('op-controls-btn');
+            if (opBtn) {
+                opBtn.classList.toggle('hidden', !isOP);
+            }
+
+            // Re-render OP controls if panel is open
+            if (activePanel === 'opcontrols') {
+                renderOPControls();
+            }
+
+            // OP Name and IC
+            const fullName = data.currentOP || '-';
+            const opName = fullName.split(' ')[0];
+            document.getElementById('op-name').textContent = opName;
+            document.getElementById('op-ic').textContent = data.currentOPIC || '-';
+
+            // Sup OP - uses 'supOP' field (not currentSupOP)
+            const supFullName = data.supOP || '-';
+            const supFirstName = supFullName !== '-' ? supFullName.split(' ')[0] : '-';
+            document.getElementById('sup-op-name').textContent = supFirstName;
+            // Lookup Sup OP IC from allUsers
+            const supUser = allUsers.find(u => u.fullName === supFullName || u.firstName === supFirstName);
+            document.getElementById('sup-op-ic').textContent = supUser?.icPhone || '-';
+
+            // Counts
+            const onDuty = data.onDuty || [];
+            const afk = data.afk || [];
+            const offDuty = data.offDuty || [];
+            const cases = data.cases || [];
+            const activeCases = cases.filter(c => !c.closed);
+
+            document.getElementById('on-duty-count').textContent = onDuty.length;
+            document.getElementById('afk-count').textContent = afk.length;
+            document.getElementById('off-duty-count').textContent = offDuty.length;
+            document.getElementById('story-count').textContent = activeCases.length;
+
+            // On Duty List - with IC and status close to name
+            const onDutyListEl = document.getElementById('on-duty-list');
+            const medicStatuses = data.medicStatuses || {};
+            if (onDuty.length > 0) {
+                onDutyListEl.innerHTML = onDuty.map(n => {
+                    const firstName = n.split(' ')[0];
+                    const matchedUser = allUsers.find(u => u.firstName && u.firstName === firstName);
+                    const icPhone = matchedUser?.icPhone || '';
+                    const st = medicStatuses[n] || '';
+                    const statusIcon = st === 'accept' ? '✓' : st === 'waitfix' ? '⏳' : st === 'decline' ? '❌' : '';
+                    const statusClass = st === 'accept' ? 'text-cyan-400' : st === 'waitfix' ? 'text-amber-400' : st === 'decline' ? 'text-rose-400' : 'text-slate-500';
+                    // Phone and status next to name
+                    const phoneDisplay = icPhone ? `<span class="text-slate-500 ml-1">📞${icPhone}</span>` : '';
+                    const statusDisplay = statusIcon ? `<span class="${statusClass} ml-1">${statusIcon}</span>` : '';
+                    return `<div class="flex items-center"><span>• ${firstName}</span>${phoneDisplay}${statusDisplay}</div>`;
+                }).join('');
+            } else {
+                onDutyListEl.innerHTML = '<div class="text-slate-500">-</div>';
+            }
+
+            // AFK List - with timer from afkTimes
+            const afkListEl = document.getElementById('afk-list');
+            const afkTimes = data.afkTimes || {};
+            if (afk.length > 0) {
+                afkListEl.innerHTML = afk.map(name => {
+                    const n = name.split(' ')[0];
+                    const start = afkTimes[name] || Date.now();
+                    const elapsed = Math.floor((Date.now() - start) / 1000);
+                    const mins = Math.floor(elapsed / 60);
+                    const secs = elapsed % 60;
+                    const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    return `<div class="flex justify-between"><span>• ${n}</span><span class="text-amber-500">${timeStr}</span></div>`;
+                }).join('');
+            } else {
+                afkListEl.innerHTML = '<div class="text-slate-500">-</div>';
+            }
+
+            // Off Duty List
+            const offDutyListEl = document.getElementById('off-duty-list');
+            if (offDuty.length > 0) {
+                offDutyListEl.innerHTML = offDuty.map(name => {
+                    const n = typeof name === 'string' ? name.split(' ')[0] : name.name?.split(' ')[0] || '?';
+                    return `<div>• ${n}</div>`;
+                }).join('');
+            } else {
+                offDutyListEl.innerHTML = '<div class="text-slate-500">-</div>';
+            }
+
+            // Stories List - show pairs with what, where, time (today only)
+            const storyListEl = document.getElementById('story-list');
+
+            // Filter by storyDate (YYYY-MM-DD format) to show only today's stories
+            const todayStr = new Date().toISOString().split('T')[0]; // "2025-12-15"
+            const todayCases = activeCases.filter(c => {
+                // If no storyDate, include it (current shift story)
+                if (!c.storyDate) return true;
+                return c.storyDate === todayStr;
+            });
+
+            document.getElementById('story-count').textContent = todayCases.length;
+
+            if (todayCases.length > 0) {
+                storyListEl.innerHTML = todayCases.map((c, i) => {
+                    const medics = c.medics ? c.medics.map(m => m.split(' ')[0]).join(', ') : '-';
+                    const storyType = c.storyType || c.caseType || 'สตอรี่';
+                    const location = c.location || '-';
+                    // startTime is already a string like "21:30"
+                    const timeStr = c.startTime || '-';
+                    return `<div class="bg-slate-800/50 rounded p-1.5">
+                        <div class="flex justify-between items-center">
+                            <span class="text-rose-300 font-medium">${c.partyA || '?'} vs ${c.partyB || '?'}</span>
+                            <span class="text-cyan-400 text-[9px]">${timeStr}</span>
+                        </div>
+                        <div class="text-slate-400 text-[9px] mt-0.5">📍 ${location} • 📋 ${storyType}</div>
+                        <div class="text-emerald-400 text-[9px]">👨‍⚕️ ${medics}</div>
+                    </div>`;
+                }).join('');
+            } else {
+                storyListEl.innerHTML = '<div class="text-slate-500 text-center py-1">ไม่มีสตอรี่วันนี้</div>';
+            }
+
+            // Auto-resize window based on content height
+            requestAnimationFrame(() => {
+                const overlay = document.getElementById('overlay');
+                if (overlay && window.overlayAPI?.resizeToFit) {
+                    const height = overlay.offsetHeight + 20; // Add padding
+                    window.overlayAPI.resizeToFit(height);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

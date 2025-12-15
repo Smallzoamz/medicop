@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('windowControls', {
     close: () => ipcRenderer.send('window-close'),
     isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
     logout: () => ipcRenderer.send('user-logout'),
+    toggleOverlayMode: () => ipcRenderer.send('toggle-overlay-mode'),
     // Logout with confirmation - use this from UI
     confirmLogout: () => {
         // Ask user for confirmation before logout

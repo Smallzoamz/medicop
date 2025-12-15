@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รวมคำสั่ง</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: transparent;
+            -webkit-app-region: no-drag;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .drag-region {
+            -webkit-app-region: drag;
+        }
+
+        .no-drag {
+            -webkit-app-region: no-drag;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glass rounded-xl shadow-2xl overflow-hidden">
+        <div class="drag-region p-2 border-b border-white/10 flex justify-between items-center cursor-move">
+            <span class="text-blue-400 text-xs font-bold">📋 รวมคำสั่งประกาศ</span>
+            <button onclick="window.panelAPI.close('copy')"
+                class="no-drag text-slate-400 hover:text-red-400 text-xs">✕</button>
+        </div>
+        <div class="p-2 space-y-1">
+            <button onclick="copyCmd(this, '/an 🏥 โรงพยาบาล พร้อมให้บริการ')"
+                class="no-drag w-full text-left px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300">📢
+                ประกาศพร้อม</button>
+            <button onclick="copyCmd(this, '/911 กำลังเดินทางไป')"
+                class="no-drag w-full text-left px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300">🚑
+                กำลังไป</button>
+            <button onclick="copyCmd(this, '/911 ถึงที่เกิดเหตุแล้ว')"
+                class="no-drag w-full text-left px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300">📍
+                ถึงแล้ว</button>
+            <button onclick="copyCmd(this, '/911 นำผู้ป่วยส่งโรงพยาบาล')"
+                class="no-drag w-full text-left px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-slate-300">🏥
+                ส่ง รพ.</button>
+        </div>
+    </div>
+    <script>
+        function copyCmd(btn, text) {
+            navigator.clipboard.writeText(text);
+            const orig = btn.textContent;
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => btn.textContent = orig, 1000);
+        }
+    </script>
+</body>
+
+</html>

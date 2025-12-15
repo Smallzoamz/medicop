@@ -1,6 +1,8 @@
-const { app, BrowserWindow, shell, dialog, ipcMain, session } = require('electron');
+const { app, BrowserWindow, shell, dialog, ipcMain, session, globalShortcut, Tray, Menu, clipboard } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const { exec } = require('child_process');
+const fs = require('fs');
 
 // Enable autoplay for audio/video without user gesture
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -10,7 +12,11 @@ let splashWindow;
 let loginWindow;
 let mainWindow;
 let goodbyeWindow;
+let overlayWindow;
+let tray = null;
 let loggedInUser = null;
+let isOverlayMode = false;
+let panelWindows = {}; // Store separate panel windows
 
 // Create splash screen
 function createSplashWindow() {
@@ -496,6 +502,453 @@ ipcMain.on('user-logout', () => {
     // Show goodbye window
     createGoodbyeWindow();
 });
+
+// ========== MINI OVERLAY MODE ==========
+// Settings file path
+const settingsPath = path.join(app.getPath('userData'), 'overlay-settings.json');
+
+// Load/Save settings functions
+function loadSettings() {
+    try {
+        if (fs.existsSync(settingsPath)) {
+            return JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+        }
+    } catch (e) { console.error('Failed to load settings:', e); }
+    return { overlay: { x: 50, y: 50, opacity: 0.95 }, panel: { opacity: 0.95 } };
+}
+
+function saveSettings(settings) {
+    try {
+        fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+        console.log('💾 Settings saved');
+    } catch (e) { console.error('Failed to save settings:', e); }
+}
+
+// Load saved settings
+let allSettings = loadSettings();
+let overlaySettings = allSettings.overlay || { x: 50, y: 50, opacity: 0.95 };
+let panelSettings = allSettings.panel || { opacity: 0.95 };
+
+function createOverlayWindow() {
+    if (overlayWindow) {
+        overlayWindow.focus();
+        return;
+    }
+
+    overlayWindow = new BrowserWindow({
+        width: 300,
+        height: 500,
+        x: overlaySettings.x,
+        y: overlaySettings.y,
+        frame: false,
+        resizable: false,
+        alwaysOnTop: true,
+        skipTaskbar: false,  // Show in taskbar as a convenience feature
+        transparent: true,
+        opacity: overlaySettings.opacity,
+        icon: path.join(__dirname, 'src', 'icon.ico'),
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'src', 'overlay-preload.js')
+        }
+    });
+
+    // Keep overlay visible across all workspaces and Alt+Tab
+    overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+    // Overlay starts in interactive mode - use F10 to toggle to game mode
+
+    // Pass user data
+    const userDataParam = loggedInUser ? encodeURIComponent(JSON.stringify(loggedInUser)) : '';
+    overlayWindow.loadFile(path.join(__dirname, 'src', 'overlay.html'), {
+        query: { userData: userDataParam }
+    });
+
+    overlayWindow.on('closed', () => {
+        overlayWindow = null;
+        isOverlayMode = false;
+        // Close all panel windows
+        Object.values(panelWindows).forEach(win => {
+            if (win && !win.isDestroyed()) {
+                win.close();
+            }
+        });
+        panelWindows = {};
+        // Unregister hotkeys
+        globalShortcut.unregister('F10');
+        globalShortcut.unregister('F11');
+        // Show main window again
+        if (mainWindow) {
+            mainWindow.show();
+        }
+    });
+
+    // Register F10 hotkey to toggle overlay visibility
+    globalShortcut.register('F10', () => {
+        if (overlayWindow) {
+            if (overlayWindow.isVisible()) {
+                overlayWindow.hide();
+                console.log('🙈 Overlay hidden (F10)');
+            } else {
+                overlayWindow.show();
+                console.log('👁️ Overlay shown (F10)');
+            }
+        }
+    });
+    console.log('⌨️ F10 hotkey registered for overlay toggle');
+
+    // F11 to toggle interactive mode (click-through vs clickable)
+    let isInteractiveMode = true; // Start as interactive
+    globalShortcut.register('F11', () => {
+        if (overlayWindow) {
+            isInteractiveMode = !isInteractiveMode;
+            if (isInteractiveMode) {
+                // Interactive mode - can click overlay
+                overlayWindow.setIgnoreMouseEvents(false);
+                overlayWindow.setFocusable(true);
+                console.log('🖱️ Interactive Mode ON (F11)');
+            } else {
+                // Game mode - overlay is click-through
+                overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+                overlayWindow.setFocusable(false);
+                console.log('🎮 Game Mode ON - Click-through (F11)');
+            }
+        }
+    });
+    console.log('⌨️ F11 hotkey registered for interactive toggle');
+
+    console.log('🖥️ Mini Overlay window created');
+}
+
+// Toggle Mini Overlay Mode
+ipcMain.on('toggle-overlay-mode', () => {
+    if (isOverlayMode) {
+        // Exit overlay mode
+        if (overlayWindow) {
+            overlayWindow.close();
+            overlayWindow = null;
+        }
+        // Destroy tray
+        if (tray) {
+            tray.destroy();
+            tray = null;
+        }
+        isOverlayMode = false;
+        if (mainWindow) {
+            mainWindow.show();
+        }
+        console.log('📺 Switched to Full Mode');
+    } else {
+        // Enter overlay mode
+        isOverlayMode = true;
+
+        // Create system tray
+        if (!tray) {
+            tray = new Tray(path.join(__dirname, 'src', 'icon.ico'));
+            const contextMenu = Menu.buildFromTemplate([
+                {
+                    label: '📺 กลับ Full Mode', click: () => {
+                        ipcMain.emit('toggle-overlay-mode');
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: '🖥️ แสดง Overlay', click: () => {
+                        if (overlayWindow) overlayWindow.show();
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: '❌ ปิดโปรแกรม', click: () => {
+                        app.quit();
+                    }
+                }
+            ]);
+            tray.setToolTip('Medical OP Systems - Mini Overlay');
+            tray.setContextMenu(contextMenu);
+
+            // Double-click to show main window
+            tray.on('double-click', () => {
+                ipcMain.emit('toggle-overlay-mode');
+            });
+
+            console.log('🔔 System tray created');
+        }
+
+        // Keep main window visible - overlay is just a convenience feature
+        // mainWindow stays open, user can minimize if they want
+        createOverlayWindow();
+        console.log('🖥️ Switched to Mini Overlay Mode');
+    }
+});
+
+// Expand overlay (resize to larger)
+ipcMain.on('overlay-expand', () => {
+    if (overlayWindow) {
+        const currentBounds = overlayWindow.getBounds();
+        overlayWindow.setBounds({
+            x: currentBounds.x,
+            y: currentBounds.y,
+            width: 300,
+            height: 350
+        });
+    }
+});
+
+// Collapse overlay (resize to smaller)
+ipcMain.on('overlay-collapse', () => {
+    if (overlayWindow) {
+        const currentBounds = overlayWindow.getBounds();
+        overlayWindow.setBounds({
+            x: currentBounds.x,
+            y: currentBounds.y,
+            width: 300,
+            height: 150
+        });
+    }
+});
+
+// Hide overlay temporarily
+ipcMain.on('overlay-hide', () => {
+    if (overlayWindow) {
+        overlayWindow.hide();
+    }
+});
+
+// Show overlay
+ipcMain.on('overlay-show', () => {
+    if (overlayWindow) {
+        overlayWindow.show();
+    }
+});
+
+// Exit overlay and show main window
+ipcMain.on('overlay-exit', () => {
+    if (overlayWindow) {
+        overlayWindow.close();
+        overlayWindow = null;
+    }
+    // Destroy tray
+    if (tray) {
+        tray.destroy();
+        tray = null;
+    }
+    isOverlayMode = false;
+    if (mainWindow) {
+        mainWindow.show();
+    }
+});
+
+// Expand overlay for feature panel
+ipcMain.on('overlay-expand-panel', () => {
+    if (overlayWindow) {
+        const currentBounds = overlayWindow.getBounds();
+        overlayWindow.setBounds({
+            x: currentBounds.x,
+            y: currentBounds.y,
+            width: 300,
+            height: 280
+        });
+    }
+});
+
+// Collapse overlay (hide feature panel)
+ipcMain.on('overlay-collapse-panel', () => {
+    if (overlayWindow) {
+        const currentBounds = overlayWindow.getBounds();
+        overlayWindow.setBounds({
+            x: currentBounds.x,
+            y: currentBounds.y,
+            width: 300,
+            height: 150
+        });
+    }
+});
+
+// Auto-resize overlay based on content height
+ipcMain.on('overlay-resize', (event, height) => {
+    if (overlayWindow) {
+        const currentBounds = overlayWindow.getBounds();
+        const newHeight = Math.min(Math.max(height, 200), 800); // Min 200, Max 800
+        overlayWindow.setBounds({
+            x: currentBounds.x,
+            y: currentBounds.y,
+            width: 300,
+            height: newHeight
+        });
+    }
+});
+
+// Set overlay opacity
+ipcMain.on('overlay-set-opacity', (event, opacity) => {
+    if (overlayWindow) {
+        const newOpacity = Math.min(Math.max(opacity, 0.3), 1.0);
+        overlayWindow.setOpacity(newOpacity);
+        overlaySettings.opacity = newOpacity;
+        allSettings.overlay = overlaySettings;
+        saveSettings(allSettings);
+    }
+});
+
+// Save overlay position
+ipcMain.on('overlay-save-position', () => {
+    if (!overlayWindow) return;
+    const bounds = overlayWindow.getBounds();
+    overlaySettings.x = bounds.x;
+    overlaySettings.y = bounds.y;
+    allSettings.overlay = overlaySettings;
+    saveSettings(allSettings);
+    console.log(`💾 Overlay position saved: x=${bounds.x}, y=${bounds.y}`);
+});
+
+// Get overlay settings
+ipcMain.handle('overlay-get-settings', () => {
+    return overlaySettings;
+});
+
+// Auto-announce feature - sends message to game chat
+ipcMain.on('send-announcement', (event, message) => {
+    // Copy message to clipboard
+    clipboard.writeText(message);
+    console.log('📢 Announcement copied:', message.substring(0, 50) + '...');
+
+    // Wait 500ms then simulate keystrokes using PowerShell
+    setTimeout(() => {
+        const { spawn } = require('child_process');
+
+        // PowerShell commands as single string
+        const psCommands = 'Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait("{PGDN}"); Start-Sleep -Milliseconds 150; [System.Windows.Forms.SendKeys]::SendWait("^v"); Start-Sleep -Milliseconds 100; [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")';
+
+        const ps = spawn('powershell', ['-NoProfile', '-Command', psCommands], {
+            windowsHide: true
+        });
+
+        ps.on('error', (err) => {
+            console.error('❌ PowerShell error:', err);
+        });
+
+        ps.on('close', (code) => {
+            if (code === 0) {
+                console.log('✅ Announcement sent successfully');
+            } else {
+                console.error('❌ PowerShell exited with code:', code);
+            }
+        });
+    }, 500);
+});
+
+// Create separate panel windows
+// panelSettings is already loaded at the top
+
+ipcMain.on('open-panel-window', (event, panelType) => {
+    // Close existing panel of same type
+    if (panelWindows[panelType]) {
+        panelWindows[panelType].focus();
+        return;
+    }
+
+    const panelConfig = {
+        price: { width: 320, height: 550, title: 'ตารางค่ารักษา' },
+        copy: { width: 180, height: 180, title: 'รวมคำสั่ง' },
+        blacklist: { width: 200, height: 250, title: 'Blacklist' }
+    };
+
+    const config = panelConfig[panelType] || { width: 200, height: 200, title: 'Panel' };
+
+    // Get saved position for this panel or calculate new one
+    const savedPanelPositions = allSettings.panelPositions || {};
+    let panelX, panelY;
+
+    if (savedPanelPositions[panelType]) {
+        panelX = savedPanelPositions[panelType].x;
+        panelY = savedPanelPositions[panelType].y;
+    } else {
+        const overlayBounds = overlayWindow ? overlayWindow.getBounds() : { x: 50, y: 150 };
+        const xOffset = Object.keys(panelWindows).length * 210;
+        panelX = overlayBounds.x + 290 + xOffset;
+        panelY = overlayBounds.y;
+    }
+
+    const panelWin = new BrowserWindow({
+        width: config.width,
+        height: config.height,
+        x: panelX,
+        y: panelY,
+        frame: false,
+        resizable: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        transparent: true,
+        opacity: panelSettings.opacity,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'src', 'panel-preload.js')
+        }
+    });
+
+    panelWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    panelWin.setAlwaysOnTop(true, 'screen-saver');
+
+    panelWin.loadFile(path.join(__dirname, 'src', `panel-${panelType}.html`));
+
+    // Save position when panel is moved
+    panelWin.on('moved', () => {
+        const bounds = panelWin.getBounds();
+        if (!allSettings.panelPositions) allSettings.panelPositions = {};
+        allSettings.panelPositions[panelType] = { x: bounds.x, y: bounds.y };
+        saveSettings(allSettings);
+        console.log(`📍 Panel ${panelType} position saved: x=${bounds.x}, y=${bounds.y}`);
+    });
+
+    panelWin.on('closed', () => {
+        delete panelWindows[panelType];
+    });
+
+    panelWindows[panelType] = panelWin;
+    console.log(`📋 Panel window created: ${panelType} at (${panelX}, ${panelY})`);
+});
+
+// Set opacity for all panels and overlay
+ipcMain.on('set-all-opacity', (event, opacity) => {
+    const newOpacity = Math.min(Math.max(opacity, 0.3), 1.0);
+
+    // Apply to overlay
+    if (overlayWindow) {
+        overlayWindow.setOpacity(newOpacity);
+    }
+
+    // Apply to all panel windows
+    Object.values(panelWindows).forEach(win => {
+        if (win && !win.isDestroyed()) {
+            win.setOpacity(newOpacity);
+        }
+    });
+
+    // Save settings using JSON file
+    overlaySettings.opacity = newOpacity;
+    panelSettings.opacity = newOpacity;
+    allSettings.overlay = overlaySettings;
+    allSettings.panel = panelSettings;
+    saveSettings(allSettings);
+
+    console.log(`🎨 Opacity set to ${Math.round(newOpacity * 100)}% for all windows`);
+});
+
+// Get current opacity for display
+ipcMain.handle('get-all-opacity', () => {
+    return panelSettings.opacity;
+});
+
+// Close panel window
+ipcMain.on('close-panel-window', (event, panelType) => {
+    if (panelWindows[panelType]) {
+        panelWindows[panelType].close();
+        delete panelWindows[panelType];
+    }
+});
+
 // ========== END AUTO UPDATE ==========
 
 // App ready
