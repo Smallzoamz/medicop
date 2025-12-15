@@ -8069,11 +8069,11 @@
                         showShiftSummary();
                     }
 
-                    const pendingCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart);
+                    const preservedCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart || c.closed);
                     appData = {
                         shiftStart: null, currentOP: null, supOP: null,
                         onDuty: [], offDuty: [], afk: [], afkTimes: {},
-                        cases: pendingCases, closedCases: [], medicStatuses: {},
+                        cases: preservedCases, closedCases: [], medicStatuses: {},
                         opPendingRequests: [], opHandoverAt: null, handoverNextOP: null,
                         afkWarnings: {}, afkWarnedTimes: {}
                     };
@@ -8955,9 +8955,9 @@
             const c = await showConfirm('⚠️ บังคับปิดกะ', 'คุณแน่ใจหรือไม่? การกระทำนี้จะปิดกะทันทีและไม่สามารถย้อนกลับได้');
             if (!c) return;
             const prevOP = appData.currentOP;
-            // Preserve pending stories (not yet started)
-            const pendingCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart);
-            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: pendingCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, afkWarnings: {}, afkWarnedTimes: {} };
+            // Preserve pending stories (not yet started) AND closed stories (for Discord bot)
+            const preservedCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart || c.closed);
+            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, afkWarnings: {}, afkWarnedTimes: {} };
 
             // CRITICAL: Wait for save to complete before proceeding
             const saved = await saveOpData();
@@ -9691,9 +9691,9 @@
             lastShiftSummaryData = { op: prevOP, supOP: appData.supOP, onDuty: [...(appData.onDuty || [])], offDuty: [...(appData.offDuty || [])], closedCases: [...(appData.closedCases || [])], afkWarnings, duration: shiftDuration, startTime: appData.shiftStart, endTime: new Date(), umaeHelped: appData.umae?.helped?.length || 0, umaeExpired: appData.umae?.expired?.length || 0 };
             showShiftSummary();
             addOpLog('จบกะ', `OP: ${prevOP}`);
-            // Preserve pending stories (not yet started)
-            const pendingCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart);
-            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: pendingCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
+            // Preserve pending stories (not yet started) AND closed stories (for Discord bot)
+            const preservedCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart || c.closed);
+            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
             const saved = await saveOpData();
             if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
             renderAll();
@@ -9786,8 +9786,8 @@
 
             // Then reset data and save (async)
             addOpLog('จบกะ (Server Restart)', `OP: ${prevOP}`);
-            const pendingCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart);
-            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: pendingCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
+            const preservedCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart || c.closed);
+            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
             saveOpData();
             renderAll();
             renderOPControl();
