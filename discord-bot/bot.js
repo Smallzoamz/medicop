@@ -1038,12 +1038,28 @@ async function updateStoryChannelMessage(data) {
         const storedMessageId = configDoc.exists ? configDoc.data().storyMessageId : null;
 
         if (allClosed) {
-            // ALL stories closed - post NEW message (final summary for the day)
-            const newMsg = await channel.send(message);
+            // ALL stories closed - update existing message to "สรุป" and clear ID for next batch
+            if (storedMessageId) {
+                try {
+                    const msg = await channel.messages.fetch(storedMessageId);
+                    await msg.edit(message);
+                    console.log('✅ Story Channel: All closed - edited existing message to summary');
+                } catch (e) {
+                    // Message not found - send new summary
+                    await channel.send(message);
+                    console.log('✅ Story Channel: All closed - sent new summary (old message not found)');
+                }
+            } else {
+                // No existing message - send summary
+                await channel.send(message);
+                console.log('✅ Story Channel: All closed - sent new summary');
+            }
+
+            // Clear storyMessageId so next batch of stories starts a NEW message
             await db.collection('config').doc('discord_message').set({
-                storyMessageId: newMsg.id
+                storyMessageId: null
             }, { merge: true });
-            console.log('✅ Story Channel: All closed - new summary posted');
+            console.log('🔄 Cleared storyMessageId for next batch');
         } else if (storedMessageId) {
             // Still have open stories - try to EDIT existing message
             try {
