@@ -8955,8 +8955,14 @@
             const c = await showConfirm('⚠️ บังคับปิดกะ', 'คุณแน่ใจหรือไม่? การกระทำนี้จะปิดกะทันทีและไม่สามารถย้อนกลับได้');
             if (!c) return;
             const prevOP = appData.currentOP;
-            // Preserve pending stories (not yet started) AND closed stories (for Discord bot)
-            const preservedCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart || !c.closed);
+            // New logic: If any story is still active (not closed), keep ALL stories. If all closed, delete closed stories.
+            const activeStories = (appData.cases || []).filter(cs => !cs.closed && !isTimeInFuture(cs.startTime, cs.storyDate) && !cs.pendingStart);
+            const hasActiveStories = activeStories.length > 0;
+            const preservedCases = (appData.cases || []).filter(cs => {
+                if (isTimeInFuture(cs.startTime, cs.storyDate) || cs.pendingStart) return true;
+                if (hasActiveStories) return true;
+                return !cs.closed;
+            });
             appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, afkWarnings: {}, afkWarnedTimes: {} };
 
             // CRITICAL: Wait for save to complete before proceeding
@@ -9676,12 +9682,7 @@
         async function startShift() { if (!appData.currentOP) return showNotif('Error', 'กรุณากด "เข้ากะ" ก่อน'); appData.shiftStart = Date.now(); const saved = await saveOpData(); if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; } addOpLog('เริ่มกะ', `OP: ${appData.currentOP}`); showNotif('Success', 'เริ่มกะเรียบร้อย'); addNotification(`▶ เริ่มกะโดย ${appData.currentOP}`, 'success'); renderOPControl(); }
         let lastShiftSummaryData = null;
         async function endShift() {
-            // Only check for started stories (not pending, not closed) that need to be closed
-            const startedCases = (appData.cases || []).filter(c => !c.closed && !isTimeInFuture(c.startTime, c.storyDate) && c.medics?.length > 0);
-            if (startedCases.length > 0) {
-                const caseNames = startedCases.map(c => `• ${c.partyA} VS ${c.partyB}`).join('\n');
-                return showNotif('Error', `กรุณาปิดสตอรี่ที่เริ่มแล้วก่อนจบกะ:\n${caseNames}`);
-            }
+            // UMAE check remains
             if (appData.umae?.cases?.length > 0) return showNotif('Error', 'กรุณาช่วยเหลือหรือปล่อยเคสอุ้มเอ๋อก่อนจบกะ');
             const c = await showConfirm('ยืนยันจบกะ', 'ต้องการจบกะ?');
             if (!c) return;
@@ -9692,8 +9693,17 @@
             lastShiftSummaryData = { op: prevOP, supOP: appData.supOP, onDuty: [...(appData.onDuty || [])], offDuty: [...(appData.offDuty || [])], closedCases: [...(appData.closedCases || [])], afkWarnings, duration: shiftDuration, startTime: appData.shiftStart, endTime: new Date(), umaeHelped: appData.umae?.helped?.length || 0, umaeExpired: appData.umae?.expired?.length || 0 };
             showShiftSummary();
             addOpLog('จบกะ', `OP: ${prevOP}`);
-            // Preserve pending stories (not yet started) AND closed stories (for Discord bot)
-            const preservedCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart || !c.closed);
+            // New logic: If any story is still active (not closed), keep ALL stories. If all closed, delete closed stories.
+            const activeStories = (appData.cases || []).filter(cs => !cs.closed && !isTimeInFuture(cs.startTime, cs.storyDate) && !cs.pendingStart);
+            const hasActiveStories = activeStories.length > 0;
+            const preservedCases = (appData.cases || []).filter(cs => {
+                // Always keep pending/future stories
+                if (isTimeInFuture(cs.startTime, cs.storyDate) || cs.pendingStart) return true;
+                // If there are active stories, keep ALL (including closed for Discord bot)
+                if (hasActiveStories) return true;
+                // If all stories are closed, only keep pending/future (already checked above)
+                return !cs.closed;
+            });
             appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
             const saved = await saveOpData();
             if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
@@ -9787,7 +9797,14 @@
 
             // Then reset data and save (async)
             addOpLog('จบกะ (Server Restart)', `OP: ${prevOP}`);
-            const preservedCases = (appData.cases || []).filter(c => isTimeInFuture(c.startTime, c.storyDate) || c.pendingStart || !c.closed);
+            // New logic: If any story is still active (not closed), keep ALL stories. If all closed, delete closed stories.
+            const activeStories = (appData.cases || []).filter(cs => !cs.closed && !isTimeInFuture(cs.startTime, cs.storyDate) && !cs.pendingStart);
+            const hasActiveStories = activeStories.length > 0;
+            const preservedCases = (appData.cases || []).filter(cs => {
+                if (isTimeInFuture(cs.startTime, cs.storyDate) || cs.pendingStart) return true;
+                if (hasActiveStories) return true;
+                return !cs.closed;
+            });
             appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
             saveOpData();
             renderAll();

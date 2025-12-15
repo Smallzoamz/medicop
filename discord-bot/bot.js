@@ -100,12 +100,13 @@ function formatBadge(badge) {
     return badges[badge] || '';
 }
 
-// --- Discord ID Lookup Cache ---
+// --- Discord ID and IC Phone Lookup Cache ---
 let discordIdCache = {};
+let icPhoneCache = {}; // IC phone number cache
 let discordIdCacheTime = 0;
 const DISCORD_ID_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Load all Discord IDs from op_users collection
+// Load all Discord IDs and IC Phones from op_users collection
 async function loadDiscordIdCache() {
     if (!db) return;
 
@@ -117,41 +118,50 @@ async function loadDiscordIdCache() {
     try {
         const snapshot = await db.collection('op_users').get();
         discordIdCache = {};
+        icPhoneCache = {};
 
         snapshot.forEach(doc => {
             const data = doc.data();
             const discordId = data.discordId;
-            if (!discordId) return;
+            const icPhone = data.icPhone; // IC phone number
 
             // Store by document ID (username)
             const username = doc.id;
             if (username) {
-                discordIdCache[username.toLowerCase()] = discordId;
+                const key = username.toLowerCase();
+                if (discordId) discordIdCache[key] = discordId;
+                if (icPhone) icPhoneCache[key] = icPhone;
             }
 
             // Store by firstName
             const firstName = data.firstName;
             if (firstName) {
-                discordIdCache[firstName.toLowerCase()] = discordId;
+                const key = firstName.toLowerCase();
+                if (discordId) discordIdCache[key] = discordId;
+                if (icPhone) icPhoneCache[key] = icPhone;
             }
 
             // Store by fullName
             const fullName = data.fullName;
             if (fullName) {
-                discordIdCache[fullName.toLowerCase()] = discordId;
+                const key = fullName.toLowerCase();
+                if (discordId) discordIdCache[key] = discordId;
+                if (icPhone) icPhoneCache[key] = icPhone;
             }
 
             // Store by first part of fullName (in case firstName is not set)
             if (fullName && !firstName) {
                 const firstPart = fullName.split(' ')[0];
                 if (firstPart) {
-                    discordIdCache[firstPart.toLowerCase()] = discordId;
+                    const key = firstPart.toLowerCase();
+                    if (discordId) discordIdCache[key] = discordId;
+                    if (icPhone) icPhoneCache[key] = icPhone;
                 }
             }
         });
 
         discordIdCacheTime = now;
-        console.log(`📋 Loaded ${Object.keys(discordIdCache).length} Discord ID mappings into cache`);
+        console.log(`📋 Loaded ${Object.keys(discordIdCache).length} Discord IDs and ${Object.keys(icPhoneCache).length} IC phones into cache`);
     } catch (error) {
         console.error('❌ Failed to load Discord ID cache:', error);
     }
@@ -183,6 +193,35 @@ function formatWithMention(name, forceText = false) {
     if (forceText || !name) return name || '';
     const discordId = getDiscordIdByName(name);
     return discordId ? `<@${discordId}>` : name;
+}
+
+// Get IC phone by name (case-insensitive, tries multiple strategies)
+function getIcPhoneByName(name) {
+    if (!name) return null;
+
+    const nameLower = name.toLowerCase();
+
+    // Strategy 1: Direct lookup (exact match)
+    if (icPhoneCache[nameLower]) {
+        return icPhoneCache[nameLower];
+    }
+
+    // Strategy 2: Try first name only (split by space)
+    const firstName = name.split(' ')[0].toLowerCase();
+    if (firstName && icPhoneCache[firstName]) {
+        return icPhoneCache[firstName];
+    }
+
+    // Strategy 3: Not found
+    return null;
+}
+
+// Format name with IC phone if available (for OP, Sup OP, On Duty)
+function formatNameWithIC(name, options = {}) {
+    if (!name) return name || '';
+    const icPhone = getIcPhoneByName(name);
+    const displayName = options.useMention ? formatWithMention(name) : name;
+    return icPhone ? `${displayName} (📞 ${icPhone})` : displayName;
 }
 
 // Thai month abbreviations to month number (0-indexed)
@@ -804,9 +843,9 @@ async function updateOPChannelMessage(data) {
             message += '🚫 **ไม่มีกะ ณ ขณะนี้**\n\n';
             message += '_รอ OP เปิดกะ..._\n';
         } else {
-            // Format OP and Sup OP with Discord mentions (if linked)
-            const opDisplay = formatWithMention(currentOP);
-            const supOPDisplay = supOP ? formatWithMention(supOP) : null;
+            // Format OP and Sup OP with Discord mentions and IC phone (if available)
+            const opDisplay = formatNameWithIC(currentOP, { useMention: true });
+            const supOPDisplay = supOP ? formatNameWithIC(supOP, { useMention: true }) : null;
 
             // Build message for OP Channel (Queue info)
             message = '**สรุปการเข้าเวร OP**\n';
@@ -840,7 +879,9 @@ async function updateOPChannelMessage(data) {
                     } else if (status === 'decline') {
                         icon = ' ❌'; // ไม่รับเคส
                     }
-                    message += `• ${name}${icon}\n`;
+                    // Add IC phone if available
+                    const nameWithIC = formatNameWithIC(name);
+                    message += `• ${nameWithIC}${icon}\n`;
                 });
             } else {
                 message += '_ไม่มี_\n';
