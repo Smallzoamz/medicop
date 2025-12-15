@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blacklist</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         body {
             background: transparent;
@@ -167,19 +169,26 @@
     </div>
 
     <script>
+        // Firebase config (same as main app)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCPnd6bmpPe0cbWXbNh2LsYaeGcFHZNNsU",
+            authDomain: "medic-op.firebaseapp.com",
+            projectId: "medic-op",
+            storageBucket: "medic-op.firebasestorage.app",
+            messagingSenderId: "628357107384",
+            appId: "1:628357107384:web:3050de54d5a84d10ae75e2"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         // Settings
         const announceCmd = '/an';
 
-        // Blacklist data (will be synced from Firebase via IPC)
+        // Blacklist data (will be synced from Firebase)
         let blacklistData = [];
 
         // Load blacklist data when panel opens
-        if (window.panelAPI && window.panelAPI.getBlacklist) {
-            window.panelAPI.getBlacklist().then(data => {
-                blacklistData = data || [];
-                populateUnblacklistDropdown();
-            });
-        }
+        loadBlacklistFromFirebase();
 
         function updateTypeLabel() {
             const type = document.getElementById('bl-type').value;
@@ -218,6 +227,39 @@
             return '';
         }
 
+        // Load blacklist from Firebase
+        async function loadBlacklistFromFirebase() {
+            try {
+                const snapshot = await db.collection('blacklist').orderBy('createdAt', 'desc').get();
+                blacklistData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                populateUnblacklistDropdown();
+            } catch (e) {
+                console.error('Failed to load blacklist:', e);
+            }
+        }
+
+        // Add blacklist entry to Firebase
+        async function addBlacklistToFirebase(entry) {
+            try {
+                await db.collection('blacklist').add(entry);
+                console.log('✅ Blacklist entry added:', entry.name);
+                await loadBlacklistFromFirebase(); // Refresh list
+            } catch (e) {
+                console.error('Failed to add blacklist:', e);
+            }
+        }
+
+        // Remove blacklist entry from Firebase
+        async function removeBlacklistFromFirebase(docId) {
+            try {
+                await db.collection('blacklist').doc(docId).delete();
+                console.log('✅ Blacklist entry removed:', docId);
+                await loadBlacklistFromFirebase(); // Refresh list
+            } catch (e) {
+                console.error('Failed to remove blacklist:', e);
+            }
+        }
+
         async function copyBlacklist() {
             const type = document.getElementById('bl-type').value;
             const name = document.getElementById('bl-name').value.trim();
@@ -240,21 +282,34 @@
             const msg = `${announceCmd} ประกาศ Blacklist ${typeLabel} ${name} เนื่องจาก ${reason} กรุณาติดต่อแพทย์เพื่อจ่ายค่าปรับจำนวน ${fine} One-Dollars กรุณามาติดต่อเพื่อชำระค่าปรับด้วย ขอบคุณครับ/ค่ะ`;
 
             // Copy to clipboard
-            navigator.clipboard.writeText(msg);
+            await navigator.clipboard.writeText(msg);
 
-            // Save to blacklist via IPC
+            // Visual feedback
+            const btn = document.querySelector('button[onclick="copyBlacklist()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ Copy แล้ว!';
+            btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+            btn.disabled = true;
+
+            // Save to blacklist via Firebase
             const entry = { name, type, reason, fine, penaltyTag: penalty, createdAt: Date.now() };
-            if (window.panelAPI && window.panelAPI.addBlacklist) {
-                await window.panelAPI.addBlacklist(entry);
-            }
+            await addBlacklistToFirebase(entry);
 
             // Clear form
             document.getElementById('bl-name').value = '';
             document.getElementById('bl-fine').value = '';
             document.getElementById('bl-penalty').value = '';
 
-            // Close panel and restore overlays
-            closePanel();
+            // Close panel and restore overlays (with delay)
+            setTimeout(() => {
+                closePanel();
+                // Reset button style (in case reopened)
+                btn.innerHTML = originalText;
+                btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                btn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+                btn.disabled = false;
+            }, 1000); // 1.5s delay was too long, let's do 1s to be snappy but safe
         }
 
         async function copyUnblacklist() {
@@ -275,18 +330,33 @@
             const msg = `${announceCmd} ประกาศปลด Blacklist ${typeLabel} ${name} เนื่องจากได้จ่ายค่าปรับครบจำนวนเป็นที่เรียบร้อย และจะได้รับการรักษาจากแพทย์ตามปกติครับ/ค่ะ`;
 
             // Copy to clipboard
-            navigator.clipboard.writeText(msg);
+            await navigator.clipboard.writeText(msg);
 
-            // Remove from blacklist via IPC
-            if (window.panelAPI && window.panelAPI.removeBlacklist) {
-                await window.panelAPI.removeBlacklist(parseInt(idx));
+            // Visual feedback
+            const btn = document.querySelector('button[onclick="copyUnblacklist()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ Copy แล้ว!';
+            btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+            btn.classList.add('bg-cyan-600', 'hover:bg-cyan-500');
+            btn.disabled = true;
+
+            // Remove from blacklist via Firebase
+            if (entry && entry.id) {
+                await removeBlacklistFromFirebase(entry.id);
             }
 
             // Clear selection
             select.value = '';
 
-            // Close panel and restore overlays
-            closePanel();
+            // Close panel and restore overlays (with delay)
+            setTimeout(() => {
+                closePanel();
+                // Reset button style
+                btn.innerHTML = originalText;
+                btn.classList.remove('bg-cyan-600', 'hover:bg-cyan-500');
+                btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                btn.disabled = false;
+            }, 1000);
         }
 
         function closePanel() {
