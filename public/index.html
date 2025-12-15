@@ -9175,12 +9175,15 @@
                                 const canCopy = isOP || isMedicInCase;
                                 // Calculate pending dynamically based on current time and story date/time
                                 const isPending = isTimeInFuture(c.startTime, c.storyDate);
+                                // Check if story is closed
+                                const isClosed = c.closed === true;
                                 // Check if story date is today or past (not future date) - show "ห้ามฉีดยา"
                                 const today = new Date().toISOString().split('T')[0];
                                 const storyDateStr = c.storyDate || today;
                                 const isStoryDateReached = storyDateStr <= today;
-                                const noInjectionBadge = isStoryDateReached ? '<span class="text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded ml-1">🚫 ห้ามฉีดยา</span>' : '';
-                                const pendingBadge = isPending ? '<span class="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded ml-1">⏳ รอเริ่ม</span>' : '';
+                                const closedBadge = isClosed ? '<span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded ml-1">✅ Clear</span>' : '';
+                                const noInjectionBadge = isStoryDateReached && !isClosed ? '<span class="text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded ml-1">🚫 ห้ามฉีดยา</span>' : '';
+                                const pendingBadge = isPending && !isClosed ? '<span class="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded ml-1">⏳ รอเริ่ม</span>' : '';
                                 const isAssigning = assigningCaseId === c.id;
 
                                 // Check blacklist for Party A and Party B (handle both string and object format)
@@ -9236,7 +9239,7 @@
 
                                 html += '<div class="bg-slate-800/80 rounded-lg overflow-hidden border border-slate-700/50 flex flex-col">' +
                                     '<div class="px-3 py-1.5 bg-gradient-to-r from-indigo-900/40 to-transparent flex justify-between items-center flex-wrap gap-1">' +
-                                    '<span class="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded">สตอรี่ #' + (localIdx + 1) + '</span>' + pendingBadge + noInjectionBadge +
+                                    '<span class="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded">สตอรี่ #' + (localIdx + 1) + '</span>' + closedBadge + pendingBadge + noInjectionBadge +
                                     '<span class="text-[10px] text-slate-400">🕐 ' + (c.startTime || '--:--') + '</span>' +
                                     '</div>' +
                                     '<div class="px-3 py-2 flex-1 flex flex-col">' +
@@ -9579,8 +9582,8 @@
             async function startShift() { if (!appData.currentOP) return showNotif('Error', 'กรุณากด "เข้ากะ" ก่อน'); appData.shiftStart = Date.now(); const saved = await saveOpData(); if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; } addOpLog('เริ่มกะ', `OP: ${appData.currentOP}`); showNotif('Success', 'เริ่มกะเรียบร้อย'); addNotification(`▶ เริ่มกะโดย ${appData.currentOP}`, 'success'); renderOPControl(); }
             let lastShiftSummaryData = null;
             async function endShift() {
-                // Only check for started stories (not pending) that need to be closed
-                const startedCases = (appData.cases || []).filter(c => !isTimeInFuture(c.startTime, c.storyDate) && c.medics?.length > 0);
+                // Only check for started stories (not pending, not closed) that need to be closed
+                const startedCases = (appData.cases || []).filter(c => !c.closed && !isTimeInFuture(c.startTime, c.storyDate) && c.medics?.length > 0);
                 if (startedCases.length > 0) {
                     const caseNames = startedCases.map(c => `• ${c.partyA} VS ${c.partyB}`).join('\n');
                     return showNotif('Error', `กรุณาปิดสตอรี่ที่เริ่มแล้วก่อนจบกะ:\n${caseNames}`);
