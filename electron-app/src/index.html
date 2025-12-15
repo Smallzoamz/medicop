@@ -9908,7 +9908,49 @@
         }
         function showHowToModal() { document.getElementById('how-to-modal').classList.remove('hidden'); }
         function closeHowToModal() { document.getElementById('how-to-modal').classList.add('hidden'); }
-        function copyShiftSummary() { const data = lastShiftSummaryData; if (!data) return; const dur = data.duration; const h = Math.floor(dur / 3600000), m = Math.floor((dur % 3600000) / 60000); const durStr = `${h}ชม. ${m}นาที`; const startTime = data.startTime ? new Date(data.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '-'; const endTime = data.endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }); const dateStr = data.endTime.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }); let text = `📊 สรุปการเข้าเวร OP\n━━━━━━━━━━━━━━━━━━━━\n📅 วันที่: ${dateStr}\n👨‍⚕️ OP: ${data.op || '-'}\n👨‍⚕️ Support OP: ${data.supOP || '-'}\n⏰ เวลา: ${startTime} - ${endTime} (${durStr})\n━━━━━━━━━━━━━━━━━━━━\n✅ On Duty (${data.onDuty.length} คน):\n${data.onDuty.length ? data.onDuty.map(n => `- ${n}`).join('\n') : '- ไม่มี'}\n━━━━━━━━━━━━━━━━━━━━\n❌ Off Duty (${data.offDuty.length} คน):\n${data.offDuty.length ? data.offDuty.map(n => `- ${n}`).join('\n') : '- ไม่มี'}`; if (data.afkWarnings && Object.keys(data.afkWarnings).length) { text += `\n━━━━━━━━━━━━━━━━━━━━\n⚠️ คนที่โดน Warning:\n${Object.entries(data.afkWarnings).map(([name, mins]) => `- ${name} (เหม่อ ${mins} นาที)`).join('\n')}`; } if (data.closedCases?.length) { text += `\n━━━━━━━━━━━━━━━━━━━━\n⚔️ สตอรี่ (${data.closedCases.length} เคส):\n${data.closedCases.map((cs, i) => { let storyText = `สตอรี่ #${i + 1} ระหว่าง ${cs.partyA} VS ${cs.partyB}\nแพทย์ผู้รับผิดชอบ : ${cs.medics?.[0] || '-'}`; if (cs.medics?.length > 1) storyText += `\nแพทย์ช่วยเหลือ : ${cs.medics.slice(1).join(' , ')}`; return storyText; }).join('\n\n')}`; } if (data.umaeHelped > 0 || data.umaeExpired > 0) { text += `\n━━━━━━━━━━━━━━━━━━━━\n💀 อุ้มเอ๋อ:\n- ช่วยเหลือได้: ${data.umaeHelped} เบอร์\n- เอ๋อ: ${data.umaeExpired} เบอร์`; } navigator.clipboard.writeText(text); showNotif('Success', 'คัดลอกสรุปกะแล้ว'); }
+        // Helper to get Discord mention or fallback to name
+        function getDiscordMentionOrName(name) {
+            // Find user by firstName or fullName
+            const user = (allUsers || []).find(u =>
+                u.firstName === name ||
+                u.fullName === name ||
+                u.fullName?.split(' ')[0] === name
+            );
+            if (user?.discordId) {
+                return `<@${user.discordId}>`;
+            }
+            return name;
+        }
+        function copyShiftSummary() {
+            const data = lastShiftSummaryData;
+            if (!data) return;
+            const dur = data.duration;
+            const h = Math.floor(dur / 3600000), m = Math.floor((dur % 3600000) / 60000);
+            const durStr = `${h}ชม. ${m}นาที`;
+            const startTime = data.startTime ? new Date(data.startTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '-';
+            const endTime = data.endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = data.endTime.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+            // Use Discord mentions for OP and Support OP
+            const opMention = data.op ? getDiscordMentionOrName(data.op) : '-';
+            const supOpMention = data.supOP ? getDiscordMentionOrName(data.supOP) : '-';
+            let text = `📊 สรุปการเข้าเวร OP\n━━━━━━━━━━━━━━━━━━━━\n📅 วันที่: ${dateStr}\n👨‍⚕️ OP: ${opMention}\n👨‍⚕️ Support OP: ${supOpMention}\n⏰ เวลา: ${startTime} - ${endTime} (${durStr})\n━━━━━━━━━━━━━━━━━━━━\n✅ On Duty (${data.onDuty.length} คน):\n${data.onDuty.length ? data.onDuty.map(n => `- ${getDiscordMentionOrName(n)}`).join('\n') : '- ไม่มี'}\n━━━━━━━━━━━━━━━━━━━━\n❌ Off Duty (${data.offDuty.length} คน):\n${data.offDuty.length ? data.offDuty.map(n => `- ${getDiscordMentionOrName(n)}`).join('\n') : '- ไม่มี'}`;
+            if (data.afkWarnings && Object.keys(data.afkWarnings).length) {
+                text += `\n━━━━━━━━━━━━━━━━━━━━\n⚠️ คนที่โดน Warning:\n${Object.entries(data.afkWarnings).map(([name, mins]) => `- ${getDiscordMentionOrName(name)} (เหม่อ ${mins} นาที)`).join('\n')}`;
+            }
+            if (data.closedCases?.length) {
+                text += `\n━━━━━━━━━━━━━━━━━━━━\n⚔️ สตอรี่ (${data.closedCases.length} เคส):\n${data.closedCases.map((cs, i) => {
+                    const mainMedic = cs.medics?.[0] ? getDiscordMentionOrName(cs.medics[0]) : '-';
+                    let storyText = `สตอรี่ #${i + 1} ระหว่าง ${cs.partyA} VS ${cs.partyB}\nแพทย์ผู้รับผิดชอบ : ${mainMedic}`;
+                    if (cs.medics?.length > 1) storyText += `\nแพทย์ช่วยเหลือ : ${cs.medics.slice(1).map(m => getDiscordMentionOrName(m)).join(' , ')}`;
+                    return storyText;
+                }).join('\n\n')}`;
+            }
+            if (data.umaeHelped > 0 || data.umaeExpired > 0) {
+                text += `\n━━━━━━━━━━━━━━━━━━━━\n💀 อุ้มเอ๋อ:\n- ช่วยเหลือได้: ${data.umaeHelped} เบอร์\n- เอ๋อ: ${data.umaeExpired} เบอร์`;
+            }
+            navigator.clipboard.writeText(text);
+            showNotif('Success', 'คัดลอกสรุปกะแล้ว');
+        }
         // Levenshtein distance for fuzzy matching
         function levenshteinDistance(a, b) {
             const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
