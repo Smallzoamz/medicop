@@ -9,7 +9,7 @@ echo.
 
 cd /d f:\medicop
 
-set VERSION=1.6.0
+set VERSION=1.6.1
 
 echo 📦 Version: %VERSION%
 echo.

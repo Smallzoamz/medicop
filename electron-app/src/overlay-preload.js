@@ -13,5 +13,9 @@ contextBridge.exposeInMainWorld('overlayAPI', {
     setAllOpacity: (opacity) => ipcRenderer.send('set-all-opacity', opacity),
     getAllOpacity: () => ipcRenderer.invoke('get-all-opacity'),
     savePosition: () => ipcRenderer.send('overlay-save-position'),
-    getSettings: () => ipcRenderer.invoke('overlay-get-settings')
+    getSettings: () => ipcRenderer.invoke('overlay-get-settings'),
+    // Game mode listener
+    onGameModeChanged: (callback) => ipcRenderer.on('game-mode-changed', (event, isGameMode) => callback(isGameMode)),
+    // Blacklist panel - opens with focus mode (hides other overlays)
+    openBlacklistPanel: () => ipcRenderer.send('open-blacklist-panel')
 });

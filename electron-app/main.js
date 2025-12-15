@@ -503,6 +503,59 @@ ipcMain.on('user-logout', () => {
     createGoodbyeWindow();
 });
 
+// Show centered game mode notification
+let notifyWindow = null;
+function showGameModeNotification(text, bgColor) {
+    // Close existing notification
+    if (notifyWindow && !notifyWindow.isDestroyed()) {
+        notifyWindow.close();
+    }
+
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width } = primaryDisplay.workAreaSize;
+
+    notifyWindow = new BrowserWindow({
+        width: 250,
+        height: 50,
+        x: Math.round((width - 250) / 2),
+        y: 20,
+        frame: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        transparent: true,
+        focusable: false,
+        resizable: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+
+    notifyWindow.setIgnoreMouseEvents(true);
+    notifyWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    notifyWindow.setAlwaysOnTop(true, 'screen-saver');
+
+    const html = `
+        <html>
+        <body style="margin:0; background:transparent; display:flex; justify-content:center; align-items:center; height:100%;">
+            <div style="background:${bgColor}; color:white; padding:12px 24px; border-radius:12px; font-family:system-ui; font-size:16px; font-weight:bold; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+                ${text}
+            </div>
+        </body>
+        </html>
+    `;
+    notifyWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+
+    // Auto close after 1.5 seconds
+    setTimeout(() => {
+        if (notifyWindow && !notifyWindow.isDestroyed()) {
+            notifyWindow.close();
+            notifyWindow = null;
+        }
+    }, 1500);
+}
+
 // ========== MINI OVERLAY MODE ==========
 // Settings file path
 const settingsPath = path.join(app.getPath('userData'), 'overlay-settings.json');
@@ -584,39 +637,63 @@ function createOverlayWindow() {
         }
     });
 
-    // Register F10 hotkey to toggle overlay visibility
+    // Register F10 hotkey to toggle overlay and all panels visibility
     globalShortcut.register('F10', () => {
         if (overlayWindow) {
             if (overlayWindow.isVisible()) {
                 overlayWindow.hide();
-                console.log('🙈 Overlay hidden (F10)');
+                // Hide all panels too
+                Object.values(panelWindows).forEach(win => {
+                    if (win && !win.isDestroyed()) win.hide();
+                });
+                console.log('🙈 All windows hidden (F10)');
             } else {
                 overlayWindow.show();
-                console.log('👁️ Overlay shown (F10)');
+                // Show all panels too
+                Object.values(panelWindows).forEach(win => {
+                    if (win && !win.isDestroyed()) win.show();
+                });
+                console.log('👁️ All windows shown (F10)');
             }
         }
     });
-    console.log('⌨️ F10 hotkey registered for overlay toggle');
+    console.log('⌨️ F10 hotkey registered for all windows toggle');
 
-    // F11 to toggle interactive mode (click-through vs clickable)
+    // F11 to toggle interactive mode (click-through vs clickable) for all windows
     let isInteractiveMode = true; // Start as interactive
     globalShortcut.register('F11', () => {
         if (overlayWindow) {
             isInteractiveMode = !isInteractiveMode;
             if (isInteractiveMode) {
-                // Interactive mode - can click overlay
+                // Interactive mode - can click
                 overlayWindow.setIgnoreMouseEvents(false);
                 overlayWindow.setFocusable(true);
-                console.log('🖱️ Interactive Mode ON (F11)');
+                Object.values(panelWindows).forEach(win => {
+                    if (win && !win.isDestroyed()) {
+                        win.setIgnoreMouseEvents(false);
+                        win.setFocusable(true);
+                    }
+                });
+                // Show centered notification
+                showGameModeNotification('🖱️ Interactive Mode', '#d97706');
+                console.log('🖱️ Interactive Mode ON - All windows clickable (F11)');
             } else {
-                // Game mode - overlay is click-through
+                // Game mode - all windows are click-through
                 overlayWindow.setIgnoreMouseEvents(true, { forward: true });
                 overlayWindow.setFocusable(false);
-                console.log('🎮 Game Mode ON - Click-through (F11)');
+                Object.values(panelWindows).forEach(win => {
+                    if (win && !win.isDestroyed()) {
+                        win.setIgnoreMouseEvents(true, { forward: true });
+                        win.setFocusable(false);
+                    }
+                });
+                // Show centered notification
+                showGameModeNotification('🎮 Game Mode ON', '#059669');
+                console.log('🎮 Game Mode ON - All windows click-through (F11)');
             }
         }
     });
-    console.log('⌨️ F11 hotkey registered for interactive toggle');
+    console.log('⌨️ F11 hotkey registered for all windows interactive toggle');
 
     console.log('🖥️ Mini Overlay window created');
 }
@@ -850,8 +927,8 @@ ipcMain.on('open-panel-window', (event, panelType) => {
 
     const panelConfig = {
         price: { width: 320, height: 550, title: 'ตารางค่ารักษา' },
-        copy: { width: 180, height: 180, title: 'รวมคำสั่ง' },
-        blacklist: { width: 200, height: 250, title: 'Blacklist' }
+        copy: { width: 400, height: 250, title: 'รวมคำสั่ง' },
+        blacklist: { width: 500, height: 580, title: 'Blacklist' }
     };
 
     const config = panelConfig[panelType] || { width: 200, height: 200, title: 'Panel' };
@@ -947,6 +1024,101 @@ ipcMain.on('close-panel-window', (event, panelType) => {
         panelWindows[panelType].close();
         delete panelWindows[panelType];
     }
+});
+
+// Track which windows were visible before Blacklist opened
+let hiddenWindowsBeforeBlacklist = {
+    overlay: false,
+    panels: []
+};
+
+// Open Blacklist panel (hides other windows)
+ipcMain.on('open-blacklist-panel', () => {
+    // Save state of visible windows
+    hiddenWindowsBeforeBlacklist.overlay = overlayWindow && overlayWindow.isVisible();
+    hiddenWindowsBeforeBlacklist.panels = [];
+
+    Object.entries(panelWindows).forEach(([type, win]) => {
+        if (win && !win.isDestroyed() && win.isVisible() && type !== 'blacklist') {
+            hiddenWindowsBeforeBlacklist.panels.push(type);
+            win.hide();
+        }
+    });
+
+    // Hide overlay
+    if (overlayWindow && overlayWindow.isVisible()) {
+        overlayWindow.hide();
+    }
+
+    // Open or focus Blacklist panel
+    if (panelWindows.blacklist) {
+        panelWindows.blacklist.show();
+        panelWindows.blacklist.focus();
+    } else {
+        // Create blacklist panel (center of screen)
+        const { screen } = require('electron');
+        const primaryDisplay = screen.getPrimaryDisplay();
+        const { width, height } = primaryDisplay.workAreaSize;
+
+        const panelWidth = 500;
+        const panelHeight = 580;
+        const panelX = Math.round((width - panelWidth) / 2);
+        const panelY = Math.round((height - panelHeight) / 2);
+
+        const blacklistWin = new BrowserWindow({
+            width: panelWidth,
+            height: panelHeight,
+            x: panelX,
+            y: panelY,
+            frame: false,
+            resizable: false,
+            alwaysOnTop: true,
+            skipTaskbar: true,
+            transparent: true,
+            opacity: panelSettings.opacity,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                preload: path.join(__dirname, 'src', 'panel-preload.js')
+            }
+        });
+
+        blacklistWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+        blacklistWin.setAlwaysOnTop(true, 'screen-saver');
+        blacklistWin.loadFile(path.join(__dirname, 'src', 'panel-blacklist.html'));
+
+        blacklistWin.on('closed', () => {
+            delete panelWindows.blacklist;
+        });
+
+        panelWindows.blacklist = blacklistWin;
+        console.log('🚫 Blacklist panel opened (focused mode)');
+    }
+});
+
+// Close Blacklist panel (restores other windows)
+ipcMain.on('close-blacklist-panel', () => {
+    // Close blacklist panel
+    if (panelWindows.blacklist) {
+        panelWindows.blacklist.close();
+        delete panelWindows.blacklist;
+    }
+
+    // Restore overlay
+    if (hiddenWindowsBeforeBlacklist.overlay && overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.show();
+    }
+
+    // Restore other panels that were open
+    hiddenWindowsBeforeBlacklist.panels.forEach(type => {
+        if (panelWindows[type] && !panelWindows[type].isDestroyed()) {
+            panelWindows[type].show();
+        }
+    });
+
+    // Reset state
+    hiddenWindowsBeforeBlacklist = { overlay: false, panels: [] };
+    console.log('✅ Blacklist panel closed, overlays restored');
 });
 
 // ========== END AUTO UPDATE ==========

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.6.0 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.6.1 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -459,7 +459,7 @@
     <div id="electron-title-bar" class="electron-title-bar hidden">
         <div class="title-bar-left">
             <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
-            <span class="title-bar-text">Medical OP Systems v.1.6.0</span>
+            <span class="title-bar-text">Medical OP Systems v.1.6.1</span>
         </div>
         <div class="title-bar-controls">
             <button class="title-bar-btn minimize" id="btn-minimize" title="ย่อ">
@@ -528,7 +528,7 @@
             <div id="changelog-content" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 <div class="bg-gradient-to-r from-cyan-900/50 to-transparent rounded-xl p-4 border-l-4 border-cyan-500">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-cyan-400 font-bold text-sm">v1.6.0</span>
+                        <span class="text-cyan-400 font-bold text-sm">v1.6.1</span>
                         <span class="text-[10px] bg-cyan-500 text-white px-2 py-0.5 rounded-full">Latest</span>
                         <span class="text-[10px] text-slate-500">15 ธ.ค. 2567</span>
                     </div>
@@ -1735,7 +1735,7 @@
                     <div class="px-5 py-3 border-b border-white/10 flex justify-between items-center">
                         <span class="text-sm text-slate-300 flex items-center gap-2"><span
                                 class="w-2 h-2 rounded-full bg-cyan-500"></span> Operator Systems Login</span>
-                        <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.6.0</span>
+                        <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.6.1</span>
                     </div>
                     <div class="flex border-b border-white/10">
                         <button onclick="showAuthTab('login')" id="tab-login"
@@ -1820,7 +1820,7 @@
                 </div>
 
                 <!-- Download Desktop Card -->
-                <a href="https://github.com/Smallzoamz/medicop/releases/download/v1.6.0/Medical-OP-Systems-Setup-1.6.0.exe"
+                <a href="https://github.com/Smallzoamz/medicop/releases/download/v1.6.1/Medical-OP-Systems-Setup-1.6.1.exe"
                     class="glass rounded-xl p-4 hover:bg-cyan-500/10 transition group block">
                     <div class="flex items-center gap-3">
                         <div
@@ -6430,7 +6430,7 @@
             // App Version & Changelog
             // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
             // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-            const APP_VERSION = '1.6.0';
+            const APP_VERSION = '1.6.1';
 
             // Update all version displays from APP_VERSION (single source of truth)
             function updateVersionDisplays() {
@@ -9070,16 +9070,26 @@
             function renderAll() {
                 // Check if OP is on duty
                 const hasOP = !!appData.currentOP;
-                const isOP = hasOP && (currentUser?.fullName === appData.currentOP || currentUser?.fullName === appData.supOP);
+                // Fix: Compare first name or check if fullName includes OP name (handles "Jummxm Shehot" vs "Jummxm")
+                const userFirstName = currentUser?.fullName?.split(' ')[0] || '';
+                const opFirstName = appData.currentOP?.split(' ')[0] || '';
+                const supOpFirstName = appData.supOP?.split(' ')[0] || '';
+
+                // Check conditions with null safety
+                const isOPMatch = userFirstName && opFirstName && userFirstName === opFirstName;
+                const isSupOPMatch = userFirstName && supOpFirstName && userFirstName === supOpFirstName;
+                const includesOP = currentUser?.fullName && appData.currentOP && currentUser.fullName.includes(appData.currentOP);
+                const includesSupOP = currentUser?.fullName && appData.supOP && currentUser.fullName.includes(appData.supOP);
+
+                const isOP = hasOP && (isOPMatch || isSupOPMatch || includesOP || includesSupOP);
                 const isStaffPlus = currentUser?.role && ['Staff', 'Admin', 'Owner'].includes(currentUser.role);
 
                 // Fight form visibility:
-                // - Member users: Never see the form
-                // - If no OP on duty: Staff+ can see and create
-                // - If OP on duty: Only OP/SupOP can see
+                // - isOP (current OP or Sup OP): Always see the form
+                // - Staff+ with no OP on duty: Can see and create
+                // - Otherwise: Hidden
                 const fightForm = document.getElementById('fight-create-form');
-                const isMember = !isStaffPlus; // Member role or no role
-                const canSeeFightForm = isMember ? false : (hasOP ? isOP : isStaffPlus);
+                const canSeeFightForm = isOP || (!hasOP && isStaffPlus);
                 if (fightForm) fightForm.classList.toggle('hidden', !canSeeFightForm);
 
                 // Umae form: Only OP can see
@@ -9138,7 +9148,11 @@
                         ${avatarImg}<span class="text-cyan-300 text-xs font-medium truncate">${n}${warnBadge}</span>${icPhone}
                     </div>
                     <div class="flex items-center gap-1 flex-wrap">
-                        ${acceptBtn}${waitBtn}${declineBtn}
+                        ${isOP ? `${acceptBtn}${waitBtn}${declineBtn}` : (
+                            st === 'accept' ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-cyan-900/50 border border-cyan-700/50 text-cyan-400">✓ พร้อม</span>' :
+                                st === 'waitfix' ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-900/50 border border-amber-700/50 text-amber-400">⏳ รอแก้ไข</span>' :
+                                    st === 'decline' ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-rose-900/50 border border-rose-700/50 text-rose-400">❌ ไม่พร้อม</span>' : ''
+                        )}
                         <button onclick="moveMedic('${n}','onDuty','afk')" class="medic-action-btn px-1.5 py-1 rounded text-[10px] bg-slate-700/80 text-yellow-400 hover:bg-yellow-600/40" title="AFK">💤</button>
                         <button onclick="moveMedic('${n}','onDuty','offDuty')" class="medic-action-btn px-1.5 py-1 rounded text-[10px] bg-slate-700/80 text-slate-400 hover:bg-slate-600" title="Off">📴</button>
                     </div>
@@ -9153,7 +9167,7 @@
                 if (!caseList) return;
                 if (!appData.cases || appData.cases.length === 0) { caseList.innerHTML = '<p class="text-center text-slate-500 text-xs py-8">ยังไม่มีสตอรี่</p>'; }
                 else {
-                    const isOP = appData.currentOP && (currentUser?.fullName === appData.currentOP || currentUser?.fullName === appData.supOP);
+                    // Use isOP from renderAll scope (already defined at top with correct firstName matching)
 
                     // Group cases by date
                     const casesByDate = {};
@@ -9242,7 +9256,8 @@
                                 // Check if story is closed
                                 const isClosed = c.closed === true;
                                 // Check if story date is today or past (not future date) - show "ห้ามฉีดยา"
-                                const today = new Date().toISOString().split('T')[0];
+                                const now = new Date();
+                                const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
                                 const storyDateStr = c.storyDate || today;
                                 const isStoryDateReached = storyDateStr <= today;
                                 const closedBadge = isClosed ? '<span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded ml-1">✅ Clear</span>' : '';

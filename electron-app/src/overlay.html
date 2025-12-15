@@ -69,6 +69,8 @@
         <div id="title-bar" class="p-2 drag-region border-b border-white/10 flex items-center justify-between">
             <span class="text-cyan-400 text-xs font-bold">🏥 OP Systems</span>
             <div class="flex gap-0.5 no-drag">
+                <button onclick="openBlacklistPanel()" id="blacklist-btn" title="Blacklist"
+                    class="w-5 h-5 flex items-center justify-center text-white bg-rose-600 hover:bg-rose-500 rounded text-[10px]">⚠️</button>
                 <button onclick="showAddMenu()" id="add-panel-btn" title="เพิ่มหน้าต่าง"
                     class="w-5 h-5 flex items-center justify-center text-white bg-cyan-600 hover:bg-cyan-500 rounded text-xs font-bold">+</button>
                 <button onclick="showSettingsMenu()" id="settings-btn" title="ตั้งค่า"
@@ -78,6 +80,11 @@
                 <button onclick="exitOverlay()" title="ปิด"
                     class="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-red-400 rounded text-[10px]">✕</button>
             </div>
+        </div>
+
+        <!-- Game Mode Notification -->
+        <div id="game-mode-notify"
+            class="hidden absolute top-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm font-bold z-50 transition-all duration-300">
         </div>
 
         <!-- Settings Menu -->
@@ -113,8 +120,7 @@
             <button onclick="openPanelWindow('copy')"
                 class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-xs text-blue-400">📋
                 รวมคำสั่งประกาศ</button>
-            <button onclick="openPanelWindow('blacklist')"
-                class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-xs text-red-400">🚫 Blacklist</button>
+
         </div>
 
         <!-- OP Info Header -->
@@ -164,17 +170,6 @@
         </div>
         <!-- Bottom Border -->
         <div class="h-[3px] bg-gradient-to-r from-cyan-500/50 via-purple-500/50 to-rose-500/50"></div>
-    </div>
-    <!-- OP Controls Panel (for OP users only) -->
-    <div id="panel-opcontrols" class="glass rounded-xl shadow-lg p-3 hidden"
-        style="position: fixed; top: 200px; left: 10px; width: 260px; z-index: 9999;">
-        <div class="text-purple-400 text-xs font-bold mb-2">👨‍💼 OP Controls</div>
-        <div class="text-xs font-medium text-slate-300 mb-2">On Duty List:</div>
-        <div id="op-onduty-list" class="space-y-1 text-xs max-h-[150px] overflow-y-auto"></div>
-        <div class="border-t border-white/10 mt-2 pt-2">
-            <div class="text-xs font-medium text-slate-300 mb-1">AFK List:</div>
-            <div id="op-afk-list" class="space-y-1 text-xs max-h-[60px] overflow-y-auto"></div>
-        </div>
     </div>
 
     <script>
@@ -227,6 +222,22 @@
                 lockBtn.textContent = '🔓';
                 lockBtn.classList.remove('text-amber-400');
             }
+        }
+
+        // Game Mode Notification
+        if (window.overlayAPI?.onGameModeChanged) {
+            window.overlayAPI.onGameModeChanged((isGameMode) => {
+                const notify = document.getElementById('game-mode-notify');
+                if (isGameMode) {
+                    notify.textContent = '🎮 Game Mode ON';
+                    notify.className = 'absolute top-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm font-bold z-50 bg-emerald-600/90 text-white';
+                } else {
+                    notify.textContent = '🖱️ Interactive Mode';
+                    notify.className = 'absolute top-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm font-bold z-50 bg-amber-600/90 text-white';
+                }
+                notify.classList.remove('hidden');
+                setTimeout(() => notify.classList.add('hidden'), 1500);
+            });
         }
 
         // Add Menu
@@ -292,6 +303,63 @@
         function openPanelWindow(panelType) {
             window.overlayAPI.openPanel(panelType);
             document.getElementById('add-menu').classList.add('hidden');
+        }
+
+        // Open Blacklist panel (focused mode - hides other overlays)
+        function openBlacklistPanel() {
+            if (window.overlayAPI?.openBlacklistPanel) {
+                window.overlayAPI.openBlacklistPanel();
+            }
+        }
+
+        // Copy Story Announcement (Cooldown / Enter Area) - Exact text from Desktop OP
+        function copyStoryAnnounce(type, partyA, partyB) {
+            const cmd = '/an';
+            let msg = '';
+
+            if (type === 'cooldown') {
+                // Exact text from Desktop OP line 8293
+                const now = new Date();
+                const later = new Date(now.getTime() + 10 * 60 * 1000);
+                const timeFormat = { hour: '2-digit', minute: '2-digit' };
+                const nowStr = now.toLocaleTimeString('th-TH', timeFormat);
+                const laterStr = later.toLocaleTimeString('th-TH', timeFormat);
+                msg = `${cmd} ประกาศคูลดาวน์สตอรี่ ระหว่าง ${partyA} vs ${partyB} เป็นเวลา 10 นาที ตั้งแต่เวลา ${nowStr} - ${laterStr} น. หรือหากพร้อม สามารถเริ่มได้ทันที`;
+            } else {
+                // Exact text from Desktop OP line 8294
+                msg = `${cmd} แพทย์กำลังเข้าพื้นที่สตอรี่ ${partyA} vs ${partyB} ขอให้แก๊งที่ชนะ ออกจากพื้นที่และหยุดการกระทำทุกอย่างภายใน 2 นาที ขออภัยในความไม่สะดวก`;
+            }
+
+            navigator.clipboard.writeText(msg);
+            // Show feedback
+            const buttons = event.target.closest('.flex')?.querySelectorAll('button');
+            if (buttons) {
+                buttons.forEach(btn => btn.disabled = true);
+            }
+            event.target.textContent = '✅ Copied!';
+            event.target.classList.add('bg-emerald-600');
+            setTimeout(() => {
+                event.target.textContent = type === 'cooldown' ? '📋 คูลดาวน์' : '📋 เข้าพื้นที่';
+                event.target.classList.remove('bg-emerald-600');
+                if (buttons) {
+                    buttons.forEach(btn => btn.disabled = false);
+                }
+            }, 1000);
+        }
+
+        // Toggle OP Controls Panel
+        function toggleOPControlsPanel() {
+            const panel = document.getElementById('panel-opcontrols');
+            document.getElementById('add-menu').classList.add('hidden');
+
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                activePanel = 'opcontrols';
+                renderOPControls();
+            } else {
+                panel.classList.add('hidden');
+                activePanel = null;
+            }
         }
 
         // Floating Panels
@@ -463,30 +531,84 @@
             if (!userData) return false;
             try {
                 const user = JSON.parse(decodeURIComponent(userData));
-                return data.currentOP === user.username || data.supOP === user.username;
+                // Allow OP, Sup OP, or Admin/Owner role (case-insensitive)
+                const role = (user.role || '').toLowerCase();
+                const isAdmin = role === 'admin' || role === 'owner';
+                const isCurrentOP = data.currentOP === user.username;
+                const isSupOP = data.supOP === user.username;
+                console.log('🔐 OP Check:', { username: user.username, role: user.role, isAdmin, isCurrentOP, isSupOP });
+                return isCurrentOP || isSupOP || isAdmin;
             } catch (e) {
+                console.error('❌ checkIfOP error:', e);
                 return false;
             }
         }
 
+        // Helper to check if current user is OP (firstName match)
+        function checkIfOP(data) {
+            if (!data?.currentOP) return false;
+            let currentUser = null;
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const userDataStr = params.get('userData');
+                if (userDataStr) currentUser = JSON.parse(decodeURIComponent(userDataStr));
+            } catch (e) { }
+
+            if (!currentUser) return false;
+
+            // Check first name match
+            const userFirst = currentUser.fullName?.split(' ')[0];
+            const opFirst = data.currentOP?.split(' ')[0];
+            const supOpFirst = data.supOP?.split(' ')[0];
+
+            return (userFirst && opFirst && userFirst === opFirst) ||
+                (userFirst && supOpFirst && userFirst === supOpFirst);
+        }
+
         function renderOPControls() {
             if (!currentData) return;
-
             const onDuty = currentData.onDuty || [];
             const afk = currentData.afk || [];
+            const statuses = currentData.medicStatuses || {};
+            const isOP = checkIfOP(currentData);
 
-            // On Duty List
+            // On Duty List with status buttons
             const onDutyEl = document.getElementById('op-onduty-list');
             if (onDuty.length > 0) {
-                onDutyEl.innerHTML = onDuty.map((name, idx) => `
-                    <div class="flex justify-between items-center bg-slate-800/50 px-2 py-1 rounded">
-                        <span class="flex-1">${idx + 1}. ${name}</span>
-                        <div class="flex gap-1">
-                            <button onclick="moveToAFK('${name}')" class="text-amber-400 hover:bg-amber-500/20 px-1 rounded" title="ย้ายไป AFK">💤</button>
-                            <button onclick="removeFromDuty('${name}')" class="text-red-400 hover:bg-red-500/20 px-1 rounded" title="ออกจากเวร">❌</button>
+                onDutyEl.innerHTML = onDuty.map((name, idx) => {
+                    const status = statuses[name] || 'none';
+                    const statusIcon = status === 'accept' ? '✅' : status === 'waitfix' ? '⏳' : status === 'decline' ? '❌' : '⚪';
+
+                    const controls = isOP ? `
+                        <div class="flex gap-1 justify-center">
+                            <button onclick="changeMedicStatus('${name}', 'accept')" 
+                                class="text-[9px] px-2 py-0.5 rounded ${status === 'accept' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-emerald-600/50'}">
+                                ✅ รับ
+                            </button>
+                            <button onclick="changeMedicStatus('${name}', 'waitfix')" 
+                                class="text-[9px] px-2 py-0.5 rounded ${status === 'waitfix' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-amber-600/50'}">
+                                ⏳ รอแก้
+                            </button>
+                            <button onclick="changeMedicStatus('${name}', 'decline')" 
+                                class="text-[9px] px-2 py-0.5 rounded ${status === 'decline' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-red-600/50'}">
+                                ❌ ไม่รับ
+                            </button>
                         </div>
-                    </div>
-                `).join('');
+                    ` : '';
+
+                    return `
+                    <div class="flex flex-col gap-1 bg-slate-800/50 px-2 py-1.5 rounded">
+                        <div class="flex justify-between items-center">
+                            <span class="flex-1">${statusIcon} ${idx + 1}. ${name.split(' ')[0]}</span>
+                            ${isOP ? `
+                            <div class="flex gap-1">
+                                <button onclick="moveToAFK('${name}')" class="text-amber-400 hover:bg-amber-500/20 px-1 rounded" title="ย้ายไป AFK">💤</button>
+                                <button onclick="removeFromDuty('${name}')" class="text-red-400 hover:bg-red-500/20 px-1 rounded" title="ออกจากเวร">🚫</button>
+                            </div>` : ''}
+                        </div>
+                        ${controls}
+                    </div>`;
+                }).join('');
             } else {
                 onDutyEl.innerHTML = '<div class="text-slate-500 text-center">ไม่มี</div>';
             }
@@ -496,13 +618,42 @@
             if (afk.length > 0) {
                 afkEl.innerHTML = afk.map(name => `
                     <div class="flex justify-between items-center bg-slate-800/50 px-2 py-1 rounded">
-                        <span class="flex-1">${name}</span>
-                        <button onclick="moveToOnDuty('${name}')" class="text-emerald-400 hover:bg-emerald-500/20 px-1 rounded" title="กลับ On Duty">✅</button>
+                        <span class="flex-1">${name.split(' ')[0]}</span>
+                        ${isOP ? `<button onclick="moveToOnDuty('${name}')" class="text-emerald-400 hover:bg-emerald-500/20 px-1 rounded" title="กลับ On Duty">✅</button>` : ''}
                     </div>
                 `).join('');
             } else {
                 afkEl.innerHTML = '<div class="text-slate-500 text-center">ไม่มี</div>';
             }
+        }
+
+        function changeMedicStatus(name, status) {
+            if (!currentData) return;
+            const statuses = { ...(currentData.medicStatuses || {}) };
+
+            // If clicking the same status again, toggle it off
+            if (statuses[name] === status) {
+                delete statuses[name];
+                console.log(`🔄 Status cleared: ${name}`);
+            } else {
+                // For 'accept' - only allow 1 person to have accept status
+                if (status === 'accept') {
+                    // Clear accept from all others first
+                    Object.keys(statuses).forEach(key => {
+                        if (statuses[key] === 'accept') {
+                            delete statuses[key];
+                        }
+                    });
+                }
+                statuses[name] = status;
+                console.log(`✅ Status changed: ${name} -> ${status}`);
+            }
+
+            db.collection('op_data').doc('current').update({
+                medicStatuses: statuses
+            }).catch(err => {
+                console.error('Failed to update status:', err);
+            });
         }
 
         function moveToAFK(name) {
@@ -555,12 +706,9 @@
             // Store data for OP controls
             currentData = data;
 
-            // Check if user is OP and show button
+            // Check if user is OP (for logging only)
             isOP = checkIfOP(data);
-            const opBtn = document.getElementById('op-controls-btn');
-            if (opBtn) {
-                opBtn.classList.toggle('hidden', !isOP);
-            }
+            // OP Controls button is always visible now
 
             // Re-render OP controls if panel is open
             if (activePanel === 'opcontrols') {
@@ -593,7 +741,7 @@
             document.getElementById('off-duty-count').textContent = offDuty.length;
             document.getElementById('story-count').textContent = activeCases.length;
 
-            // On Duty List - with IC and status close to name
+            // On Duty List - with IC, status, and OP controls
             const onDutyListEl = document.getElementById('on-duty-list');
             const medicStatuses = data.medicStatuses || {};
             if (onDuty.length > 0) {
@@ -604,10 +752,23 @@
                     const st = medicStatuses[n] || '';
                     const statusIcon = st === 'accept' ? '✓' : st === 'waitfix' ? '⏳' : st === 'decline' ? '❌' : '';
                     const statusClass = st === 'accept' ? 'text-cyan-400' : st === 'waitfix' ? 'text-amber-400' : st === 'decline' ? 'text-rose-400' : 'text-slate-500';
-                    // Phone and status next to name
                     const phoneDisplay = icPhone ? `<span class="text-slate-500 ml-1">📞${icPhone}</span>` : '';
                     const statusDisplay = statusIcon ? `<span class="${statusClass} ml-1">${statusIcon}</span>` : '';
-                    return `<div class="flex items-center"><span>• ${firstName}</span>${phoneDisplay}${statusDisplay}</div>`;
+
+                    // OP Controls - show status buttons if user is OP
+                    let opButtons = '';
+                    if (isOP) {
+                        opButtons = `
+                            <div class="flex gap-0.5 ml-auto">
+                                <button onclick="changeMedicStatus('${n}', 'accept')" 
+                                    class="text-[8px] px-1 rounded ${st === 'accept' ? 'bg-emerald-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-emerald-600/50'}" title="รับเคส">✅</button>
+                                <button onclick="changeMedicStatus('${n}', 'waitfix')" 
+                                    class="text-[8px] px-1 rounded ${st === 'waitfix' ? 'bg-amber-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-amber-600/50'}" title="รอเคสแก้">⏳</button>
+                                <button onclick="changeMedicStatus('${n}', 'decline')" 
+                                    class="text-[8px] px-1 rounded ${st === 'decline' ? 'bg-red-600 text-white' : 'bg-slate-700/50 text-slate-400 hover:bg-red-600/50'}" title="ไม่รับเคส">❌</button>
+                            </div>`;
+                    }
+                    return `<div class="flex items-center"><span>• ${firstName}</span>${phoneDisplay}${statusDisplay}${opButtons}</div>`;
                 }).join('');
             } else {
                 onDutyListEl.innerHTML = '<div class="text-slate-500">-</div>';
@@ -645,7 +806,8 @@
             const storyListEl = document.getElementById('story-list');
 
             // Filter by storyDate (YYYY-MM-DD format) to show only today's stories
-            const todayStr = new Date().toISOString().split('T')[0]; // "2025-12-15"
+            const now = new Date();
+            const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
             const todayCases = activeCases.filter(c => {
                 // If no storyDate, include it (current shift story)
                 if (!c.storyDate) return true;
@@ -655,12 +817,37 @@
             document.getElementById('story-count').textContent = todayCases.length;
 
             if (todayCases.length > 0) {
+                // Get current user info for permission check
+                let currentUsername = '';
+                try {
+                    const params = new URLSearchParams(window.location.search);
+                    const userData = params.get('userData');
+                    if (userData) {
+                        const user = JSON.parse(decodeURIComponent(userData));
+                        currentUsername = user.fullName || user.username || '';
+                    }
+                } catch (e) { }
+
                 storyListEl.innerHTML = todayCases.map((c, i) => {
                     const medics = c.medics ? c.medics.map(m => m.split(' ')[0]).join(', ') : '-';
                     const storyType = c.storyType || c.caseType || 'สตอรี่';
                     const location = c.location || '-';
-                    // startTime is already a string like "21:30"
                     const timeStr = c.startTime || '-';
+
+                    // Check if current user can see copy buttons (OP or assigned medic)
+                    const isAssigned = c.medics && c.medics.some(m => m.includes(currentUsername.split(' ')[0]));
+                    const canCopy = isOP || isAssigned;
+
+                    // Copy buttons HTML (only for authorized users)
+                    const copyButtons = canCopy ? `
+                        <div class="flex gap-1 mt-1">
+                            <button onclick="copyStoryAnnounce('cooldown', '${c.partyA}', '${c.partyB}')" 
+                                class="text-[8px] px-1.5 py-0.5 bg-cyan-700/60 hover:bg-cyan-600 text-white rounded">📋 คูลดาวน์</button>
+                            <button onclick="copyStoryAnnounce('enter', '${c.partyA}', '${c.partyB}')" 
+                                class="text-[8px] px-1.5 py-0.5 bg-purple-700/60 hover:bg-purple-600 text-white rounded">📋 เข้าพื้นที่</button>
+                        </div>
+                    ` : '';
+
                     return `<div class="bg-slate-800/50 rounded p-1.5">
                         <div class="flex justify-between items-center">
                             <span class="text-rose-300 font-medium">${c.partyA || '?'} vs ${c.partyB || '?'}</span>
@@ -668,6 +855,7 @@
                         </div>
                         <div class="text-slate-400 text-[9px] mt-0.5">📍 ${location} • 📋 ${storyType}</div>
                         <div class="text-emerald-400 text-[9px]">👨‍⚕️ ${medics}</div>
+                        ${copyButtons}
                     </div>`;
                 }).join('');
             } else {

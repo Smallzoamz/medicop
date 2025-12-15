@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blacklist</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
         body {
             background: transparent;
@@ -17,9 +15,9 @@
         }
 
         .glass {
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(15, 23, 42, 0.98);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         .drag-region {
@@ -29,60 +27,289 @@
         .no-drag {
             -webkit-app-region: no-drag;
         }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(239, 68, 68, 0.3);
+            border-radius: 2px;
+        }
+
+        .inp {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(100, 116, 139, 0.5);
+            background: rgba(15, 23, 42, 0.8);
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .inp:focus {
+            outline: none;
+            border-color: rgba(239, 68, 68, 0.6);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+        }
     </style>
 </head>
 
 <body>
-    <div class="glass rounded-xl shadow-2xl overflow-hidden">
-        <div class="drag-region p-2 border-b border-white/10 flex justify-between items-center cursor-move">
-            <span class="text-red-400 text-xs font-bold">🚫 Blacklist</span>
-            <button onclick="window.panelAPI.close('blacklist')"
-                class="no-drag text-slate-400 hover:text-red-400 text-xs">✕</button>
+    <div class="glass rounded-xl shadow-2xl overflow-hidden" style="width: 500px;">
+        <!-- Title Bar -->
+        <div id="title-bar"
+            class="drag-region px-3 py-2 border-b border-rose-500/30 flex justify-between items-center cursor-move bg-gradient-to-r from-rose-900/50 to-transparent">
+            <span class="text-rose-400 text-sm font-bold flex items-center gap-2">🚫 ประกาศ Blacklist / บทลงโทษ</span>
+            <div class="flex gap-2 no-drag">
+                <button id="lock-btn" onclick="toggleLock()" class="text-slate-400 hover:text-cyan-400 text-xs"
+                    title="ล็อค/ปลดล็อคการลาก">🔓</button>
+                <button onclick="closePanel()" class="text-slate-400 hover:text-red-400 text-xs" title="ปิด">✕</button>
+            </div>
         </div>
-        <div class="p-2">
-            <div id="blacklist-content" class="text-xs text-slate-400 max-h-[120px] overflow-y-auto">กำลังโหลด...</div>
-            <div class="border-t border-white/10 pt-2 mt-2">
-                <button onclick="copyCmd(this, '/me เช็ค Blacklist')"
-                    class="no-drag w-full text-left px-2 py-1 bg-red-900/30 hover:bg-red-900/50 rounded text-xs text-red-300">📋
-                    /me เช็ค Blacklist</button>
+
+        <div class="p-4 space-y-4 max-h-[550px] overflow-y-auto">
+            <!-- Section 1: ประกาศ Blacklist -->
+            <div>
+                <div class="text-xs font-bold text-rose-400 mb-3 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    ประกาศ Blacklist
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 space-y-3">
+                    <!-- ประเภท -->
+                    <div>
+                        <label class="text-[10px] text-slate-400 mb-1 block">ประเภท</label>
+                        <select id="bl-type" class="inp no-drag" onchange="updateTypeLabel()">
+                            <option value="patient">คนไข้ทั่วไป</option>
+                            <option value="citizen">ประชาชน</option>
+                            <option value="gang">แก๊ง</option>
+                            <option value="family">ครอบครัว</option>
+                        </select>
+                    </div>
+                    <!-- ชื่อ/เบอร์ -->
+                    <div>
+                        <label id="bl-name-label" class="text-[10px] text-slate-400 mb-1 block">เบอร์ หรือ ชื่อ
+                            ที่ต้องการ Blacklist</label>
+                        <input type="text" id="bl-name" placeholder="กรอกเบอร์/ชื่อ..." class="inp no-drag">
+                    </div>
+                    <!-- สาเหตุ -->
+                    <div>
+                        <label class="text-[10px] text-slate-400 mb-1 block">สาเหตุ</label>
+                        <select id="bl-reason" class="inp no-drag">
+                            <option value="ทำร้ายร่างกายในพื้นที่ Safe Zone">ทำร้ายร่างกายในพื้นที่ Safe Zone</option>
+                            <option value="ควักอาวุธในเขตพื้นที่โรงพยาบาล">ควักอาวุธในเขตพื้นที่โรงพยาบาล</option>
+                            <option value="ขโมยยานพาหนะในเขตพื้นที่โรงพยาบาล">ขโมยยานพาหนะในเขตพื้นที่โรงพยาบาล</option>
+                            <option value="สวมอุปกรณ์ปกปิดใบหน้าในเขตพื้นที่โรงพยาบาล">
+                                สวมอุปกรณ์ปกปิดใบหน้าในเขตพื้นที่โรงพยาบาล</option>
+                            <option value="ขัดขวางการทำงานของแพทย์">ขัดขวางการทำงานของแพทย์</option>
+                            <option value="ทำร้ายแพทย์ขณะอยู่ในเครื่องแบบ หรือ กำลังปฏิบัติหน้าที่">
+                                ทำร้ายแพทย์ขณะอยู่ในเครื่องแบบ หรือ กำลังปฏิบัติหน้าที่</option>
+                            <option value="ขโมยยานพาหนะของหน่วยงาน">ขโมยยานพาหนะของหน่วยงาน</option>
+                            <option value="ทำการเคลื่อนย้ายศพ ไปจากจุดที่มีการกดเรียกเคส">ทำการเคลื่อนย้ายศพ
+                                ไปจากจุดที่มีการกดเรียกเคส</option>
+                            <option value="ฝ่าฝืนคำสั่งเชิญออกจากพื้นที่โรงพยาบาล">
+                                ฝ่าฝืนคำสั่งเชิญออกจากพื้นที่โรงพยาบาล</option>
+                            <option value="กระทำความผิดจริงตามหลักฐาน">กระทำความผิดจริงตามหลักฐาน</option>
+                            <option value="ทำร้ายร่างกายแพทย์ในพื้นที่เรเบล">ทำร้ายร่างกายแพทย์ในพื้นที่เรเบล</option>
+                        </select>
+                    </div>
+                    <!-- ค่าปรับ -->
+                    <div>
+                        <label class="text-[10px] text-slate-400 mb-1 block">ค่าปรับ (One-Dollars)</label>
+                        <input type="number" id="bl-fine" placeholder="จำนวนเงิน..." class="inp no-drag" min="0">
+                    </div>
+                    <!-- โทษเพิ่มเติม -->
+                    <div>
+                        <label class="text-[10px] text-slate-400 mb-1 block">โทษเพิ่มเติม</label>
+                        <select id="bl-penalty" class="inp no-drag">
+                            <option value="">ไม่มีโทษเพิ่มเติม</option>
+                            <option value="x2">โทษค่ารักษา x2</option>
+                            <option value="x5">โทษค่ารักษา x5</option>
+                            <option value="no-treat">ไม่ทำการรักษา</option>
+                        </select>
+                    </div>
+                    <!-- Button -->
+                    <button onclick="copyBlacklist()"
+                        class="no-drag w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium rounded-lg transition">
+                        📋 Copy ประกาศ + บันทึก Blacklist
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section 2: ประกาศปลด Blacklist -->
+            <div>
+                <div class="text-xs font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    ประกาศปลด Blacklist
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 space-y-3">
+                    <!-- เลือกรายการ -->
+                    <div>
+                        <label class="text-[10px] text-slate-400 mb-1 block">เลือกรายการ Blacklist ที่จะปลด</label>
+                        <select id="unbl-select" class="inp no-drag">
+                            <option value="">-- เลือกรายการ --</option>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <!-- Button -->
+                    <button onclick="copyUnblacklist()"
+                        class="no-drag w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition">
+                        📋 Copy ประกาศปลด + ลบ Blacklist
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCPnd6bmpPe0cbWXbNh2LsYaeGcFHZNNsU",
-            authDomain: "medic-op.firebaseapp.com",
-            projectId: "medic-op",
-            storageBucket: "medic-op.firebasestorage.app",
-            messagingSenderId: "628357107384",
-            appId: "1:628357107384:web:3050de54d5a84d10ae75e2"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
 
-        // Load blacklist
-        db.collection('blacklist').limit(10).get().then(snapshot => {
-            const content = document.getElementById('blacklist-content');
-            if (snapshot.empty) {
-                content.innerHTML = '<div class="text-slate-500">ไม่มีข้อมูล</div>';
+    <script>
+        // Settings
+        const announceCmd = '/an';
+
+        // Blacklist data (will be synced from Firebase via IPC)
+        let blacklistData = [];
+
+        // Load blacklist data when panel opens
+        if (window.panelAPI && window.panelAPI.getBlacklist) {
+            window.panelAPI.getBlacklist().then(data => {
+                blacklistData = data || [];
+                populateUnblacklistDropdown();
+            });
+        }
+
+        function updateTypeLabel() {
+            const type = document.getElementById('bl-type').value;
+            const label = document.getElementById('bl-name-label');
+            if (type === 'patient') {
+                label.textContent = 'เบอร์ หรือ ชื่อ ที่ต้องการ Blacklist';
+            } else if (type === 'citizen') {
+                label.textContent = 'ชื่อประชาชนที่ต้องการ Blacklist';
+            } else if (type === 'gang') {
+                label.textContent = 'ชื่อแก๊งที่ต้องการ Blacklist';
+            } else {
+                label.textContent = 'ชื่อครอบครัวที่ต้องการ Blacklist';
+            }
+        }
+
+        function populateUnblacklistDropdown() {
+            const select = document.getElementById('unbl-select');
+            select.innerHTML = '<option value="">-- เลือกรายการ --</option>';
+            blacklistData.forEach((entry, idx) => {
+                const name = typeof entry === 'object' ? entry.name : entry;
+                const type = typeof entry === 'object' ? entry.type : 'unknown';
+                let typeLabel = '';
+                if (type === 'patient') typeLabel = '📞';
+                else if (type === 'citizen') typeLabel = '👤';
+                else if (type === 'gang') typeLabel = '🏴';
+                else if (type === 'family') typeLabel = '👨‍👩‍👧';
+                select.innerHTML += `<option value="${idx}">${typeLabel} ${name}</option>`;
+            });
+        }
+
+        function getTypeLabel(type) {
+            if (type === 'patient') return 'คนไข้เบอร์';
+            if (type === 'citizen') return 'คุณ';
+            if (type === 'gang') return 'แก๊ง';
+            if (type === 'family') return 'ครอบครัว';
+            return '';
+        }
+
+        async function copyBlacklist() {
+            const type = document.getElementById('bl-type').value;
+            const name = document.getElementById('bl-name').value.trim();
+            const reason = document.getElementById('bl-reason').value;
+            const fine = document.getElementById('bl-fine').value.trim();
+            const penalty = document.getElementById('bl-penalty').value;
+
+            if (!name) {
+                alert('กรุณากรอกชื่อ/เบอร์');
                 return;
             }
-            content.innerHTML = snapshot.docs.map(doc => {
-                const d = doc.data();
-                return `<div class="flex justify-between py-1 border-b border-white/5">
-                    <span>${d.name || 'ไม่ระบุ'}</span>
-                    <span class="text-red-400 text-[10px]">${d.reason || '-'}</span>
-                </div>`;
-            }).join('');
-        }).catch(() => {
-            document.getElementById('blacklist-content').innerHTML = '<div class="text-red-400">โหลดไม่สำเร็จ</div>';
-        });
+            if (!fine) {
+                alert('กรุณากรอกค่าปรับ');
+                return;
+            }
 
-        function copyCmd(btn, text) {
-            navigator.clipboard.writeText(text);
-            const orig = btn.textContent;
-            btn.textContent = '✅ Copied!';
-            setTimeout(() => btn.textContent = orig, 1000);
+            const typeLabel = getTypeLabel(type);
+
+            // Exact text from Desktop OP (line 8654)
+            const msg = `${announceCmd} ประกาศ Blacklist ${typeLabel} ${name} เนื่องจาก ${reason} กรุณาติดต่อแพทย์เพื่อจ่ายค่าปรับจำนวน ${fine} One-Dollars กรุณามาติดต่อเพื่อชำระค่าปรับด้วย ขอบคุณครับ/ค่ะ`;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(msg);
+
+            // Save to blacklist via IPC
+            const entry = { name, type, reason, fine, penaltyTag: penalty, createdAt: Date.now() };
+            if (window.panelAPI && window.panelAPI.addBlacklist) {
+                await window.panelAPI.addBlacklist(entry);
+            }
+
+            // Clear form
+            document.getElementById('bl-name').value = '';
+            document.getElementById('bl-fine').value = '';
+            document.getElementById('bl-penalty').value = '';
+
+            // Close panel and restore overlays
+            closePanel();
+        }
+
+        async function copyUnblacklist() {
+            const select = document.getElementById('unbl-select');
+            const idx = select.value;
+
+            if (idx === '') {
+                alert('กรุณาเลือกรายการที่จะปลด');
+                return;
+            }
+
+            const entry = blacklistData[parseInt(idx)];
+            const name = typeof entry === 'object' ? entry.name : entry;
+            const type = typeof entry === 'object' ? entry.type : 'unknown';
+            const typeLabel = getTypeLabel(type);
+
+            // Exact text from Desktop OP (line 8692)
+            const msg = `${announceCmd} ประกาศปลด Blacklist ${typeLabel} ${name} เนื่องจากได้จ่ายค่าปรับครบจำนวนเป็นที่เรียบร้อย และจะได้รับการรักษาจากแพทย์ตามปกติครับ/ค่ะ`;
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(msg);
+
+            // Remove from blacklist via IPC
+            if (window.panelAPI && window.panelAPI.removeBlacklist) {
+                await window.panelAPI.removeBlacklist(parseInt(idx));
+            }
+
+            // Clear selection
+            select.value = '';
+
+            // Close panel and restore overlays
+            closePanel();
+        }
+
+        function closePanel() {
+            if (window.panelAPI && window.panelAPI.closeBlacklistPanel) {
+                window.panelAPI.closeBlacklistPanel();
+            }
+        }
+
+        // Lock toggle
+        let isLocked = false;
+        function toggleLock() {
+            isLocked = !isLocked;
+            const titleBar = document.getElementById('title-bar');
+            const lockBtn = document.getElementById('lock-btn');
+            if (isLocked) {
+                titleBar.classList.remove('drag-region');
+                titleBar.classList.remove('cursor-move');
+                lockBtn.textContent = '🔒';
+            } else {
+                titleBar.classList.add('drag-region');
+                titleBar.classList.add('cursor-move');
+                lockBtn.textContent = '🔓';
+            }
         }
     </script>
 </body>
