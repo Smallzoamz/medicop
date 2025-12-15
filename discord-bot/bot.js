@@ -888,8 +888,12 @@ async function updateOPChannelMessage(data) {
                     const medics = c.medics || [];
                     const mainMedic = medics[0] ? formatWithMention(medics[0]) : 'ยังไม่มี';
                     const supportMedics = medics.slice(1).map(m => formatWithMention(m)).join(', ');
+                    const isClosed = c.closed;
 
-                    message += `**สตอรี่ #${i + 1}** ${startTime ? `⏰ ${startTime}` : ''}\n`;
+                    // Add "✅ Clear" for closed stories
+                    const statusLabel = isClosed ? ' ✅ **Clear**' : '';
+
+                    message += `**สตอรี่ #${i + 1}**${statusLabel} ${startTime ? `⏰ ${startTime}` : ''}\n`;
                     message += `ระหว่าง ${partyA} VS ${partyB}\n`;
                     if (location) message += `📍 ${location}\n`;
                     message += `แพทย์ผู้รับผิดชอบ : ${mainMedic}\n`;
