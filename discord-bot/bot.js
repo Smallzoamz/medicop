@@ -789,8 +789,10 @@ async function updateOPChannelMessage(data) {
         if (currentOP === 'ไม่มี') {
             // Check if summary was just posted (to avoid duplicate "waiting" message)
             const configDoc = await db.collection('config').doc('discord_message').get();
-            if (configDoc.exists && configDoc.data().opChannelMessageId) {
-                // Already have a waiting message from postSummaryToDiscord, skip
+            const configData = configDoc.exists ? configDoc.data() : {};
+
+            // Skip if summary was just posted OR if we already have a waiting message
+            if (configData.summaryJustPosted || configData.opChannelMessageId) {
                 console.log('⏭️ Waiting message already posted by summary function, skipping...');
                 return;
             }
