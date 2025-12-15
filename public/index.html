@@ -10198,7 +10198,22 @@
             // Check every 30 seconds for pending start cases
             setInterval(checkCasePendingStart, 30000);
 
-            async function closeCase(id) { const c = await showConfirm('ยืนยันปิดเคส', 'ปิดเคสและนำแพทย์กลับ?'); if (!c) return; const idx = appData.cases.findIndex(x => x.id === id); if (idx > -1) { const cs = appData.cases[idx]; if (!appData.closedCases) appData.closedCases = []; appData.closedCases.push({ ...cs, closedAt: Date.now() }); cs.medics.forEach(m => { if (!appData.onDuty.includes(m)) appData.onDuty.push(m); }); appData.cases.splice(idx, 1); saveOpData(); showNotif('Success', 'ปิดเคสเรียบร้อย'); } }
+            async function closeCase(id) {
+                const c = await showConfirm('ยืนยันปิดเคส', 'ปิดเคสและนำแพทย์กลับ?'); if (!c) return; const idx = appData.cases.findIndex(x => x.id === id); if (idx > -1) {
+                    const cs = appData.cases[idx];
+                    // Mark as closed instead of removing (so it shows "Clear" label)
+                    cs.closed = true;
+                    cs.closedAt = Date.now();
+                    // Also add to closedCases for summary
+                    if (!appData.closedCases) appData.closedCases = [];
+                    appData.closedCases.push({ ...cs });
+                    // Return medics to onDuty
+                    cs.medics.forEach(m => { if (!appData.onDuty.includes(m)) appData.onDuty.push(m); });
+                    // NOTE: Don't splice - keep story in cases array with closed=true
+                    saveOpData();
+                    showNotif('Success', 'ปิดเคสเรียบร้อย');
+                }
+            }
 
             function copyPhoneNotFound() { const cmd = getAnnounceCmd(); const phone = document.getElementById('phone-input-1').value.trim(); if (!phone) return showNotif('Error', 'กรุณากรอกเบอร์โทร'); const msg = `${cmd} คนไข้เบอร์ ${phone} หมอไม่พบร่างรบกวนเข้าห้องติดต่อหมอในนิตยสารประเทศ ขอบคุณครับ/ค่ะ`; navigator.clipboard.writeText(msg); document.getElementById('phone-input-1').value = ''; showNotif('Success', 'คัดลอกแล้ว'); }
             function copyPhoneUnreachable() { const cmd = getAnnounceCmd(); const phone = document.getElementById('phone-input-1').value.trim(); if (!phone) return showNotif('Error', 'กรุณากรอกเบอร์โทร'); const msg = `${cmd} คนไข้เบอร์ ${phone} หมอไม่สามารถเข้าถึงพื้นที่ได้ รบกวนเข้าห้องติดต่อหมอในนิตยสารประเทศ ขอบคุณครับ/ค่ะ`; navigator.clipboard.writeText(msg); document.getElementById('phone-input-1').value = ''; showNotif('Success', 'คัดลอกแล้ว'); }
