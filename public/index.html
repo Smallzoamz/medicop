@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th" class="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.5.6 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.5.7 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -459,7 +459,7 @@
     <div id="electron-title-bar" class="electron-title-bar hidden">
         <div class="title-bar-left">
             <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
-            <span class="title-bar-text">Medical OP Systems v.1.5.6</span>
+            <span class="title-bar-text">Medical OP Systems v.1.5.7</span>
         </div>
         <div class="title-bar-controls">
             <button class="title-bar-btn minimize" id="btn-minimize" title="ย่อ">
@@ -528,7 +528,7 @@
             <div id="changelog-content" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 <div class="bg-gradient-to-r from-cyan-900/50 to-transparent rounded-xl p-4 border-l-4 border-cyan-500">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-cyan-400 font-bold text-sm">v1.5.6</span>
+                        <span class="text-cyan-400 font-bold text-sm">v1.5.7</span>
                         <span class="text-[10px] bg-cyan-500 text-white px-2 py-0.5 rounded-full">Latest</span>
                         <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
                     </div>
@@ -1716,7 +1716,7 @@
                 <div class="px-5 py-3 border-b border-white/10 flex justify-between items-center">
                     <span class="text-sm text-slate-300 flex items-center gap-2"><span
                             class="w-2 h-2 rounded-full bg-cyan-500"></span> Operator Systems Login</span>
-                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.5.6</span>
+                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.5.7</span>
                 </div>
                 <div class="flex border-b border-white/10">
                     <button onclick="showAuthTab('login')" id="tab-login"
@@ -6388,7 +6388,7 @@
             // App Version & Changelog
             // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
             // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-            const APP_VERSION = '1.5.6';
+            const APP_VERSION = '1.5.7';
             function showChangelogModal() { document.getElementById('changelog-modal').classList.remove('hidden'); }
             function closeChangelogModal() { document.getElementById('changelog-modal').classList.add('hidden'); localStorage.setItem('op_last_seen_version', APP_VERSION); }
             function checkShowChangelog() { const lastSeen = localStorage.getItem('op_last_seen_version'); if (lastSeen !== APP_VERSION) { setTimeout(() => showChangelogModal(), 500); } }
@@ -6442,7 +6442,7 @@
                 }, 2500);
             }
 
-            function loginSuccess(showWelcome = true) { document.getElementById('auth-container').classList.add('hidden'); document.getElementById('app-container').classList.remove('hidden'); loadOpData(); loadServerSettings(); loadOnlineStatus(); loadMedicalFees(); loadBlacklist(); loadMusicSettings(); loadChatMessages(); cleanOldChatMessages(); updateHeader(); updateUserAvatar(); if (['Owner', 'Admin', 'Staff'].includes(currentUser?.role)) document.getElementById('staff-admin-btn').classList.remove('hidden'); clearOldLogs(); applyRoleRestrictions(); if (showWelcome) { showWelcomeAnimation(); } checkShowChangelog(); setTimeout(() => { const dmBubblesContainer = document.getElementById('dm-bubbles-container'); const dmExpandedContainer = document.getElementById('dm-expanded-container'); if (dmBubblesContainer) dmBubblesContainer.classList.remove('hidden'); if (dmExpandedContainer) dmExpandedContainer.classList.remove('hidden'); loadDMBubbleState(); listenToLastMessages(); }, 1000); }
+            function loginSuccess(showWelcome = true) { document.getElementById('auth-container').classList.add('hidden'); document.getElementById('app-container').classList.remove('hidden'); loadOpData(); loadServerSettings(); loadOnlineStatus(); loadMedicalFees(); loadBlacklist(); loadMusicSettings(); loadChatMessages(); cleanOldChatMessages(); updateHeader(); updateUserAvatar(); if (['Owner', 'Admin', 'Staff'].includes(currentUser?.role)) document.getElementById('staff-admin-btn').classList.remove('hidden'); clearOldLogs(); applyRoleRestrictions(); if (showWelcome) { showWelcomeAnimation(); } checkShowChangelog(); if (currentUser?.role === 'Owner') { db.collection('op_settings').doc('server').set({ version: APP_VERSION, updatedAt: Date.now(), updatedBy: 'System (Post-Deploy)' }, { merge: true }).catch(e => console.log('Version update failed:', e)); } setTimeout(() => { const dmBubblesContainer = document.getElementById('dm-bubbles-container'); const dmExpandedContainer = document.getElementById('dm-expanded-container'); if (dmBubblesContainer) dmBubblesContainer.classList.remove('hidden'); if (dmExpandedContainer) dmExpandedContainer.classList.remove('hidden'); loadDMBubbleState(); listenToLastMessages(); }, 1000); }
             function isOP() { if (!appData.currentOP) return false; return currentUser?.fullName === appData.supOP || currentUser?.fullName === appData.currentOP; }
             function isCurrentOPorSupOP() { return currentUser?.fullName === appData.currentOP || currentUser?.fullName === appData.supOP; }
             function isGuest() { return currentUser?.isGuest === true || currentUser?.role === 'Guest'; }
