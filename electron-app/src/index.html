@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 .:: Medical OP Systems ::. v.1.5.9 by Bonchon-Studio</title>
+    <title>🏥 .:: Medical OP Systems ::. v.1.6.0 by Bonchon-Studio</title>
     <link id="dynamic-favicon" rel="icon" type="image/png" href="">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -459,7 +459,7 @@
     <div id="electron-title-bar" class="electron-title-bar hidden">
         <div class="title-bar-left">
             <img src="logo.jpg" alt="Logo" class="title-bar-icon" style="border-radius: 3px;">
-            <span class="title-bar-text">Medical OP Systems v.1.5.9</span>
+            <span class="title-bar-text">Medical OP Systems v.1.6.0</span>
         </div>
         <div class="title-bar-controls">
             <button class="title-bar-btn minimize" id="btn-minimize" title="ย่อ">
@@ -529,8 +529,21 @@
             <div id="changelog-content" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 <div class="bg-gradient-to-r from-cyan-900/50 to-transparent rounded-xl p-4 border-l-4 border-cyan-500">
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-cyan-400 font-bold text-sm">v1.5.7</span>
+                        <span class="text-cyan-400 font-bold text-sm">v1.6.0</span>
                         <span class="text-[10px] bg-cyan-500 text-white px-2 py-0.5 rounded-full">Latest</span>
+                        <span class="text-[10px] text-slate-500">15 ธ.ค. 2567</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-1">
+                        <li>• 📞 Discord Bot แสดงเบอร์ IC ต่อท้ายชื่อ OP/Sup OP/On Duty</li>
+                        <li>• 🎮 Badge "กำลังเล่น" สำหรับสตอรี่ที่เริ่มแล้ว</li>
+                        <li>• ✅ จบกะได้โดยไม่ต้องปิดสตอรี่ (เก็บต่อถ้ายังมีที่ไม่จบ)</li>
+                        <li>• 🔧 แก้ไข Discord โพสต์ซ้ำเมื่อดูประวัติกะ</li>
+                        <li>• ⚡ Version Display อัพเดทอัตโนมัติจาก APP_VERSION</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-slate-300 font-bold text-sm">v1.5.7</span>
                         <span class="text-[10px] text-slate-500">14 ธ.ค. 2567</span>
                     </div>
                     <ul class="text-xs text-slate-300 space-y-1">
@@ -1384,14 +1397,9 @@
                 <div class="bg-slate-800/50 rounded-xl p-4">
                     <h4 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">🎯 การจัดการ OP</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">เข้ากะ (เป็น OP)</span> - กดเพื่อตั้งตัวเองเป็น
-                            OP
+                        <li>• <span class="text-white font-medium">เข้ากะ (เป็น OP)</span> - กดเพื่อตั้งตัวเองเป็น OP
                             ประจำกะ</li>
-                        <li>• <span class="text-white font-medium">🎲 สุ่ม OP</span> - สุ่มเลือก OP ใหม่จากรายชื่อใน
-                            On
-                            Duty, AFK หรือแพทย์ที่ไปสตอรี่</li>
-                        <li>• <span class="text-white font-medium">▶ เริ่มกะ</span> - เริ่มนับเวลากะ (ต้องเป็น OP
-                            ก่อน)
+                        <li>• <span class="text-white font-medium">▶ เริ่มกะ</span> - เริ่มนับเวลากะ (ต้องเป็น OP ก่อน)
                         </li>
                         <li>• <span class="text-white font-medium">⏹️ จบกะ</span> - จบกะและแสดงสรุปการทำงาน</li>
                         <li>• <span class="text-white font-medium">📋 Request OP</span> - ส่งคำขอเป็น OP
@@ -1454,11 +1462,13 @@
                     <ul class="text-xs text-slate-300 space-y-1.5">
                         <li>• <span class="text-white font-medium">✏️ แก้ไข</span> - แก้ไขข้อมูลเคส</li>
                         <li>• <span class="text-white font-medium">❌ ปิดเคส</span> - ปิดเคสและนำแพทย์กลับ On Duty</li>
-                        <li>• <span class="text-white font-medium">👨‍⚕️ กำหนดแพทย์</span> - เลือกแพทย์ 1-3
-                            คนสำหรับแต่ละเคส (ใหม่!)</li>
-                        <li>• <span class="text-rose-300">🚫 ห้ามฉีดยา</span> - แสดงเมื่อถึงวันสตอรี่แล้ว (ใหม่!)</li>
-                        <li>• <span class="text-rose-300">โทษx5</span> - แสดงเมื่อ Party เป็นแก๊ง Blacklist (ใหม่!)</li>
-                        <li>• ประวัติสตอรี่จะเก็บไว้สำหรับสรุปกะ</li>
+                        <li>• <span class="text-white font-medium">👨‍⚕️ กำหนดแพทย์</span> - เลือกแพทย์ 1-3 คน</li>
+                        <li>• <span class="text-cyan-300">🎮 กำลังเล่น</span> - แสดงเมื่อสตอรี่เริ่มแล้ว <span
+                                class="text-[10px] bg-cyan-500/30 text-cyan-300 px-1 rounded">ใหม่!</span></li>
+                        <li>• <span class="text-rose-300">🚫 ห้ามฉีดยา / 💰x5</span> - แสดงเมื่อถึงวันแล้ว/Blacklist
+                        </li>
+                        <li>• <span class="text-emerald-300">✅ จบกะได้เลย</span> - สตอรี่ที่ยังไม่จบจะส่งต่อกะหน้า <span
+                                class="text-[10px] bg-cyan-500/30 text-cyan-300 px-1 rounded">ใหม่!</span></li>
                     </ul>
                 </div>
 
@@ -1762,7 +1772,7 @@
                 <div class="px-5 py-3 border-b border-white/10 flex justify-between items-center">
                     <span class="text-sm text-slate-300 flex items-center gap-2"><span
                             class="w-2 h-2 rounded-full bg-cyan-500"></span> Operator Systems Login</span>
-                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.5.9</span>
+                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.6.0</span>
                 </div>
                 <div class="flex border-b border-white/10">
                     <button onclick="showAuthTab('login')" id="tab-login"
@@ -6481,7 +6491,23 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.5.9';
+        const APP_VERSION = '1.6.0';
+
+        // Update all version displays from APP_VERSION (single source of truth)
+        function updateVersionDisplays() {
+            const verStr = `v.${APP_VERSION}`;
+            // Title
+            document.title = `🏥 .:: Medical OP Systems ::. ${verStr} by Bonchon-Studio`;
+            // Title bar (Electron)
+            const titleBar = document.querySelector('.title-bar-text');
+            if (titleBar) titleBar.textContent = `Medical OP Systems ${verStr}`;
+            // Login version
+            const loginVer = document.getElementById('login-version-display');
+            if (loginVer) loginVer.textContent = verStr;
+        }
+        // Update on DOM ready
+        document.addEventListener('DOMContentLoaded', updateVersionDisplays);
+
         function showChangelogModal() { document.getElementById('changelog-modal').classList.remove('hidden'); }
         function closeChangelogModal() { document.getElementById('changelog-modal').classList.add('hidden'); localStorage.setItem('op_last_seen_version', APP_VERSION); }
         function checkShowChangelog() { const lastSeen = localStorage.getItem('op_last_seen_version'); if (lastSeen !== APP_VERSION) { setTimeout(() => showChangelogModal(), 500); } }
@@ -9820,6 +9846,10 @@
             const key = `shift_history_${currentUser.id || currentUser.fullName}`;
             let history = JSON.parse(localStorage.getItem(key) || '[]');
 
+            // Check if this summary was already saved to history (has savedAt from localStorage)
+            // If it has savedAt, it means it's being viewed from history, not a new summary
+            const isFromHistory = summaryData.savedAt && summaryData.savedAt > 0;
+
             // Add timestamp for expiration and convert Date to ISO string
             const entry = {
                 ...summaryData,
@@ -9831,16 +9861,20 @@
             const now = Date.now();
             history = history.filter(h => (now - h.savedAt) < 24 * 60 * 60 * 1000);
 
-            // Add new entry at the beginning
-            history.unshift(entry);
+            // Add new entry at the beginning (only if not already in history)
+            if (!isFromHistory) {
+                history.unshift(entry);
+            }
 
             // Keep only last 3 entries
             history = history.slice(0, 3);
 
             localStorage.setItem(key, JSON.stringify(history));
 
-            // Also save to Firestore for Discord bot to post
-            saveShiftSummaryToFirestore(summaryData);
+            // Only save to Firestore for Discord bot if this is a NEW summary (not from viewing history)
+            if (!isFromHistory) {
+                saveShiftSummaryToFirestore(summaryData);
+            }
         }
 
         // Save shift summary to Firestore for Discord bot
