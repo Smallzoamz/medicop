@@ -1721,91 +1721,118 @@
     </div>
 
     <!-- Auth Container -->
-    <div id="auth-container" class="hidden min-h-screen flex items-center justify-center p-4">
-        <div class="w-full max-w-md">
-            <!-- Login Logo (Animated) -->
-            <div class="text-center mb-8">
-                <img id="login-logo" src="" alt="Logo" class="w-64 h-64 mx-auto object-contain animate-pulse hidden">
-            </div>
-            <div class="glass rounded-2xl w-full overflow-hidden animate-zoom-in">
-                <div class="px-5 py-3 border-b border-white/10 flex justify-between items-center">
-                    <span class="text-sm text-slate-300 flex items-center gap-2"><span
-                            class="w-2 h-2 rounded-full bg-cyan-500"></span> Operator Systems Login</span>
-                    <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.6.0</span>
-                </div>
-                <div class="flex border-b border-white/10">
-                    <button onclick="showAuthTab('login')" id="tab-login"
-                        class="flex-1 py-2.5 text-center text-sm font-medium text-indigo-400 border-b-2 border-indigo-400">เข้าสู่ระบบ</button>
-                    <button onclick="showAuthTab('register')" id="tab-register"
-                        class="flex-1 py-2.5 text-center text-sm font-medium text-slate-500 border-b-2 border-transparent hover:text-slate-300">สมัครสมาชิก</button>
-                </div>
-                <div id="login-form" class="p-5 space-y-4">
-                    <div>
-                        <label class="text-xs text-slate-400 mb-1.5 block font-medium">Username</label>
-                        <input type="text" id="login-username" class="inp-pretty" placeholder="ชื่อผู้ใช้">
+    <div id="auth-container" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+        <!-- Login Logo (Animated) - Top Center -->
+        <div class="text-center mb-6">
+            <img id="login-logo" src="" alt="Logo" class="w-48 h-48 mx-auto object-contain animate-pulse hidden">
+        </div>
+
+        <!-- Login + Side Cards Row -->
+        <div class="flex flex-col lg:flex-row gap-6 items-start justify-center">
+            <!-- Login Form Card -->
+            <div class="w-full lg:w-[380px] flex-shrink-0">
+                <div class="glass rounded-2xl w-full overflow-hidden animate-zoom-in">
+                    <div class="px-5 py-3 border-b border-white/10 flex justify-between items-center">
+                        <span class="text-sm text-slate-300 flex items-center gap-2"><span
+                                class="w-2 h-2 rounded-full bg-cyan-500"></span> Operator Systems Login</span>
+                        <span id="login-version-display" class="text-xs text-slate-500 font-mono">v.1.6.0</span>
                     </div>
-                    <div>
-                        <label class="text-xs text-slate-400 mb-1.5 block font-medium">Password</label>
-                        <input type="password" id="login-password" class="inp-pretty" placeholder="รหัสผ่าน">
+                    <div class="flex border-b border-white/10">
+                        <button onclick="showAuthTab('login')" id="tab-login"
+                            class="flex-1 py-2.5 text-center text-sm font-medium text-indigo-400 border-b-2 border-indigo-400">เข้าสู่ระบบ</button>
+                        <button onclick="showAuthTab('register')" id="tab-register"
+                            class="flex-1 py-2.5 text-center text-sm font-medium text-slate-500 border-b-2 border-transparent hover:text-slate-300">สมัครสมาชิก</button>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="login-remember" class="rounded bg-slate-800 border-slate-600">
-                        <label for="login-remember" class="text-xs text-slate-400">จดจำการเข้าสู่ระบบ 7 วัน</label>
-                    </div>
-                    <button onclick="handleLogin()"
-                        class="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition">เข้าสู่ระบบ</button>
-                    <!-- Guest Mode Divider -->
-                    <div class="flex items-center gap-3 my-2">
-                        <div class="flex-1 h-px bg-slate-700"></div>
-                        <span class="text-xs text-slate-500">หรือ</span>
-                        <div class="flex-1 h-px bg-slate-700"></div>
-                    </div>
-                    <!-- Guest Button -->
-                    <button onclick="enterAsGuest()"
-                        class="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-sm font-medium rounded-lg transition flex items-center justify-center gap-2">
-                        <span>👁️</span> เข้าดูแบบ Guest (ดูได้อย่างเดียว)
-                    </button>
-                </div>
-                <div id="register-form" class="p-5 space-y-4 hidden">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div id="login-form" class="p-5 space-y-4">
                         <div>
                             <label class="text-xs text-slate-400 mb-1.5 block font-medium">Username</label>
-                            <input type="text" id="reg-username" class="inp-pretty" placeholder="ชื่อผู้ใช้">
+                            <input type="text" id="login-username" class="inp-pretty" placeholder="ชื่อผู้ใช้">
                         </div>
                         <div>
                             <label class="text-xs text-slate-400 mb-1.5 block font-medium">Password</label>
-                            <input type="password" id="reg-password" class="inp-pretty" placeholder="รหัสผ่าน">
+                            <input type="password" id="login-password" class="inp-pretty" placeholder="รหัสผ่าน">
                         </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="text-xs text-slate-400 mb-1.5 block font-medium">ชื่อ</label>
-                            <input type="text" id="reg-firstname" class="inp-pretty" placeholder="ชื่อ">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="login-remember" class="rounded bg-slate-800 border-slate-600">
+                            <label for="login-remember" class="text-xs text-slate-400">จดจำการเข้าสู่ระบบ 7 วัน</label>
                         </div>
-                        <div>
-                            <label class="text-xs text-slate-400 mb-1.5 block font-medium">นามสกุล</label>
-                            <input type="text" id="reg-lastname" class="inp-pretty" placeholder="นามสกุล">
-                        </div>
+                        <button onclick="handleLogin()"
+                            class="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition">เข้าสู่ระบบ</button>
                     </div>
-                    <div>
-                        <label class="text-xs text-slate-400 mb-1.5 block font-medium">รูปโปรไฟล์ (URL)</label>
-                        <input type="text" id="reg-avatar" class="inp-pretty"
-                            placeholder="https://example.com/avatar.png">
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-400 mb-1.5 block font-medium">เบอร์โทร IC</label>
-                        <input type="text" id="reg-ic-phone" class="inp-pretty" placeholder="เบอร์โทร In-Character">
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-400 mb-1.5 block font-medium">ช่วงเวลาที่สะดวก</label>
+                    <div id="register-form" class="p-5 space-y-4 hidden">
                         <div class="grid grid-cols-2 gap-3">
-                            <input type="time" id="reg-shift-start" class="inp-pretty text-center">
-                            <input type="time" id="reg-shift-end" class="inp-pretty text-center">
+                            <div>
+                                <label class="text-xs text-slate-400 mb-1.5 block font-medium">Username</label>
+                                <input type="text" id="reg-username" class="inp-pretty" placeholder="ชื่อผู้ใช้">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400 mb-1.5 block font-medium">Password</label>
+                                <input type="password" id="reg-password" class="inp-pretty" placeholder="รหัสผ่าน">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-400 mb-1.5 block font-medium">ชื่อ</label>
+                                <input type="text" id="reg-firstname" class="inp-pretty" placeholder="ชื่อ">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400 mb-1.5 block font-medium">นามสกุล</label>
+                                <input type="text" id="reg-lastname" class="inp-pretty" placeholder="นามสกุล">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 mb-1.5 block font-medium">รูปโปรไฟล์ (URL)</label>
+                            <input type="text" id="reg-avatar" class="inp-pretty"
+                                placeholder="https://example.com/avatar.png">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 mb-1.5 block font-medium">เบอร์โทร IC</label>
+                            <input type="text" id="reg-ic-phone" class="inp-pretty" placeholder="เบอร์โทร In-Character">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 mb-1.5 block font-medium">ช่วงเวลาที่สะดวก</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="time" id="reg-shift-start" class="inp-pretty text-center">
+                                <input type="time" id="reg-shift-end" class="inp-pretty text-center">
+                            </div>
+                        </div>
+                        <button onclick="handleRegister()"
+                            class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-500/20">สมัครสมาชิก</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Cards (Guest & Download) -->
+            <div class="w-full lg:w-auto flex flex-col gap-3 animate-zoom-in" style="animation-delay: 0.1s;">
+                <!-- Guest Card -->
+                <div class="glass rounded-xl p-4 hover:bg-white/10 transition cursor-pointer group"
+                    onclick="enterAsGuest()">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                            👁️
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-xs mb-0.5">เข้าดูแบบ Guest</h3>
+                            <p class="text-slate-400 text-[10px]">ดูสถานะ OP ได้อย่างเดียว</p>
                         </div>
                     </div>
-                    <button onclick="handleRegister()"
-                        class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-500/20">สมัครสมาชิก</button>
                 </div>
+
+                <!-- Download Desktop Card -->
+                <a href="https://github.com/Smallzoamz/medicop/releases/latest" target="_blank"
+                    class="glass rounded-xl p-4 hover:bg-cyan-500/10 transition group block">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                            💻
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-xs mb-0.5">ดาวน์โหลด Desktop OP</h3>
+                            <p class="text-slate-400 text-[10px]">แอปสำหรับ Windows</p>
+                        </div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
