@@ -958,9 +958,10 @@ async function updateOPChannelMessage(data) {
 }
 
 // --- Update Story Channel Message ---
-// Shows ALL stories for the day, marks closed ones with "Clear"
+// Shows stories for the day, marks closed ones with "Clear"
 // Edits existing message while stories are still open
-// Posts NEW message when ALL stories are closed
+// Posts NEW message when ALL stories in current batch are closed
+// Uses summarizedStoryIds to track which stories have been finalized
 async function updateStoryChannelMessage(data) {
     try {
         const channel = await client.channels.fetch(STORY_CHANNEL_ID);
@@ -970,22 +971,42 @@ async function updateStoryChannelMessage(data) {
         }
 
         const allStories = data.cases || [];
-        const stories = filterTodayItems(allStories);
+        const todayStories = filterTodayItems(allStories);
 
-        // No stories at all - nothing to do
-        if (stories.length === 0) {
-            console.log('📭 No stories to display');
+        // Get config with summarized story IDs
+        const configDoc = await db.collection('config').doc('discord_message').get();
+        const configData = configDoc.exists ? configDoc.data() : {};
+        const storedMessageId = configData.storyMessageId || null;
+        let summarizedStoryIds = configData.summarizedStoryIds || [];
+        const summarizedDate = configData.summarizedDate || null;
+
+        // Get today's date string for comparison
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }); // YYYY-MM-DD format
+
+        // Clear summarized IDs if it's a new day
+        if (summarizedDate && summarizedDate !== todayStr) {
+            summarizedStoryIds = [];
+            console.log('🔄 New day detected - cleared summarizedStoryIds');
+        }
+
+        // Filter out already-summarized stories from the current batch
+        const activeStories = todayStories.filter(s => !summarizedStoryIds.includes(s.id));
+
+        // No active stories to display
+        if (activeStories.length === 0) {
+            console.log('📭 No active stories to display (all summarized or none)');
             return;
         }
 
-        // Check if there are any OPEN (not closed) stories
-        const openStories = stories.filter(s => !s.closed);
+        // Check if there are any OPEN (not closed) stories in active batch
+        const openStories = activeStories.filter(s => !s.closed);
         const allClosed = openStories.length === 0;
 
         // Get date from first story's storyDate, or use current date as fallback
         let dateStr;
-        if (stories.length > 0 && stories[0].storyDate) {
-            const [year, month, day] = stories[0].storyDate.split('-').map(Number);
+        if (activeStories.length > 0 && activeStories[0].storyDate) {
+            const [year, month, day] = activeStories[0].storyDate.split('-').map(Number);
             const storyDateObj = new Date(year, month - 1, day);
             dateStr = storyDateObj.toLocaleDateString('th-TH', {
                 day: 'numeric',
@@ -993,7 +1014,6 @@ async function updateStoryChannelMessage(data) {
                 year: 'numeric'
             });
         } else {
-            const now = new Date();
             dateStr = now.toLocaleDateString('th-TH', {
                 day: 'numeric',
                 month: 'short',
@@ -1001,16 +1021,16 @@ async function updateStoryChannelMessage(data) {
             });
         }
 
-        // Build message - show ALL stories
+        // Build message - show active stories only
         let message = '';
         message += allClosed ? '**📋 สรุปเคสสตอรี่**\n' : '**📋 แจ้งเคสสตอรี่**\n';
         message += '────────────────────\n';
         message += `📅 ${dateStr}\n`;
         message += '────────────────────\n\n';
 
-        // Show ALL stories with status
-        message += `⚔️ **สตอรี่ (${stories.length} เคส):**\n`;
-        stories.forEach((c, i) => {
+        // Show active stories with status
+        message += `⚔️ **สตอรี่ (${activeStories.length} เคส):**\n`;
+        activeStories.forEach((c, i) => {
             const partyA = c.partyA || '?';
             const partyB = c.partyB || '?';
             const location = c.location || '';
@@ -1033,12 +1053,8 @@ async function updateStoryChannelMessage(data) {
             message += '\n';
         });
 
-        // Get stored message ID for Story channel
-        const configDoc = await db.collection('config').doc('discord_message').get();
-        const storedMessageId = configDoc.exists ? configDoc.data().storyMessageId : null;
-
         if (allClosed) {
-            // ALL stories closed - update existing message to "สรุป" and clear ID for next batch
+            // ALL stories in current batch closed - update existing message to "สรุป"
             if (storedMessageId) {
                 try {
                     const msg = await channel.messages.fetch(storedMessageId);
@@ -1055,11 +1071,16 @@ async function updateStoryChannelMessage(data) {
                 console.log('✅ Story Channel: All closed - sent new summary');
             }
 
-            // Clear storyMessageId so next batch of stories starts a NEW message
+            // Add current batch story IDs to summarized list
+            const newSummarizedIds = [...summarizedStoryIds, ...activeStories.map(s => s.id)];
+
+            // Clear storyMessageId and save summarized IDs so next batch starts a NEW message
             await db.collection('config').doc('discord_message').set({
-                storyMessageId: null
+                storyMessageId: null,
+                summarizedStoryIds: newSummarizedIds,
+                summarizedDate: todayStr
             }, { merge: true });
-            console.log('🔄 Cleared storyMessageId for next batch');
+            console.log(`🔄 Cleared storyMessageId, saved ${activeStories.length} summarized story IDs`);
         } else if (storedMessageId) {
             // Still have open stories - try to EDIT existing message
             try {
@@ -1070,7 +1091,7 @@ async function updateStoryChannelMessage(data) {
                 // Message not found - send new
                 const newMsg = await channel.send(message);
                 await db.collection('config').doc('discord_message').set({
-                    ...configDoc.data(),
+                    ...configData,
                     storyMessageId: newMsg.id
                 }, { merge: true });
                 console.log('✅ Story Channel new message sent');
@@ -1079,6 +1100,7 @@ async function updateStoryChannelMessage(data) {
             // No existing message - send new
             const newMsg = await channel.send(message);
             await db.collection('config').doc('discord_message').set({
+                ...configData,
                 storyMessageId: newMsg.id
             }, { merge: true });
             console.log('✅ Story Channel initial message sent');
