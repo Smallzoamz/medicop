@@ -949,15 +949,16 @@ async function updateOPChannelMessage(data) {
                 message += '_ไม่มีสตอรี่ในขณะนี้_\n';
             }
 
-            // Events (activeEvents) - show in OP Channel too
-            const allEvents = data.activeEvents || [];
-            const eventList = filterTodayItems(allEvents);
-            if (eventList.length > 0) {
+            // Events (activeEvents) - show all current events (they expire automatically)
+            const activeEvents = data.activeEvents || [];
+            if (activeEvents.length > 0) {
                 message += '────────────────────\n';
-                message += `🎉 **Events (${eventList.length}):**\n`;
-                eventList.forEach(e => {
+                message += `🎉 **Events (${activeEvents.length}):**\n`;
+                activeEvents.forEach(e => {
+                    const emoji = e.emoji || '🎉';
+                    const eventName = e.name || 'Event';
                     const participants = (e.medics || []).join(', ') || 'ยังไม่มี';
-                    message += `**${e.name || 'Event'}**\n`;
+                    message += `**${emoji} ${eventName}**\n`;
                     message += `ผู้เข้าร่วม: ${participants}\n\n`;
                 });
             }
