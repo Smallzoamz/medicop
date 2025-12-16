@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical OP Launcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        html,
+        body {
+            background: transparent;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .launcher-container {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        /* Custom title bar */
+        .title-bar {
+            -webkit-app-region: drag;
+            height: 36px;
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+        }
+
+        .title-bar-buttons {
+            -webkit-app-region: no-drag;
+            display: flex;
+            gap: 8px;
+        }
+
+        .title-btn {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .title-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-close {
+            background: #ef4444;
+        }
+
+        .btn-minimize {
+            background: #eab308;
+        }
+
+        .btn-maximize {
+            background: #22c55e;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Left panel - Login */
+        .left-panel {
+            width: 40%;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            overflow-y: auto;
+        }
+
+        /* Right panel - News */
+        .right-panel {
+            width: 60%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .news-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .news-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .news-container::-webkit-scrollbar-thumb {
+            background: rgba(6, 182, 212, 0.5);
+            border-radius: 2px;
+        }
+
+        /* News card */
+        .news-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .news-card:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .news-card.pinned {
+            border-left: 3px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Glass effect */
+        .glass {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Input styling */
+        .inp-pretty {
+            width: 100%;
+            font-size: 0.875rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            background-color: rgba(30, 41, 59, 0.8);
+            padding: 0.625rem 0.75rem;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .inp-pretty:focus {
+            outline: none;
+            border-color: rgba(6, 182, 212, 0.8);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .inp-pretty::placeholder {
+            color: #64748b;
+        }
+
+        /* Logo animation */
+        .logo {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 50%;
+            filter: drop-shadow(0 0 15px rgba(6, 182, 212, 0.4));
+            margin-bottom: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.03);
+            }
+        }
+
+        /* Bottom bar */
+        .bottom-bar {
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Launch button */
+        .launch-btn {
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            color: white;
+            font-weight: 600;
+            padding: 12px 40px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .launch-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+        }
+
+        .launch-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Update progress */
+        .update-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .update-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #06b6d4, #3b82f6);
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        /* Notification */
+        .notif-container {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .notif {
+            padding: 10px 16px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            animation: slideIn 0.3s ease;
+            font-size: 0.875rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Type badges */
+        .type-badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .type-news {
+            background: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .type-update {
+            background: rgba(34, 197, 94, 0.3);
+            color: #4ade80;
+        }
+
+        .type-event {
+            background: rgba(168, 85, 247, 0.3);
+            color: #c084fc;
+        }
+
+        .type-maintenance {
+            background: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        /* Register form */
+        .form-container {
+            width: 100%;
+            max-width: 260px;
+        }
+    </style>
+</head>
+
+<body class="text-white">
+    <div class="notif-container" id="notif-container"></div>
+
+    <div class="launcher-container">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <div class="flex items-center gap-2">
+                <img src="logo.jpg" class="w-5 h-5 rounded-full">
+                <span class="text-sm text-slate-300 font-medium">Medical OP Launcher</span>
+                <span id="app-version" class="text-xs text-slate-500 font-mono ml-2">v1.6.1</span>
+            </div>
+            <div class="title-bar-buttons">
+                <button class="title-btn btn-minimize" onclick="minimizeWindow()" title="ย่อหน้าต่าง"></button>
+                <button class="title-btn btn-close" onclick="closeApp()" title="ปิดโปรแกรม"></button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Login -->
+            <div class="left-panel">
+                <img src="logo.jpg" class="logo" alt="Medical OP">
+                <h1 class="text-base font-semibold text-cyan-400 mb-0.5">Medical OP Systems</h1>
+                <p class="text-[10px] text-slate-500 mb-3">Desktop Application</p>
+
+                <!-- Login Form -->
+                <div id="login-form" class="form-container space-y-2">
+                    <div>
+                        <label class="text-[11px] text-slate-400 mb-0.5 block">Username</label>
+                        <input type="text" id="login-username" class="inp-pretty text-sm py-2" placeholder="ชื่อผู้ใช้">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-slate-400 mb-0.5 block">Password</label>
+                        <input type="password" id="login-password" class="inp-pretty text-sm py-2"
+                            placeholder="รหัสผ่าน" onkeypress="if(event.key==='Enter')handleLogin()">
+                    </div>
+                    <label class="flex items-center gap-2 text-[11px] text-slate-400 cursor-pointer">
+                        <input type="checkbox" id="remember-me" class="w-3 h-3 rounded accent-cyan-500">
+                        จดจำการเข้าสู่ระบบ 7 วัน
+                    </label>
+                    <button onclick="showRegisterForm()"
+                        class="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-xs font-semibold rounded-lg transition-all duration-300 shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/40 flex items-center justify-center gap-1.5">
+                        📝 สมัครสมาชิกใหม่
+                    </button>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="form-container space-y-1.5 hidden">
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <div>
+                            <label class="text-[10px] text-slate-400 mb-0.5 block">Username</label>
+                            <input type="text" id="reg-username" class="inp-pretty text-xs py-1.5"
+                                placeholder="ชื่อผู้ใช้">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 mb-0.5 block">Password</label>
+                            <input type="password" id="reg-password" class="inp-pretty text-xs py-1.5"
+                                placeholder="รหัสผ่าน">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <div>
+                            <label class="text-[10px] text-slate-400 mb-0.5 block">ชื่อ IC</label>
+                            <input type="text" id="reg-firstname" class="inp-pretty text-xs py-1.5"
+                                placeholder="ชื่อ IC">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 mb-0.5 block">นามสกุล IC</label>
+                            <input type="text" id="reg-lastname" class="inp-pretty text-xs py-1.5"
+                                placeholder="นามสกุล IC">
+                        </div>
+                    </div>
+
+                    <!-- Discord Link - Compact -->
+                    <div
+                        class="flex items-center justify-between p-1.5 bg-indigo-900/30 rounded-lg border border-indigo-500/30">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs">🔗</span>
+                            <span id="discord-status" class="text-[10px] text-slate-400">Discord (ไม่บังคับ)</span>
+                        </div>
+                        <button onclick="linkDiscord()" id="discord-link-btn"
+                            class="px-2 py-0.5 bg-indigo-500 hover:bg-indigo-600 text-white text-[10px] rounded transition">
+                            เชื่อมต่อ
+                        </button>
+                    </div>
+
+                    <button onclick="handleRegister()" id="register-btn"
+                        class="w-full py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition">
+                        ✅ สมัครสมาชิก
+                    </button>
+                    <button onclick="showLoginForm()"
+                        class="w-full text-[10px] text-slate-400 hover:text-white transition">
+                        ← กลับไปหน้า Login
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel - News -->
+            <div class="right-panel">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                        <span>📢</span> ข่าวสาร & ประกาศ
+                    </h2>
+                    <button onclick="loadAnnouncements()"
+                        class="text-xs text-slate-500 hover:text-cyan-400 transition">🔄</button>
+                </div>
+
+                <div class="news-container" id="news-container">
+                    <div class="text-center text-slate-500 text-sm py-8">
+                        <div class="animate-pulse">กำลังโหลดข่าวสาร...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <div class="flex items-center gap-3">
+                <div id="update-status" class="text-xs text-slate-400">
+                    <span class="text-emerald-400">✅</span> พร้อมใช้งาน
+                </div>
+                <div id="update-bar-container" class="hidden w-32">
+                    <div class="update-bar">
+                        <div id="update-progress" class="update-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="launch-btn" onclick="handleLogin()" class="launch-btn">
+                🚀 เข้าสู่ระบบ
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_CBHVb_IzcH-gH8nO24dei4jRf3M6gQU",
+            authDomain: "medic-op.firebaseapp.com",
+            projectId: "medic-op",
+            storageBucket: "medic-op.firebasestorage.app",
+            messagingSenderId: "286285926222",
+            appId: "1:286285926222:web:f63fd5455c431ab0de581f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ========== UI Functions ==========
+        function showNotif(type, message) {
+            const container = document.getElementById('notif-container');
+            const notif = document.createElement('div');
+            const bgColor = type === 'Error' ? 'bg-rose-500' : type === 'Success' ? 'bg-emerald-500' : 'bg-cyan-500';
+            notif.className = `notif ${bgColor} text-white`;
+            notif.textContent = message;
+            container.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        function showLoginForm() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('launch-btn').textContent = '🚀 เข้าสู่ระบบ';
+            document.getElementById('launch-btn').onclick = handleLogin;
+        }
+
+        function showRegisterForm() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            document.getElementById('launch-btn').textContent = '📝 สมัครสมาชิก';
+            document.getElementById('launch-btn').onclick = handleRegister;
+        }
+
+        // ========== Window Controls ==========
+        function minimizeWindow() {
+            if (window.launcherAPI) window.launcherAPI.minimize();
+        }
+
+        function closeApp() {
+            if (window.launcherAPI) window.launcherAPI.closeApp();
+        }
+
+        // ========== Login ==========
+        async function handleLogin() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+                return showNotif('Error', 'กรุณากรอกข้อมูลให้ครบ');
+            }
+
+            const btn = document.getElementById('launch-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ กำลังเข้าสู่ระบบ...';
+
+            try {
+                const doc = await db.collection('op_users').doc(username).get();
+                if (!doc.exists) {
+                    btn.disabled = false;
+                    btn.textContent = '🚀 เข้าสู่ระบบ';
+                    return showNotif('Error', 'ไม่พบผู้ใช้');
+                }
+
+                const user = doc.data();
+                if (user.password !== password) {
+                    btn.disabled = false;
+                    btn.textContent = '🚀 เข้าสู่ระบบ';
+                    return showNotif('Error', 'รหัสผ่านไม่ถูกต้อง');
+                }
+
+                // Remember me
+                const rememberMe = document.getElementById('remember-me').checked;
+                if (rememberMe) {
+                    localStorage.setItem('rememberedLogin', JSON.stringify({
+                        username, password,
+                        expiry: Date.now() + 7 * 24 * 60 * 60 * 1000
+                    }));
+                }
+
+                // Login success
+                showNotif('Success', 'เข้าสู่ระบบสำเร็จ!');
+                const userData = { username, ...user };
+
+                setTimeout(() => {
+                    if (window.launcherAPI) {
+                        window.launcherAPI.loginSuccess(userData);
+                    }
+                }, 500);
+            } catch (e) {
+                console.error('Login error:', e);
+                btn.disabled = false;
+                btn.textContent = '🚀 เข้าสู่ระบบ';
+                showNotif('Error', 'เกิดข้อผิดพลาด: ' + e.message);
+            }
+        }
+
+        // ========== Register ==========
+        async function handleRegister() {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const firstName = document.getElementById('reg-firstname').value.trim();
+            const lastName = document.getElementById('reg-lastname').value.trim();
+
+            if (!username || !password || !firstName || !lastName) {
+                return showNotif('Error', 'กรุณากรอกข้อมูลให้ครบ');
+            }
+
+            const btn = document.getElementById('launch-btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ กำลังสมัคร...';
+
+            try {
+                const existing = await db.collection('op_users').doc(username).get();
+                if (existing.exists) {
+                    btn.disabled = false;
+                    btn.textContent = '📝 สมัครสมาชิก';
+                    return showNotif('Error', 'Username นี้มีผู้ใช้แล้ว');
+                }
+
+                const userData = {
+                    password,
+                    firstName,
+                    lastName,
+                    fullName: `${firstName} ${lastName}`,
+                    role: 'Member',
+                    createdAt: Date.now()
+                };
+
+                await db.collection('op_users').doc(username).set(userData);
+                showNotif('Success', 'สมัครสมาชิกสำเร็จ!');
+
+                setTimeout(() => {
+                    const fullUserData = { username, ...userData };
+                    if (window.launcherAPI) {
+                        window.launcherAPI.loginSuccess(fullUserData);
+                    }
+                }, 1000);
+            } catch (e) {
+                console.error('Register error:', e);
+                btn.disabled = false;
+                btn.textContent = '📝 สมัครสมาชิก';
+                showNotif('Error', 'เกิดข้อผิดพลาด: ' + e.message);
+            }
+        }
+
+        // ========== Discord Link ==========
+        function linkDiscord() {
+            const username = document.getElementById('reg-username').value.trim();
+            if (!username) {
+                return showNotif('Error', 'กรุณากรอก Username ก่อน');
+            }
+
+            const clientId = '1285959234988466238';
+            const redirectUri = encodeURIComponent('https://us-central1-medic-op.cloudfunctions.net/discordCallback');
+            const state = encodeURIComponent(username);
+            const scope = encodeURIComponent('identify');
+            const discordUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
+
+            if (window.launcherAPI) {
+                window.launcherAPI.openExternal(discordUrl);
+            }
+
+            document.getElementById('discord-status').textContent = 'รอเชื่อมต่อ...';
+            document.getElementById('discord-link-btn').textContent = '⏳ รอ';
+            document.getElementById('discord-link-btn').disabled = true;
+            showNotif('Info', 'กรุณาเชื่อมต่อ Discord ในเบราว์เซอร์');
+        }
+
+        // ========== Load Announcements ==========
+        async function loadAnnouncements() {
+            const container = document.getElementById('news-container');
+            container.innerHTML = '<div class="text-center text-slate-500 text-sm py-8"><div class="animate-pulse">กำลังโหลดข่าวสาร...</div></div>';
+
+            try {
+                const snapshot = await db.collection('announcements')
+                    .orderBy('pinned', 'desc')
+                    .orderBy('createdAt', 'desc')
+                    .limit(10)
+                    .get();
+
+                if (snapshot.empty) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="text-4xl mb-2">📭</div>
+                            <div class="text-slate-500 text-sm">ยังไม่มีข่าวสาร</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const card = createNewsCard(data);
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                console.error('Load announcements error:', e);
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-4xl mb-2">⚠️</div>
+                        <div class="text-slate-500 text-sm">ไม่สามารถโหลดข่าวสารได้</div>
+                        <button onclick="loadAnnouncements()" class="mt-2 text-xs text-cyan-400">ลองใหม่</button>
+                    </div>
+                `;
+            }
+        }
+
+        function createNewsCard(data) {
+            const card = document.createElement('div');
+            card.className = `news-card ${data.pinned ? 'pinned' : ''}`;
+
+            const typeIcon = {
+                'news': '📰',
+                'update': '🆕',
+                'event': '🎉',
+                'maintenance': '🔧'
+            }[data.type] || '📌';
+
+            const typeClass = `type-${data.type || 'news'}`;
+
+            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('th-TH', {
+                day: 'numeric', month: 'short', year: 'numeric'
+            }) : '';
+
+            card.innerHTML = `
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span>${typeIcon}</span>
+                        <span class="type-badge ${typeClass}">${data.type || 'news'}</span>
+                        ${data.pinned ? '<span class="text-xs text-red-400">📌 ปักหมุด</span>' : ''}
+                    </div>
+                    <span class="text-xs text-slate-500">${date}</span>
+                </div>
+                <h3 class="text-sm font-semibold text-white mb-1">${data.title || 'ไม่มีหัวข้อ'}</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">${data.content || ''}</p>
+            `;
+
+            return card;
+        }
+
+        // ========== Load Version ==========
+        async function loadVersion() {
+            try {
+                const doc = await db.collection('settings').doc('appVersion').get();
+                if (doc.exists && doc.data().version) {
+                    document.getElementById('app-version').textContent = 'v' + doc.data().version;
+                }
+            } catch (e) { }
+        }
+
+        // ========== Auto Login ==========
+        function checkRememberedLogin() {
+            try {
+                const saved = localStorage.getItem('rememberedLogin');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.expiry > Date.now()) {
+                        document.getElementById('login-username').value = data.username;
+                        document.getElementById('login-password').value = data.password;
+                        document.getElementById('remember-me').checked = true;
+                    } else {
+                        localStorage.removeItem('rememberedLogin');
+                    }
+                }
+            } catch (e) { }
+        }
+
+        // ========== Update Status & Block Login ==========
+        let updateReady = false;
+        let isRegisterMode = false;
+
+        function setUpdateReady(ready) {
+            updateReady = ready;
+            const btn = document.getElementById('launch-btn');
+            if (ready) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                if (isRegisterMode) {
+                    btn.textContent = '📝 สมัครสมาชิก';
+                } else {
+                    btn.textContent = '🚀 เข้าสู่ระบบ';
+                }
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.textContent = '⏳ รอตรวจสอบอัปเดต...';
+            }
+        }
+
+        function setupUpdateListener() {
+            // Initially block login
+            setUpdateReady(false);
+
+            if (window.launcherAPI) {
+                window.launcherAPI.onUpdateStatus((status) => {
+                    const statusEl = document.getElementById('update-status');
+                    const barContainer = document.getElementById('update-bar-container');
+
+                    if (status === 'checking') {
+                        statusEl.innerHTML = '<span class="text-yellow-400">🔄</span> กำลังตรวจสอบอัปเดต...';
+                        setUpdateReady(false);
+                    } else if (status === 'available') {
+                        statusEl.innerHTML = '<span class="text-cyan-400">📥</span> พบอัปเดตใหม่! กำลังดาวน์โหลด...';
+                        setUpdateReady(false);
+                        barContainer.classList.remove('hidden');
+                    } else if (status === 'downloading') {
+                        statusEl.innerHTML = '<span class="text-cyan-400">⬇️</span> กำลังดาวน์โหลด...';
+                        barContainer.classList.remove('hidden');
+                        setUpdateReady(false);
+                    } else if (status === 'downloaded') {
+                        statusEl.innerHTML = '<span class="text-emerald-400">✅</span> ดาวน์โหลดเสร็จ! รีสตาร์ทเพื่ออัปเดต...';
+                        barContainer.classList.add('hidden');
+                        // Auto restart to install update
+                        setTimeout(() => {
+                            statusEl.innerHTML = '<span class="text-yellow-400">🔄</span> กำลังรีสตาร์ท...';
+                        }, 1000);
+                    } else if (status === 'error') {
+                        statusEl.innerHTML = '<span class="text-red-400">⚠️</span> ไม่สามารถตรวจสอบได้';
+                        setUpdateReady(true); // Allow login anyway on error
+                    } else {
+                        // 'ready' or 'no-update' 
+                        statusEl.innerHTML = '<span class="text-emerald-400">✅</span> พร้อมใช้งาน';
+                        barContainer.classList.add('hidden');
+                        setUpdateReady(true);
+                    }
+                });
+
+                window.launcherAPI.onUpdateProgress((percent) => {
+                    document.getElementById('update-progress').style.width = percent + '%';
+                });
+            } else {
+                // No API (dev mode without proper preload) - allow login after short timeout
+                setTimeout(() => {
+                    setUpdateReady(true);
+                    document.getElementById('update-status').innerHTML = '<span class="text-emerald-400">✅</span> พร้อมใช้งาน';
+                }, 500);
+            }
+        }
+
+        // Override showRegisterForm to track mode
+        const originalShowRegisterForm = showRegisterForm;
+        showRegisterForm = function () {
+            isRegisterMode = true;
+            originalShowRegisterForm();
+            if (updateReady) {
+                document.getElementById('launch-btn').textContent = '📝 สมัครสมาชิก';
+            }
+        };
+
+        const originalShowLoginForm = showLoginForm;
+        showLoginForm = function () {
+            isRegisterMode = false;
+            originalShowLoginForm();
+            if (updateReady) {
+                document.getElementById('launch-btn').textContent = '🚀 เข้าสู่ระบบ';
+            }
+        };
+
+        // ========== Init ==========
+        loadVersion();
+        loadAnnouncements();
+        checkRememberedLogin();
+        setupUpdateListener();
+    </script>
+</body>
+
+</html>

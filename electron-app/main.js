@@ -39,7 +39,7 @@ function createSplashWindow() {
     splashWindow.loadFile(path.join(__dirname, 'src', 'splash.html'));
 }
 
-// Create login window
+// Create login window (legacy - kept for potential future use)
 function createLoginWindow() {
     loginWindow = new BrowserWindow({
         width: 400,
@@ -64,6 +64,106 @@ function createLoginWindow() {
         // If closed without login, quit app
         if (!loggedInUser && !mainWindow) {
             app.quit();
+        }
+    });
+}
+
+// Create Launcher window (new main entry point)
+let launcherWindow = null;
+
+function createLauncherWindow() {
+    launcherWindow = new BrowserWindow({
+        width: 800,
+        height: 500,
+        frame: false,
+        resizable: false,
+        center: true,
+        icon: path.join(__dirname, 'src', 'icon.ico'),
+        backgroundColor: '#0f172a',
+        roundedCorners: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'src', 'launcher-preload.js')
+        }
+    });
+
+    launcherWindow.loadFile(path.join(__dirname, 'src', 'launcher.html'));
+
+    // Check for updates after launcher is shown
+    launcherWindow.once('ready-to-show', () => {
+        setTimeout(() => {
+            setupLauncherAutoUpdater();
+        }, 1000);
+    });
+
+    launcherWindow.on('closed', () => {
+        launcherWindow = null;
+        // If closed without login, quit app
+        if (!loggedInUser && !mainWindow) {
+            app.quit();
+        }
+    });
+
+    console.log('🚀 Launcher window created');
+}
+
+// Setup auto updater for launcher
+function setupLauncherAutoUpdater() {
+    console.log('🔄 Checking for updates from launcher...');
+
+    autoUpdater.autoDownload = true; // Auto download when update found
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    // Send status to launcher
+    if (launcherWindow && !launcherWindow.isDestroyed()) {
+        launcherWindow.webContents.send('update-status', 'checking');
+    }
+
+    autoUpdater.checkForUpdates().catch(err => {
+        console.log('❌ Check update error:', err);
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+            launcherWindow.webContents.send('update-status', 'error');
+        }
+    });
+
+    autoUpdater.on('update-available', (info) => {
+        console.log('✅ Update available:', info.version);
+        pendingUpdateInfo = info;
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+            launcherWindow.webContents.send('update-status', 'available');
+        }
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        console.log('ℹ️ No update available');
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+            launcherWindow.webContents.send('update-status', 'ready');
+        }
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+            launcherWindow.webContents.send('update-status', 'downloading');
+            launcherWindow.webContents.send('download-progress', progress.percent);
+        }
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+        console.log('✅ Update downloaded! Restarting...');
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+            launcherWindow.webContents.send('update-status', 'downloaded');
+        }
+        // Auto restart after 2 seconds
+        setTimeout(() => {
+            autoUpdater.quitAndInstall();
+        }, 2000);
+    });
+
+    autoUpdater.on('error', (err) => {
+        console.log('❌ AutoUpdater error:', err);
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+            launcherWindow.webContents.send('update-status', 'error');
         }
     });
 }
@@ -95,13 +195,13 @@ function createGoodbyeWindow() {
 
     goodbyeWindow.loadFile(path.join(__dirname, 'src', 'goodbye.html'));
 
-    // Auto close after 2.5 seconds and show login
+    // Auto close after 2.5 seconds and show launcher
     setTimeout(() => {
         if (goodbyeWindow) {
             goodbyeWindow.close();
             goodbyeWindow = null;
         }
-        createLoginWindow();
+        createLauncherWindow();
     }, 2500);
 }
 
@@ -430,12 +530,18 @@ ipcMain.on('close-update', () => {
     }
 });
 
-// Handle login success from login window
+// Handle login success from login/launcher window
 ipcMain.on('login-success', (event, userData) => {
     console.log('✅ Login success:', userData.username);
     loggedInUser = userData;
 
-    // Close login window
+    // Close launcher window
+    if (launcherWindow) {
+        launcherWindow.close();
+        launcherWindow = null;
+    }
+
+    // Close login window (legacy)
     if (loginWindow) {
         loginWindow.close();
         loginWindow = null;
@@ -443,6 +549,11 @@ ipcMain.on('login-success', (event, userData) => {
 
     // Create and show main window with user data
     createMainWindow();
+});
+
+// Handle launcher minimize
+ipcMain.on('launcher-minimize', () => {
+    if (launcherWindow) launcherWindow.minimize();
 });
 
 // ========== WINDOW CONTROLS ==========
@@ -1158,13 +1269,13 @@ app.whenReady().then(() => {
     // Show splash first
     createSplashWindow();
 
-    // After splash, show login window (not main window)
+    // After splash, show launcher window
     setTimeout(() => {
         if (splashWindow) {
             splashWindow.close();
             splashWindow = null;
         }
-        createLoginWindow();
+        createLauncherWindow();
     }, 2500);
 
     app.on('activate', () => {
@@ -1172,7 +1283,7 @@ app.whenReady().then(() => {
             if (loggedInUser) {
                 createMainWindow();
             } else {
-                createLoginWindow();
+                createLauncherWindow();
             }
         }
     });
