@@ -267,6 +267,23 @@
             animation: eventPulse 1s infinite;
         }
 
+        /* Queue Warning Popup Animation */
+        @keyframes queueWarningPop {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(5px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .queue-warning-popup {
+            animation: queueWarningPop 0.2s ease-out;
+        }
+
         .checkmark {
             width: 44px;
             height: 44px;
@@ -6527,7 +6544,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.6.1-build.9';
+        const APP_VERSION = '1.6.1-build.10';
 
         // Update all version displays from APP_VERSION (single source of truth)
         function updateVersionDisplays() {
@@ -6893,7 +6910,71 @@
         }
 
         // Medic Status Functions (รับเคส/ไม่รับเคส/รอเคสแก้)
-        function toggleMedicStatus(name, status) { if (!appData.medicStatuses) appData.medicStatuses = {}; if (!status) { delete appData.medicStatuses[name]; } else if (appData.medicStatuses[name] === status) { delete appData.medicStatuses[name]; } else if (status === 'accept') { for (const k in appData.medicStatuses) { if (appData.medicStatuses[k] === 'accept') delete appData.medicStatuses[k]; } appData.medicStatuses[name] = 'accept'; } else { appData.medicStatuses[name] = status; } saveOpData(); }
+        function toggleMedicStatus(name, status) {
+            if (!appData.medicStatuses) appData.medicStatuses = {};
+            hideQueueWarning();
+
+            if (!status) {
+                delete appData.medicStatuses[name];
+            } else if (appData.medicStatuses[name] === status) {
+                delete appData.medicStatuses[name];
+            } else if (status === 'accept') {
+                // WARNING 1: If this medic has 'decline' status, show warning
+                if (appData.medicStatuses[name] === 'decline') {
+                    showQueueWarning(name, '⚠️ ยกเลิกไม่รับเคสก่อน', true);
+                    return;
+                }
+                // WARNING 2: If someone else has 'waitfix', must run their case first
+                const waitfixMedic = Object.keys(appData.medicStatuses).find(k => appData.medicStatuses[k] === 'waitfix');
+                if (waitfixMedic && waitfixMedic !== name) {
+                    showQueueWarning(waitfixMedic, `⚠️ กรุณารันเคสแก้ก่อน`);
+                    return;
+                }
+                // Clear accept from others first
+                for (const k in appData.medicStatuses) {
+                    if (appData.medicStatuses[k] === 'accept') delete appData.medicStatuses[k];
+                }
+                appData.medicStatuses[name] = 'accept';
+            } else {
+                appData.medicStatuses[name] = status;
+            }
+            saveOpData();
+        }
+
+        // Show queue warning popup above the medic's Accept button
+        function showQueueWarning(medicName, message, isDecline = false) {
+            hideQueueWarning();
+            const listOnDuty = document.getElementById('list-on-duty');
+            if (!listOnDuty) return;
+
+            // Find the medic container by name
+            const containers = listOnDuty.querySelectorAll('.flex.flex-col');
+            let medicContainer = null;
+            containers.forEach(c => {
+                if (c.textContent.includes(medicName.split(' ')[0])) medicContainer = c;
+            });
+            if (!medicContainer) return;
+
+            // Find the button row (second child div with flex-wrap)
+            const buttonRow = medicContainer.querySelector('.flex.items-center.gap-1.flex-wrap');
+            if (!buttonRow) return;
+
+            const popup = document.createElement('div');
+            popup.id = 'queue-warning-popup';
+            const bgColor = isDecline ? 'bg-rose-500' : 'bg-amber-500';
+            popup.className = `queue-warning-popup absolute z-50 ${bgColor} text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap`;
+            popup.innerHTML = message;
+            popup.style.cssText = 'bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 1px;';
+
+            buttonRow.style.position = 'relative';
+            buttonRow.appendChild(popup);
+            setTimeout(hideQueueWarning, 3000);
+        }
+
+        function hideQueueWarning() {
+            const popup = document.getElementById('queue-warning-popup');
+            if (popup) popup.remove();
+        }
 
         // Notification Panel Functions
         let notifications = [];
