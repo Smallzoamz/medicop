@@ -1600,6 +1600,10 @@
                 <button onclick="switchAdminTab('actions')" id="admin-tab-actions"
                     class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">⚡
                     การกระทำ</button>
+                <button onclick="switchAdminTab('announcements')" id="admin-tab-announcements"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    data-owner-tab>📢
+                    ข่าวสาร</button>
             </div>
             <!-- User Management Tab -->
             <div id="admin-tab-content-users" class="flex-1 overflow-y-auto custom-scrollbar">
@@ -1717,6 +1721,62 @@
                     <button onclick="saveStaffAdminSettings()"
                         class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition">💾
                         บันทึกการตั้งค่า</button>
+                </div>
+            </div>
+            <!-- Announcements Tab (Owner) -->
+            <div id="admin-tab-content-announcements" class="hidden flex-1 overflow-y-auto custom-scrollbar">
+                <div class="space-y-4">
+                    <!-- Add New Announcement -->
+                    <div class="glass-light rounded-xl p-4">
+                        <h4 class="text-sm font-bold text-cyan-400 mb-3">➕ เพิ่มข่าวสารใหม่</h4>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs text-slate-400 mb-1 block">หัวข้อ</label>
+                                    <input type="text" id="announce-title"
+                                        class="w-full text-sm rounded-lg border-slate-700 bg-slate-900/50 p-2.5 text-white"
+                                        placeholder="หัวข้อข่าว">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-slate-400 mb-1 block">ประเภท</label>
+                                    <select id="announce-type"
+                                        class="w-full text-sm rounded-lg border-slate-700 bg-slate-900/50 p-2.5 text-white">
+                                        <option value="news">📰 ข่าวสาร</option>
+                                        <option value="update">🆕 อัพเดท</option>
+                                        <option value="event">🎉 กิจกรรม</option>
+                                        <option value="maintenance">🔧 ปิดซ่อมบำรุง</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400 mb-1 block">เนื้อหา</label>
+                                <textarea id="announce-content"
+                                    class="w-full text-sm rounded-lg border-slate-700 bg-slate-900/50 p-2.5 text-white h-20 resize-none"
+                                    placeholder="รายละเอียดข่าวสาร..."></textarea>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                                    <input type="checkbox" id="announce-pinned" class="w-4 h-4 rounded accent-rose-500">
+                                    📌 ปักหมุดข่าวนี้
+                                </label>
+                                <button onclick="addAnnouncement()"
+                                    class="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-medium rounded-lg transition">
+                                    📢 เผยแพร่ข่าว
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Existing Announcements -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-bold text-slate-300">📜 ข่าวสารที่มีอยู่</h4>
+                            <button onclick="loadAdminAnnouncements()"
+                                class="text-xs text-slate-500 hover:text-cyan-400">🔄 รีเฟรช</button>
+                        </div>
+                        <div id="admin-announcements-list" class="space-y-2">
+                            <p class="text-slate-500 text-xs text-center py-4">กำลังโหลด...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -6447,7 +6507,7 @@
             // App Version & Changelog
             // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
             // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-            const APP_VERSION = '1.6.1-build.11';
+            const APP_VERSION = '1.6.1-build.12';
 
             // Update all version displays from APP_VERSION (single source of truth)
             function updateVersionDisplays() {
@@ -8838,9 +8898,9 @@
                 }
             }
             async function changeUserRole(userId, newRole) { if (!isAdmin()) return; try { await db.collection('op_users').doc(userId).update({ role: newRole }); addOpLog('เปลี่ยนยศ', `${userId} → ${newRole}`); showNotif('Success', `เปลี่ยนยศเป็น ${newRole}`); } catch (e) { showNotif('Error', 'เกิดข้อผิดพลาด'); } }
-            function showStaffAdminModal() { if (!isStaff()) return showNotif('Error', 'สำหรับ Staff ขึ้นไปเท่านั้น'); loadOpLogs(); renderAdminUsers(); renderAdminNotifications(); populateStaffAdminSettings(); if (currentUser?.role !== 'Owner') document.getElementById('admin-tab-settings').classList.add('hidden'); else document.getElementById('admin-tab-settings').classList.remove('hidden'); if (!isAdmin()) document.getElementById('admin-tab-notifications').classList.add('hidden'); else document.getElementById('admin-tab-notifications').classList.remove('hidden'); document.getElementById('staff-admin-modal').classList.remove('hidden'); switchAdminTab('users'); }
+            function showStaffAdminModal() { if (!isStaff()) return showNotif('Error', 'สำหรับ Staff ขึ้นไปเท่านั้น'); loadOpLogs(); renderAdminUsers(); renderAdminNotifications(); populateStaffAdminSettings(); if (currentUser?.role !== 'Owner') { document.getElementById('admin-tab-settings').classList.add('hidden'); document.getElementById('admin-tab-announcements').classList.add('hidden'); } else { document.getElementById('admin-tab-settings').classList.remove('hidden'); document.getElementById('admin-tab-announcements').classList.remove('hidden'); loadAdminAnnouncements(); } if (!isAdmin()) document.getElementById('admin-tab-notifications').classList.add('hidden'); else document.getElementById('admin-tab-notifications').classList.remove('hidden'); document.getElementById('staff-admin-modal').classList.remove('hidden'); switchAdminTab('users'); }
             function closeStaffAdminModal() { document.getElementById('staff-admin-modal').classList.add('hidden'); }
-            function switchAdminTab(tab) { const themeColor = serverSettings.themeColor || '#06b6d4';['users', 'logs', 'actions', 'notifications', 'settings'].forEach(t => { const tabBtn = document.getElementById(`admin-tab-${t}`); const tabContent = document.getElementById(`admin-tab-content-${t}`); if (tabBtn) { tabBtn.style.backgroundColor = ''; tabBtn.classList.remove('text-white'); tabBtn.classList.add('bg-slate-700', 'text-slate-300'); } if (tabContent) tabContent.classList.add('hidden'); }); const activeBtn = document.getElementById(`admin-tab-${tab}`); activeBtn.style.backgroundColor = themeColor; activeBtn.classList.add('text-white'); activeBtn.classList.remove('bg-slate-700', 'text-slate-300'); document.getElementById(`admin-tab-content-${tab}`).classList.remove('hidden'); if (tab === 'users' && !isAdmin()) { document.getElementById('admin-tab-content-users').innerHTML = '<p class="text-amber-400 text-center py-8">⚠️ Staff ไม่มีสิทธิ์จัดการยศ</p>'; } else if (tab === 'users') renderAdminUsers(); if (tab === 'notifications') renderAdminNotifications(); if (tab === 'settings') populateStaffAdminSettings(); }
+            function switchAdminTab(tab) { const themeColor = serverSettings.themeColor || '#06b6d4';['users', 'logs', 'actions', 'notifications', 'settings', 'announcements'].forEach(t => { const tabBtn = document.getElementById(`admin-tab-${t}`); const tabContent = document.getElementById(`admin-tab-content-${t}`); if (tabBtn) { tabBtn.style.backgroundColor = ''; tabBtn.classList.remove('text-white'); tabBtn.classList.add('bg-slate-700', 'text-slate-300'); } if (tabContent) tabContent.classList.add('hidden'); }); const activeBtn = document.getElementById(`admin-tab-${tab}`); activeBtn.style.backgroundColor = themeColor; activeBtn.classList.add('text-white'); activeBtn.classList.remove('bg-slate-700', 'text-slate-300'); document.getElementById(`admin-tab-content-${tab}`).classList.remove('hidden'); if (tab === 'users' && !isAdmin()) { document.getElementById('admin-tab-content-users').innerHTML = '<p class="text-amber-400 text-center py-8">⚠️ Staff ไม่มีสิทธิ์จัดการยศ</p>'; } else if (tab === 'users') renderAdminUsers(); if (tab === 'notifications') renderAdminNotifications(); if (tab === 'settings') populateStaffAdminSettings(); if (tab === 'announcements') loadAdminAnnouncements(); }
             function renderAdminNotifications() { const list = document.getElementById('admin-all-notifications'); if (!list || !isAdmin()) return; if (!notifications.length) { list.innerHTML = '<p class="text-slate-500 text-center py-4">ไม่มีแจ้งเตือน</p>'; return; } list.innerHTML = notifications.map((n, i) => `<div class="flex gap-2 items-start bg-slate-800/50 p-2 rounded"><span class="text-sm ${n.type === 'warning' ? 'text-amber-400' : n.type === 'error' ? 'text-rose-400' : n.type === 'success' ? 'text-emerald-400' : 'text-cyan-400'}">${n.type === 'warning' ? '⚠️' : n.type === 'error' ? '❌' : n.type === 'success' ? '✅' : 'ℹ️'}</span><div class="flex-1"><p class="text-white">${n.msg}</p><p class="text-[10px] text-slate-500">${n.time}</p></div></div>`).join(''); }
             function populateStaffAdminSettings() {
                 document.getElementById('staff-admin-server-name').value = serverSettings.serverName || 'ONE CITY';
@@ -8852,6 +8912,126 @@
                 // Render logo galleries
                 renderLogoGallery('icon');
                 renderLogoGallery('login');
+            }
+
+            // ========== Announcement Management ==========
+            async function loadAdminAnnouncements() {
+                const list = document.getElementById('admin-announcements-list');
+                if (!list) return;
+
+                list.innerHTML = '<p class="text-slate-500 text-xs text-center py-4">กำลังโหลด...</p>';
+
+                try {
+                    const snapshot = await db.collection('announcements')
+                        .orderBy('pinned', 'desc')
+                        .orderBy('createdAt', 'desc')
+                        .limit(20)
+                        .get();
+
+                    if (snapshot.empty) {
+                        list.innerHTML = '<p class="text-slate-500 text-xs text-center py-4">ยังไม่มีข่าวสาร</p>';
+                        return;
+                    }
+
+                    list.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('th-TH') : '-';
+                        const typeIcon = { news: '📰', update: '🆕', event: '🎉', maintenance: '🔧' }[data.type] || '📌';
+                        const typeColor = { news: 'text-blue-400', update: 'text-emerald-400', event: 'text-purple-400', maintenance: 'text-rose-400' }[data.type] || 'text-slate-400';
+
+                        const card = document.createElement('div');
+                        card.className = `p-3 rounded-lg border ${data.pinned ? 'bg-rose-900/20 border-rose-500/30' : 'bg-slate-800/50 border-slate-700/50'}`;
+                        card.innerHTML = `
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="${typeColor}">${typeIcon}</span>
+                                        <span class="text-xs font-bold text-white truncate">${data.title || 'ไม่มีหัวข้อ'}</span>
+                                        ${data.pinned ? '<span class="text-[9px] bg-rose-500 text-white px-1.5 rounded">📌 ปักหมุด</span>' : ''}
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 line-clamp-2">${data.content || ''}</p>
+                                    <p class="text-[9px] text-slate-500 mt-1">${date}</p>
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <button onclick="toggleAnnouncementPin('${doc.id}', ${!data.pinned})" class="p-1.5 ${data.pinned ? 'bg-rose-500/30 text-rose-400' : 'bg-slate-700 text-slate-400'} hover:bg-rose-500/50 rounded transition" title="${data.pinned ? 'เลิกปักหมุด' : 'ปักหมุด'}">
+                                        📌
+                                    </button>
+                                    <button onclick="deleteAnnouncement('${doc.id}')" class="p-1.5 bg-slate-700 hover:bg-rose-600 text-slate-400 hover:text-white rounded transition" title="ลบ">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    });
+                } catch (e) {
+                    console.error('Load announcements error:', e);
+                    list.innerHTML = '<p class="text-rose-400 text-xs text-center py-4">❌ โหลดข้อมูลไม่สำเร็จ</p>';
+                }
+            }
+
+            async function addAnnouncement() {
+                if (currentUser?.role !== 'Owner') return showNotif('Error', 'เฉพาะ Owner เท่านั้น');
+
+                const title = document.getElementById('announce-title').value.trim();
+                const type = document.getElementById('announce-type').value;
+                const content = document.getElementById('announce-content').value.trim();
+                const pinned = document.getElementById('announce-pinned').checked;
+
+                if (!title) return showNotif('Error', 'กรุณากรอกหัวข้อ');
+                if (!content) return showNotif('Error', 'กรุณากรอกเนื้อหา');
+
+                try {
+                    await db.collection('announcements').add({
+                        title,
+                        type,
+                        content,
+                        pinned,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        author: currentUser.username
+                    });
+
+                    showNotif('Success', '📢 เผยแพร่ข่าวสารแล้ว');
+
+                    // Clear form
+                    document.getElementById('announce-title').value = '';
+                    document.getElementById('announce-content').value = '';
+                    document.getElementById('announce-pinned').checked = false;
+
+                    // Reload list
+                    loadAdminAnnouncements();
+                } catch (e) {
+                    console.error('Add announcement error:', e);
+                    showNotif('Error', 'เกิดข้อผิดพลาด');
+                }
+            }
+
+            async function toggleAnnouncementPin(docId, pinned) {
+                if (currentUser?.role !== 'Owner') return;
+
+                try {
+                    await db.collection('announcements').doc(docId).update({ pinned });
+                    showNotif('Success', pinned ? '📌 ปักหมุดแล้ว' : 'เลิกปักหมุดแล้ว');
+                    loadAdminAnnouncements();
+                } catch (e) {
+                    showNotif('Error', 'เกิดข้อผิดพลาด');
+                }
+            }
+
+            async function deleteAnnouncement(docId) {
+                if (currentUser?.role !== 'Owner') return;
+
+                const confirmed = await showConfirm('ลบข่าวสาร', 'ต้องการลบข่าวสารนี้?');
+                if (!confirmed) return;
+
+                try {
+                    await db.collection('announcements').doc(docId).delete();
+                    showNotif('Success', '🗑️ ลบข่าวสารแล้ว');
+                    loadAdminAnnouncements();
+                } catch (e) {
+                    showNotif('Error', 'เกิดข้อผิดพลาด');
+                }
             }
 
             // Server Logo Gallery System
