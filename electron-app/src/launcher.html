@@ -426,13 +426,17 @@
 
         <!-- Bottom Bar -->
         <div class="bottom-bar">
-            <div class="flex items-center gap-3">
-                <div id="update-status" class="text-xs text-slate-400">
-                    <span class="text-emerald-400">✅</span> พร้อมใช้งาน
+            <div class="flex-1 mr-4">
+                <div class="flex items-center gap-2 mb-1">
+                    <span id="update-icon" class="text-sm">🔄</span>
+                    <span id="update-status" class="text-xs text-slate-400">กำลังตรวจสอบอัปเดต...</span>
+                    <span id="update-percent" class="text-xs text-cyan-400 font-mono hidden">0%</span>
                 </div>
-                <div id="update-bar-container" class="hidden w-32">
-                    <div class="update-bar">
-                        <div id="update-progress" class="update-progress" style="width: 0%"></div>
+                <div id="update-bar-container" class="hidden">
+                    <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div id="update-progress"
+                            class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-300"
+                            style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -742,48 +746,63 @@
             // Initially block login
             setUpdateReady(false);
 
+            const iconEl = document.getElementById('update-icon');
+            const statusEl = document.getElementById('update-status');
+            const percentEl = document.getElementById('update-percent');
+            const barContainer = document.getElementById('update-bar-container');
+            const progressBar = document.getElementById('update-progress');
+
+            function updateUI(icon, text, showBar = false, percent = null) {
+                iconEl.textContent = icon;
+                statusEl.textContent = text;
+                if (showBar) {
+                    barContainer.classList.remove('hidden');
+                    percentEl.classList.remove('hidden');
+                } else {
+                    barContainer.classList.add('hidden');
+                    percentEl.classList.add('hidden');
+                }
+                if (percent !== null) {
+                    percentEl.textContent = Math.round(percent) + '%';
+                    progressBar.style.width = percent + '%';
+                }
+            }
+
             if (window.launcherAPI) {
                 window.launcherAPI.onUpdateStatus((status) => {
-                    const statusEl = document.getElementById('update-status');
-                    const barContainer = document.getElementById('update-bar-container');
-
                     if (status === 'checking') {
-                        statusEl.innerHTML = '<span class="text-yellow-400">🔄</span> กำลังตรวจสอบอัปเดต...';
+                        updateUI('🔄', 'กำลังตรวจสอบอัปเดต...', false);
                         setUpdateReady(false);
                     } else if (status === 'available') {
-                        statusEl.innerHTML = '<span class="text-cyan-400">📥</span> พบอัปเดตใหม่! กำลังดาวน์โหลด...';
+                        updateUI('📥', 'พบอัปเดตใหม่! กำลังดาวน์โหลด...', true, 0);
                         setUpdateReady(false);
-                        barContainer.classList.remove('hidden');
                     } else if (status === 'downloading') {
-                        statusEl.innerHTML = '<span class="text-cyan-400">⬇️</span> กำลังดาวน์โหลด...';
-                        barContainer.classList.remove('hidden');
+                        updateUI('⬇️', 'กำลังดาวน์โหลดแพทช์...', true);
                         setUpdateReady(false);
                     } else if (status === 'downloaded') {
-                        statusEl.innerHTML = '<span class="text-emerald-400">✅</span> ดาวน์โหลดเสร็จ! รีสตาร์ทเพื่ออัปเดต...';
-                        barContainer.classList.add('hidden');
-                        // Auto restart to install update
+                        updateUI('✅', 'ดาวน์โหลดเสร็จ! กำลังติดตั้ง...', false);
                         setTimeout(() => {
-                            statusEl.innerHTML = '<span class="text-yellow-400">🔄</span> กำลังรีสตาร์ท...';
+                            updateUI('🔄', 'กำลังรีสตาร์ท...', false);
                         }, 1000);
                     } else if (status === 'error') {
-                        statusEl.innerHTML = '<span class="text-red-400">⚠️</span> ไม่สามารถตรวจสอบได้';
+                        updateUI('⚠️', 'ไม่สามารถตรวจสอบได้', false);
                         setUpdateReady(true); // Allow login anyway on error
                     } else {
                         // 'ready' or 'no-update' 
-                        statusEl.innerHTML = '<span class="text-emerald-400">✅</span> พร้อมใช้งาน';
-                        barContainer.classList.add('hidden');
+                        updateUI('✅', 'แพทช์ปัจจุบันเป็นเวอร์ชันล่าสุดแล้ว', false);
                         setUpdateReady(true);
                     }
                 });
 
                 window.launcherAPI.onUpdateProgress((percent) => {
-                    document.getElementById('update-progress').style.width = percent + '%';
+                    percentEl.textContent = Math.round(percent) + '%';
+                    progressBar.style.width = percent + '%';
                 });
             } else {
                 // No API (dev mode without proper preload) - allow login after short timeout
                 setTimeout(() => {
                     setUpdateReady(true);
-                    document.getElementById('update-status').innerHTML = '<span class="text-emerald-400">✅</span> พร้อมใช้งาน';
+                    updateUI('✅', 'แพทช์ปัจจุบันเป็นเวอร์ชันล่าสุดแล้ว', false);
                 }, 500);
             }
         }
