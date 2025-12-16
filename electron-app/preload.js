@@ -31,6 +31,15 @@ contextBridge.exposeInMainWorld('windowControls', {
     }
 });
 
+// Update notification API for in-app alerts
+contextBridge.exposeInMainWorld('updateNotification', {
+    onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (event, info) => callback(info)),
+    onDownloadProgress: (callback) => ipcRenderer.on('update-download-progress', (event, percent) => callback(percent)),
+    onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', () => callback()),
+    acceptUpdate: () => ipcRenderer.send('accept-update-from-main'),
+    skipUpdate: () => ipcRenderer.send('skip-update')
+});
+
 // Also try to set directly (for backward compatibility)
 window.addEventListener('DOMContentLoaded', () => {
     // Set isElectronApp flag

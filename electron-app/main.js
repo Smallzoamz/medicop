@@ -335,6 +335,7 @@ function createMainWindow() {
 // ========== AUTO UPDATE ==========
 let updateWindow = null;
 let pendingUpdateInfo = null;
+let backgroundCheckInterval = null;
 
 function createUpdateWindow(currentVersion, newVersion) {
     updateWindow = new BrowserWindow({
@@ -382,7 +383,14 @@ function setupAutoUpdater() {
     autoUpdater.on('update-available', (info) => {
         console.log('✅ Update available:', info.version);
         pendingUpdateInfo = info;
-        createUpdateWindow(app.getVersion(), info.version);
+
+        // Notify main window about available update (for in-app notification)
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('update-available', {
+                currentVersion: app.getVersion(),
+                newVersion: info.version
+            });
+        }
     });
 
     autoUpdater.on('update-not-available', (info) => {
@@ -394,6 +402,7 @@ function setupAutoUpdater() {
         console.log(`📥 Download progress: ${Math.round(progress.percent)}%`);
         if (mainWindow) {
             mainWindow.setProgressBar(progress.percent / 100);
+            mainWindow.webContents.send('update-download-progress', progress.percent);
         }
         if (updateWindow) {
             updateWindow.webContents.send('download-progress', progress.percent);
@@ -404,13 +413,14 @@ function setupAutoUpdater() {
         console.log('✅ Update downloaded!');
         if (mainWindow) {
             mainWindow.setProgressBar(-1);
+            mainWindow.webContents.send('update-downloaded');
         }
         if (updateWindow) {
             updateWindow.webContents.send('download-complete');
         }
-        // Auto restart after 2 seconds
+        // Auto restart after 2 seconds with silent install
         setTimeout(() => {
-            autoUpdater.quitAndInstall();
+            autoUpdater.quitAndInstall(true, true);
         }, 2000);
     });
 
@@ -420,11 +430,34 @@ function setupAutoUpdater() {
             updateWindow.close();
         }
     });
+
+    // Start periodic background check (every 30 minutes)
+    if (backgroundCheckInterval) clearInterval(backgroundCheckInterval);
+    backgroundCheckInterval = setInterval(() => {
+        console.log('🔄 Background update check...');
+        autoUpdater.checkForUpdates().catch(err => {
+            console.log('❌ Background check error:', err);
+        });
+    }, 30 * 60 * 1000); // 30 minutes
 }
 
 // IPC handlers for update window
 ipcMain.on('download-update', () => {
     autoUpdater.downloadUpdate();
+});
+
+// Accept update from main window (in-app notification)
+ipcMain.on('accept-update-from-main', () => {
+    console.log('✅ User accepted update from main window');
+    if (pendingUpdateInfo) {
+        autoUpdater.downloadUpdate();
+    }
+});
+
+// Skip update for now (dismiss notification)
+ipcMain.on('skip-update', () => {
+    console.log('⏭️ User skipped update');
+    // Just dismiss - will ask again in 30 minutes
 });
 
 // Recheck update from launcher
