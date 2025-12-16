@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld('launcherAPI', {
 
     // Update events
     onUpdateStatus: (callback) => ipcRenderer.on('update-status', (event, status) => callback(status)),
-    onUpdateProgress: (callback) => ipcRenderer.on('download-progress', (event, percent) => callback(percent))
+    onUpdateProgress: (callback) => ipcRenderer.on('download-progress', (event, percent) => callback(percent)),
+    recheckUpdate: () => ipcRenderer.send('recheck-update')
 });

@@ -426,6 +426,12 @@ ipcMain.on('download-update', () => {
     autoUpdater.downloadUpdate();
 });
 
+// Recheck update from launcher
+ipcMain.on('recheck-update', () => {
+    console.log('🔄 Rechecking for updates...');
+    setupLauncherAutoUpdater();
+});
+
 ipcMain.on('custom-download', async () => {
     // Let user choose where to save the installer
     const result = await dialog.showOpenDialog(updateWindow, {
