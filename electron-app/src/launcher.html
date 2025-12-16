@@ -666,9 +666,10 @@
             }
         }
 
-        function createNewsCard(data) {
+        function createNewsCard(data, docId) {
             const card = document.createElement('div');
-            card.className = `news-card ${data.pinned ? 'pinned' : ''}`;
+            card.className = `news-card ${data.pinned ? 'pinned' : ''} cursor-pointer`;
+            card.setAttribute('data-expanded', 'false');
 
             const typeIcon = {
                 'news': '📰',
@@ -683,18 +684,45 @@
                 day: 'numeric', month: 'short', year: 'numeric'
             }) : '';
 
+            // Escape HTML and preserve line breaks
+            const contentHtml = (data.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
             card.innerHTML = `
-                <div class="flex items-start justify-between mb-2">
+                <div class="flex items-start justify-between mb-1">
                     <div class="flex items-center gap-2">
                         <span>${typeIcon}</span>
                         <span class="type-badge ${typeClass}">${data.type || 'news'}</span>
                         ${data.pinned ? '<span class="text-xs text-red-400">📌 ปักหมุด</span>' : ''}
                     </div>
-                    <span class="text-xs text-slate-500">${date}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-500">${date}</span>
+                        <span class="expand-icon text-slate-500 transition-transform">▼</span>
+                    </div>
                 </div>
-                <h3 class="text-sm font-semibold text-white mb-1">${data.title || 'ไม่มีหัวข้อ'}</h3>
-                <p class="text-xs text-slate-400 leading-relaxed">${data.content || ''}</p>
+                <h3 class="text-sm font-semibold text-white">${data.title || 'ไม่มีหัวข้อ'}</h3>
+                <div class="news-content hidden mt-2 pt-2 border-t border-slate-700/50">
+                    <p class="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap">${contentHtml}</p>
+                </div>
             `;
+
+            // Toggle expand/collapse on click
+            card.addEventListener('click', () => {
+                const isExpanded = card.getAttribute('data-expanded') === 'true';
+                const content = card.querySelector('.news-content');
+                const icon = card.querySelector('.expand-icon');
+
+                if (isExpanded) {
+                    content.classList.add('hidden');
+                    icon.textContent = '▼';
+                    icon.style.transform = 'rotate(0deg)';
+                    card.setAttribute('data-expanded', 'false');
+                } else {
+                    content.classList.remove('hidden');
+                    icon.textContent = '▲';
+                    icon.style.transform = 'rotate(180deg)';
+                    card.setAttribute('data-expanded', 'true');
+                }
+            });
 
             return card;
         }
