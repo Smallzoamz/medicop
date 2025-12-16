@@ -1,14 +1,12 @@
 {
     "name": "medical-op-systems",
-    "version": "1.6.1-build.3",
+    "version": "1.6.1-build.4",
     "description": "Medical OP Systems - Desktop Application",
     "main": "main.js",
     "scripts": {
         "start": "electron .",
-        "prebuild": "node increment-build.js",
         "build": "electron-builder build --win",
         "build:portable": "electron-builder build --win portable",
-        "prepublish": "node increment-build.js",
         "publish": "electron-builder build --win --publish always"
     },
     "repository": {
