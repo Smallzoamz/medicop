@@ -1800,6 +1800,30 @@
                             <span class="text-xs text-slate-500">ค่าเริ่มต้น: /an</span>
                         </div>
                     </div>
+                    <!-- Social Links -->
+                    <div class="border-t border-slate-700/50 pt-4">
+                        <label class="text-xs text-amber-400 mb-2 block">🔗 Social Links (Launcher)</label>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-16 text-xs text-slate-400">Discord:</span>
+                                <input type="text" id="staff-admin-social-discord"
+                                    class="flex-1 text-xs rounded-lg border-slate-700 bg-slate-900/50 p-2 text-white"
+                                    placeholder="https://discord.gg/...">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-16 text-xs text-slate-400">Facebook:</span>
+                                <input type="text" id="staff-admin-social-facebook"
+                                    class="flex-1 text-xs rounded-lg border-slate-700 bg-slate-900/50 p-2 text-white"
+                                    placeholder="https://www.facebook.com/...">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-16 text-xs text-slate-400">TikTok:</span>
+                                <input type="text" id="staff-admin-social-tiktok"
+                                    class="flex-1 text-xs rounded-lg border-slate-700 bg-slate-900/50 p-2 text-white"
+                                    placeholder="https://www.tiktok.com/@...">
+                            </div>
+                        </div>
+                    </div>
                     <button onclick="saveStaffAdminSettings()"
                         class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition">💾
                         บันทึกการตั้งค่า</button>
@@ -6609,7 +6633,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.6.1-build.13';
+        const APP_VERSION = '1.6.1-build.14';
 
         // Update all version displays from APP_VERSION (single source of truth)
         function updateVersionDisplays() {
@@ -9072,6 +9096,15 @@
             // Render logo galleries
             renderLogoGallery('icon');
             renderLogoGallery('login');
+            // Load social links
+            db.collection('op_settings').doc('social').get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('staff-admin-social-discord').value = data.discord || '';
+                    document.getElementById('staff-admin-social-facebook').value = data.facebook || '';
+                    document.getElementById('staff-admin-social-tiktok').value = data.tiktok || '';
+                }
+            }).catch(() => { });
         }
 
         // ========== Announcement Management ==========
@@ -9316,6 +9349,13 @@
                 await db.collection('op_settings').doc('server').set({
                     serverName: name, iconLogo, loginLogo, themeColor, countdownMinutes, announceCmd,
                     logoGallery: serverSettings.logoGallery || { icon: [], login: [] }
+                });
+                // Save social links separately
+                const socialDiscord = document.getElementById('staff-admin-social-discord').value.trim();
+                const socialFacebook = document.getElementById('staff-admin-social-facebook').value.trim();
+                const socialTiktok = document.getElementById('staff-admin-social-tiktok').value.trim();
+                await db.collection('op_settings').doc('social').set({
+                    discord: socialDiscord, facebook: socialFacebook, tiktok: socialTiktok
                 });
                 serverSettings = { serverName: name, iconLogo, loginLogo, themeColor, countdownMinutes, announceCmd, logoGallery: serverSettings.logoGallery };
                 applyServerLogos(); applyThemeColor(); showNotif('Success', 'บันทึกค่าเรียบร้อย');
