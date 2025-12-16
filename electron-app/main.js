@@ -154,9 +154,10 @@ function setupLauncherAutoUpdater() {
         if (launcherWindow && !launcherWindow.isDestroyed()) {
             launcherWindow.webContents.send('update-status', 'downloaded');
         }
-        // Auto restart after 2 seconds
+        // Auto restart after 2 seconds with silent install
         setTimeout(() => {
-            autoUpdater.quitAndInstall();
+            // isSilent = true, isForceRunAfter = true (run app after install)
+            autoUpdater.quitAndInstall(true, true);
         }, 2000);
     });
 
