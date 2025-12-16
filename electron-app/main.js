@@ -1272,6 +1272,75 @@ ipcMain.on('close-blacklist-panel', () => {
     console.log('✅ Blacklist panel closed, overlays restored');
 });
 
+// ========== MUSIC BOX ==========
+let musicBoxWindow = null;
+
+function createMusicBoxWindow() {
+    if (musicBoxWindow && !musicBoxWindow.isDestroyed()) {
+        musicBoxWindow.focus();
+        return;
+    }
+
+    // Get saved position or use default
+    const savedPos = allSettings.musicBox || { x: 100, y: 100 };
+
+    musicBoxWindow = new BrowserWindow({
+        width: 400,
+        height: 600,
+        x: savedPos.x,
+        y: savedPos.y,
+        frame: false,
+        resizable: true,
+        minWidth: 350,
+        minHeight: 500,
+        alwaysOnTop: true,
+        skipTaskbar: false,
+        transparent: true,
+        opacity: panelSettings.opacity || 0.95,
+        icon: path.join(__dirname, 'src', 'icon.ico'),
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'src', 'musicbox-preload.js')
+        }
+    });
+
+    musicBoxWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    musicBoxWindow.setAlwaysOnTop(true, 'screen-saver');
+
+    // Load music box from Firebase-hosted URL (deployed public folder)
+    // For now, load local file - change to URL after deployment
+    musicBoxWindow.loadFile(path.join(__dirname, 'src', 'music.html'));
+
+    // Save position when moved
+    musicBoxWindow.on('moved', () => {
+        const bounds = musicBoxWindow.getBounds();
+        allSettings.musicBox = { x: bounds.x, y: bounds.y };
+        saveSettings(allSettings);
+        console.log(`🎵 Music Box position saved: x=${bounds.x}, y=${bounds.y}`);
+    });
+
+    musicBoxWindow.on('closed', () => {
+        musicBoxWindow = null;
+        console.log('🎵 Music Box closed');
+    });
+
+    console.log('🎵 Music Box window created');
+}
+
+// Open Music Box
+ipcMain.on('open-music-box', () => {
+    createMusicBoxWindow();
+});
+
+// Close Music Box
+ipcMain.on('close-music-box', () => {
+    if (musicBoxWindow && !musicBoxWindow.isDestroyed()) {
+        musicBoxWindow.close();
+        musicBoxWindow = null;
+    }
+});
+
 // ========== END AUTO UPDATE ==========
 
 // App ready

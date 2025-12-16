@@ -479,6 +479,11 @@
             <span class="title-bar-text">Medical OP Systems v.1.6.1</span>
         </div>
         <div class="title-bar-controls">
+            <button class="title-bar-btn music-box" id="btn-music-box" title="Music Box"
+                onclick="window.windowControls?.openMusicBox()"
+                style="color: #a855f7; width: auto; padding: 0 8px; font-size: 11px; font-weight: bold;">
+                🎵
+            </button>
             <button class="title-bar-btn mini-mode" id="btn-mini-mode" title="Mini Overlay Mode"
                 onclick="window.windowControls?.toggleOverlayMode()"
                 style="color: #06b6d4; width: auto; padding: 0 8px; font-size: 11px; font-weight: bold;">
@@ -6544,7 +6549,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.6.1-build.10';
+        const APP_VERSION = '1.6.1-build.11';
 
         // Update all version displays from APP_VERSION (single source of truth)
         function updateVersionDisplays() {
