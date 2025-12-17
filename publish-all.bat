@@ -18,19 +18,18 @@ set /p CHANGES=<tmp_changes.txt
 del tmp_changes.txt
 
 if "%CHANGES%" NEQ "0" (
-    echo 📝 ตรวจพบการแก้ไขในเครื่อง... กำลัง Save งานเบื้องต้น...
+    echo - ตรวจพบการแก้ไขในเครื่อง... กำลัง Save งานเบื้องต้น...
     git add .
     git commit -m "Save local changes before auto-sync (Auto)"
 )
 
 :: Sync with GitHub
-echo 🔍 กำลังตรวจสอบความล่าช้าของ Code กับ GitHub...
-git fetch origin main >nul 2>&1
-git pull --rebase origin main
-if errorlevel 1 (
+echo - กำลังอัปเดตข้อมูลจาก GitHub...
+git pull origin main
+if %errorlevel% neq 0 (
     echo.
-    echo ❌ ERROR: ไม่สามารถ Pull ข้อมูลจาก GitHub ได้ (อาจมี Conflict รุนแรง)
-    echo กรุณาจัดการ Conflict ด้วยตนเองก่อนรันใหม่อีกครั้ง
+    echo [!] ERROR: ไม่สามารถดึงข้อมูลจาก GitHub ได้
+    echo กรุณาตรวจสอบว่ามี Conflict หรือไม่ หรือลองรัน git pull ด้วยตนเอง
     pause
     exit /b 1
 )
@@ -40,8 +39,8 @@ echo.
 echo [1/4] กำลังอัพเดท Build Number...
 cd electron-app
 call node increment-build.js
-if errorlevel 1 (
-    echo ❌ ERROR: ไม่สามารถเพิ่ม Build Number ได้
+if %errorlevel% neq 0 (
+    echo [!] ERROR: ไม่สามารถเพิ่ม Build Number ได้
     pause
     exit /b 1
 )
@@ -61,41 +60,40 @@ echo.
 :: Step 2: Deploy Firebase
 echo [2/4] กำลัง Deploy Firebase Hosting...
 call firebase deploy --only hosting
-if errorlevel 1 (
-    echo ⚠️ Firebase Deploy มีปัญหา แต่จะดำเนินการต่อ...
+if %errorlevel% neq 0 (
+    echo [!] Warning: Firebase Deploy มีปัญหาเล็กน้อย แต่จะดำเนินการต่อ...
 )
 
 :: Update Firebase version for Force Refresh
 echo.
 echo กำลังอัพเดท Firebase version...
 curl -s "https://asia-southeast1-medic-op.cloudfunctions.net/updateVersion?version=%VERSION%&secret=medic2024" >nul
-echo.
-echo ✅ Firebase Deploy สำเร็จ
+echo - Firebase Deploy สำเร็จ
 
 :: Step 3: Push to GitHub (triggers GitHub Actions to build EXE)
 echo.
-echo [3/4] Push ไป GitHub เพื่อ trigger EXE build...
+echo [3/4] Push ไป GitHub เพื่อเริ่มสร้าง EXE...
 git add .
 git commit -m "v%VERSION%: Deploy update (Auto)"
 git push origin main
-if errorlevel 1 (
-    echo ❌ ERROR: ไม่สามารถ Push ไป GitHub ได้
+if %errorlevel% neq 0 (
+    echo [!] ERROR: ไม่สามารถ Push ไป GitHub ได้
     pause
     exit /b 1
 )
 
 echo.
 echo ========================================
-echo   ✅ Deploy Complete! %VERSION%
+echo   COMPLETE! Version: %VERSION%
 echo ========================================
 echo.
-echo 🌐 Web: https://medic-op.web.app
-echo 📦 EXE: จะถูก build อัตโนมัติบน GitHub Actions
+echo - Web: https://medic-op.web.app
+echo - EXE: จะถูกสร้างอัตโนมัติบน GitHub Actions
 echo.
 echo [4/4] สรุป:
-echo    ✅ Build Number เพิ่มอัตโนมัติ
-echo    ✅ Sync ทุก Version เรียบร้อย
-echo    ✅ Force Refresh อัปเดตแล้ว
+echo   - อัปเดต Build Number แล้ว
+echo   - Sync ทุกเวอร์ชันเรียบร้อย
+echo   - Force Refresh พร้อมทำงาน
 echo.
-echo ⏳ จะปิดหน้าต่างใน 10 วินาที...
+echo จะปิดหน้าต่างใน 10 วินาที...
 timeout /t 10
