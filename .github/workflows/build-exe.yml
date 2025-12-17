@@ -35,9 +35,41 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run publish
 
-      - name: Upload artifact
+      - name: Get app info from package.json
+        id: app_info
+        working-directory: electron-app
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json | ConvertFrom-Json
+          $productName = $pkg.build.productName -replace ' ', '-'
+          $version = $pkg.version
+          echo "PRODUCT_NAME=$productName" >> $env:GITHUB_OUTPUT
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "ZIP_NAME=$productName-$version-portable.zip" >> $env:GITHUB_OUTPUT
+
+      - name: Create portable ZIP from win-unpacked
+        working-directory: electron-app/dist
+        shell: pwsh
+        run: |
+          $zipName = "${{ steps.app_info.outputs.ZIP_NAME }}"
+          Write-Host "Creating portable ZIP: $zipName"
+          Compress-Archive -Path "win-unpacked\*" -DestinationPath $zipName -Force
+          Write-Host "ZIP created successfully!"
+          Get-ChildItem $zipName
+
+      - name: Upload portable ZIP to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: electron-app/dist/${{ steps.app_info.outputs.ZIP_NAME }}
+          tag_name: v${{ steps.app_info.outputs.VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts (EXE + ZIP)
         uses: actions/upload-artifact@v4
         with:
           name: Medical-OP-Systems-Setup
-          path: electron-app/dist/*.exe
+          path: |
+            electron-app/dist/*.exe
+            electron-app/dist/*.zip
           retention-days: 30
