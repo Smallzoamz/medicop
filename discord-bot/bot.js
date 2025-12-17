@@ -349,6 +349,9 @@ client.once('ready', async () => {
     // Start Firestore listener for story updates
     startStoryListener();
 
+    // Start critical logs listener for alerts
+    startCriticalLogListener();
+
     // Start midnight refresh scheduler
     startMidnightScheduler();
 });
@@ -542,6 +545,65 @@ function startClosedCaseListener() {
         }, (error) => {
             console.error('❌ Closed case listener error:', error);
         });
+}
+
+// --- Listen for Critical Logs and Alert Discord ---
+function startCriticalLogListener() {
+    if (!db) return;
+
+    console.log('👀 Starting Firestore listener for op_detailed_logs (critical alerts)...');
+
+    // Only listen for new logs added after bot start
+    const startTimeToken = admin.firestore.Timestamp.now();
+
+    db.collection('op_detailed_logs')
+        .where('category', '==', 'critical')
+        .where('timestamp', '>', startTimeToken)
+        .onSnapshot(async (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added') {
+                    const log = change.doc.data();
+                    console.log(`⚠️ CRITICAL LOG DETECTED: ${log.action}`);
+                    await sendCriticalAlert(log);
+                }
+            });
+        }, (error) => {
+            console.error('❌ Critical log listener error:', error);
+        });
+}
+
+// --- Send Critical Alert to Discord ---
+async function sendCriticalAlert(log) {
+    try {
+        const channel = await client.channels.fetch(OP_CHANNEL_ID);
+        if (!channel) return;
+
+        const action = log.action || 'Unknown Action';
+        const details = log.details || 'No details provided';
+        const user = log.user || 'Unknown User';
+        const timestamp = log.timestamp ? log.timestamp.toDate().toLocaleString('th-TH', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Asia/Bangkok'
+        }) : 'Recent';
+
+        const embed = new EmbedBuilder()
+            .setTitle('⚠️ การกระทำระดับวิกฤต (Critical Action)')
+            .setColor(0xFF0000) // Red
+            .addFields(
+                { name: '🔹 สิ่งที่ทำ', value: action, inline: true },
+                { name: '👤 โดย', value: formatWithMention(user), inline: true },
+                { name: '⏰ เวลา', value: timestamp, inline: true },
+                { name: '📝 รายละเอียด', value: details }
+            )
+            .setFooter({ text: 'MedicOP Critical Alert System' });
+
+        await channel.send({ embeds: [embed] });
+        console.log('✅ Critical alert sent to Discord');
+    } catch (error) {
+        console.error('❌ sendCriticalAlert error:', error);
+    }
 }
 
 // --- Post Closed Case History to Story Channel ---

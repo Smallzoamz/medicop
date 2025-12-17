@@ -2954,7 +2954,7 @@
             let chatOpen = false;
             let chatMessages = [];
             let chatUnsubscribe = null;
-            let lastSeenMessageId = localStorage.getItem('chat_last_seen') || '';
+            let lastSeenMessageId = ''; // Loaded from Firestore on login
             let chatSoundEnabled = localStorage.getItem('chat_sound_enabled') !== 'false'; // default true
             const chatNotifSound = new Audio('https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3'); // soft ding
             const onlineNotifSound = new Audio('https://notificationsounds.com/storage/sounds/file-sounds-1137-eventually.mp3'); // soft gentle chime
@@ -3566,6 +3566,12 @@
                     if (chatMessages.length > 0) {
                         lastSeenMessageId = chatMessages[chatMessages.length - 1].id;
                         localStorage.setItem('chat_last_seen', lastSeenMessageId);
+                        // Also save to Firestore
+                        if (currentUser && !isGuest()) {
+                            db.collection('op_users').doc(currentUser.username).update({
+                                chatLastSeen: lastSeenMessageId
+                            }).catch(e => { });
+                        }
                     }
                     if (unread) unread.classList.add('hidden');
                     // Focus input
@@ -4567,6 +4573,12 @@
                 // Get last read timestamps for all DMs
                 const getLastReadTimestamp = (chatId) => {
                     try {
+                        // Priority: Firestore cache (already synced)
+                        if (dmReadStatus[chatId] && dmReadStatus[chatId][myName]) {
+                            const ts = dmReadStatus[chatId][myName];
+                            return ts.toDate ? ts.toDate() : new Date(ts);
+                        }
+                        // Fallback: localStorage
                         const key = `dm_last_read_${chatId}`;
                         const saved = localStorage.getItem(key);
                         return saved ? new Date(parseInt(saved)) : null;
@@ -4578,15 +4590,26 @@
                     try {
                         const key = `dm_last_read_${chatId}`;
                         localStorage.setItem(key, Date.now().toString());
+                        // Also call markDMAsRead to persist to Firestore
+                        markDMAsRead(chatId, myName);
                     } catch (e) { }
                 };
 
                 // For each registered user, set up a listener for potential DMs
-                const setupListenerForUser = (userName) => {
+                const setupListenerForUser = async (userName) => {
                     if (userName === myName) return; // Skip self
                     if (incomingDMListeners[userName]) return; // Already listening
 
                     const chatId = getDMChatId(myName, userName);
+
+                    // Pre-fetch read status from Firestore for this chat
+                    if (!dmReadStatus[chatId]) {
+                        try {
+                            const snap = await db.collection('dm_read_status').doc(chatId).get();
+                            if (snap.exists) dmReadStatus[chatId] = snap.data();
+                        } catch (e) { }
+                    }
+
                     const oneWeekAgo = new Date();
                     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -6615,7 +6638,29 @@
                 }, 2500);
             }
 
-            function loginSuccess(showWelcome = true) { document.getElementById('auth-container').classList.add('hidden'); document.getElementById('app-container').classList.remove('hidden'); loadOpData(); loadServerSettings(); loadOnlineStatus(); loadMedicalFees(); loadBlacklist(); loadMusicSettings(); loadChatMessages(); cleanOldChatMessages(); updateHeader(); updateUserAvatar(); if (['Owner', 'Admin', 'Staff'].includes(currentUser?.role)) document.getElementById('staff-admin-btn').classList.remove('hidden'); clearOldLogs(); applyRoleRestrictions(); if (showWelcome) { showWelcomeAnimation(); } checkShowChangelog(); if (currentUser?.role === 'Owner') { db.collection('op_settings').doc('server').set({ version: APP_VERSION, updatedAt: Date.now(), updatedBy: 'System (Post-Deploy)' }, { merge: true }).catch(e => console.log('Version update failed:', e)); } setTimeout(() => { const dmBubblesContainer = document.getElementById('dm-bubbles-container'); const dmExpandedContainer = document.getElementById('dm-expanded-container'); if (dmBubblesContainer) dmBubblesContainer.classList.remove('hidden'); if (dmExpandedContainer) dmExpandedContainer.classList.remove('hidden'); loadDMBubbleState(); listenToLastMessages(); }, 1000); }
+            async function loginSuccess(showWelcome = true) {
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                loadOpData();
+                loadServerSettings();
+                loadOnlineStatus();
+                loadMedicalFees();
+                loadBlacklist();
+                loadMusicSettings();
+
+                // Fetch group chat last seen from Firestore
+                if (currentUser && !isGuest()) {
+                    try {
+                        const userDoc = await db.collection('op_users').doc(currentUser.username).get();
+                        if (userDoc.exists && userDoc.data().chatLastSeen) {
+                            lastSeenMessageId = userDoc.data().chatLastSeen;
+                        }
+                    } catch (e) { }
+                }
+
+                loadChatMessages();
+                cleanOldChatMessages(); updateHeader(); updateUserAvatar(); if (['Owner', 'Admin', 'Staff'].includes(currentUser?.role)) document.getElementById('staff-admin-btn').classList.remove('hidden'); clearOldLogs(); applyRoleRestrictions(); if (showWelcome) { showWelcomeAnimation(); } checkShowChangelog(); if (currentUser?.role === 'Owner') { db.collection('op_settings').doc('server').set({ version: APP_VERSION, updatedAt: Date.now(), updatedBy: 'System (Post-Deploy)' }, { merge: true }).catch(e => console.log('Version update failed:', e)); } setTimeout(() => { const dmBubblesContainer = document.getElementById('dm-bubbles-container'); const dmExpandedContainer = document.getElementById('dm-expanded-container'); if (dmBubblesContainer) dmBubblesContainer.classList.remove('hidden'); if (dmExpandedContainer) dmExpandedContainer.classList.remove('hidden'); loadDMBubbleState(); listenToLastMessages(); }, 1000);
+            }
             function isOP() { if (!appData.currentOP) return false; return currentUser?.fullName === appData.supOP || currentUser?.fullName === appData.currentOP; }
             function isCurrentOPorSupOP() { return currentUser?.fullName === appData.currentOP || currentUser?.fullName === appData.supOP; }
             function isGuest() { return currentUser?.isGuest === true || currentUser?.role === 'Guest'; }
@@ -9581,18 +9626,64 @@
             // Track server data version for conflict detection
             let serverDataVersion = 0;
 
+            function validateAppData(data) {
+                if (!data || typeof data !== 'object') return false;
+
+                // Schema repair: Ensure critical fields are initialized as correct types
+                const criticalArrays = ['onDuty', 'offDuty', 'cases', 'closedCases', 'afk', 'opPendingRequests'];
+                criticalArrays.forEach(key => {
+                    if (!Array.isArray(data[key])) data[key] = [];
+                });
+
+                const criticalObjects = ['afkTimes', 'afkPositions', 'medicStatuses', 'afkWarnings', 'afkWarnedTimes'];
+                criticalObjects.forEach(key => {
+                    if (!data[key] || typeof data[key] !== 'object') data[key] = {};
+                });
+
+                // Verify currentOP type
+                if (data.currentOP !== null && data.currentOP !== undefined && typeof data.currentOP !== 'string') {
+                    console.error('[validateAppData] Invalid currentOP type:', typeof data.currentOP);
+                    return false;
+                }
+
+                return true;
+            }
+
             async function saveOpData() {
                 try {
+                    // Pre-save validation
+                    if (!validateAppData(appData)) {
+                        console.error('[saveOpData] Validation failed. Aborting save.');
+                        return false;
+                    }
+
                     const docRef = db.collection('op_data').doc(getDocId('current'));
 
-                    // Get current server data to check version
-                    const serverDoc = await docRef.get();
-                    const serverData = serverDoc.exists ? serverDoc.data() : null;
+                    await db.runTransaction(async (transaction) => {
+                        const serverDoc = await transaction.get(docRef);
+                        const serverData = serverDoc.exists ? serverDoc.data() : null;
 
-                    // Conflict detection: if server version is higher than our known version
-                    if (serverData && serverData._version && serverData._version > serverDataVersion) {
-                        // CONFLICT DETECTED! Log it and show warning
-                        console.warn('[saveOpData] CONFLICT! Server v' + serverData._version + ' > Local v' + serverDataVersion);
+                        // Conflict detection: if server version is higher than our known version
+                        if (serverData && serverData._version && serverData._version > serverDataVersion) {
+                            throw { type: 'conflict', data: serverData };
+                        }
+
+                        // Increment version and update metadata
+                        const newVersion = (serverData?._version || serverDataVersion || 0) + 1;
+                        appData._version = newVersion;
+                        appData._lastModified = Date.now();
+                        appData._modifiedBy = currentUser?.fullName || 'System';
+
+                        // Save to Firestore via transaction
+                        transaction.set(docRef, appData);
+                    });
+
+                    // Update local version tracker ONLY after transaction success
+                    serverDataVersion = appData._version;
+                    return true;
+                } catch (e) {
+                    if (e && e.type === 'conflict') {
+                        console.warn('[saveOpData] CONFLICT! Server v' + e.data._version + ' > Local v' + serverDataVersion);
 
                         // Log conflict to Firestore
                         try {
@@ -9600,33 +9691,18 @@
                                 timestamp: Date.now(),
                                 user: currentUser?.fullName || 'Unknown',
                                 localVersion: serverDataVersion,
-                                serverVersion: serverData._version,
-                                serverOP: serverData.currentOP,
+                                serverVersion: e.data._version,
+                                serverOP: e.data.currentOP,
                                 localOP: appData.currentOP,
-                                serverModifiedBy: serverData._modifiedBy,
-                                serverModifiedAt: serverData._lastModified
+                                serverModifiedBy: e.data._modifiedBy,
+                                serverModifiedAt: e.data._lastModified
                             });
                         } catch (logErr) { console.error('Conflict log error:', logErr); }
 
-                        // Show conflict modal instead of saving
-                        showDataConflictModal(serverData);
-                        return false;
+                        showDataConflictModal(e.data);
+                    } else {
+                        console.error('[saveOpData] Error:', e);
                     }
-
-                    // Increment version and update metadata
-                    appData._version = (serverData?._version || serverDataVersion || 0) + 1;
-                    appData._lastModified = Date.now();
-                    appData._modifiedBy = currentUser?.fullName || 'System';
-
-                    // Save to Firestore
-                    await docRef.set(appData);
-
-                    // Update local version tracker
-                    serverDataVersion = appData._version;
-
-                    return true;
-                } catch (e) {
-                    console.error('[saveOpData] Error:', e);
                     return false;
                 }
             }
@@ -9952,6 +10028,7 @@
                                     (isOP ? '<button onclick="editCase(\'' + c.id + '\')" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded" title="แก้ไข">✏️</button>' +
                                         '<button onclick="showRescheduleModal(\'' + c.id + '\')" class="text-[10px] bg-amber-700 hover:bg-amber-600 text-white px-2 py-1 rounded" title="เลื่อนเวลา">📅</button>' +
                                         '<button onclick="closeCase(\'' + c.id + '\')" class="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded" title="ปิดเคส">✅</button>' : '') +
+                                    (currentUser?.role === 'Owner' ? '<button onclick="deleteActiveCase(\'' + c.id + '\')" class="text-[10px] bg-rose-700 hover:bg-rose-600 text-white px-2 py-1 rounded" title="ลบสตอรี่">🗑️</button>' : '') +
                                     '</div>' +
                                     '</div>' +
                                     '</div>';
@@ -9973,6 +10050,26 @@
             function saveEdit(id) { const idx = appData.cases.findIndex(c => c.id === id); if (idx === -1) return; appData.cases[idx].partyA = document.getElementById(`edit-pA-${id}`).value; appData.cases[idx].partyB = document.getElementById(`edit-pB-${id}`).value; appData.cases[idx].location = document.getElementById(`edit-loc-${id}`).value; appData.cases[idx].radio = document.getElementById(`edit-rad-${id}`).value; appData.cases[idx].council = document.getElementById(`edit-cou-${id}`).value; appData.cases[idx].storyDate = document.getElementById(`edit-date-${id}`).value; editingCaseId = null; saveOpData(); showNotif('Success', 'แก้ไขเรียบร้อย'); }
             function toggleHistory() { showingHistory = !showingHistory; document.getElementById('history-section').classList.toggle('hidden', !showingHistory); }
             async function deleteHistory(idx) { const c = await showConfirm('ยืนยันลบ', 'ลบสตอรี่จากประวัติ?'); if (!c) return; if (appData.closedCases?.[idx]) { appData.closedCases.splice(idx, 1); saveOpData(); showNotif('Success', 'ลบเรียบร้อย'); } }
+            async function deleteActiveCase(id) {
+                if (currentUser?.role !== 'Owner') return;
+                const idx = appData.cases.findIndex(c => c.id === id);
+                if (idx === -1) return;
+                const item = appData.cases[idx];
+                const c = await showConfirm('🚨 ยืนยันการลบสตอรี่', `คุณกำลังจะลบสตอรี่ "${item.partyA} VS ${item.partyB}" ใช่หรือไม่?`);
+                if (!c) return;
+
+                // Log BEFORE deleting
+                await addDetailedLog('ลบสตอรี่ (Active)', `สตอรี่: ${item.partyA} VS ${item.partyB}, วันที่: ${item.storyDate}, เวลา: ${item.startTime}`, 'critical');
+
+                appData.cases.splice(idx, 1);
+                const saved = await saveOpData();
+                if (saved) {
+                    showNotif('Success', 'ลบสตอรี่เรียบร้อย');
+                    renderAll();
+                } else {
+                    showNotif('Error', 'ไม่สามารถลบสตอรี่ได้');
+                }
+            }
 
             // Reschedule Story Functions
             let reschedulingCaseId = null;
@@ -10278,7 +10375,83 @@
             function rejectOPRequest(idx) { if (!appData.opPendingRequests?.[idx]) return; const name = appData.opPendingRequests[idx].requester; appData.opPendingRequests.splice(idx, 1); saveOpData(); showNotif('Success', 'ปฏิเสธ Request เรียบร้อย'); addNotification(`❌ ปฏิเสธ Request จาก ${name}`, 'warning'); }
 
             // Perform Handover - shows summary for old OP and adds old OP to On Duty
-            async function performHandover() { if (!appData.handoverNextOP) return; const prevOP = appData.currentOP; const prevSupOP = appData.supOP; const shiftDuration = appData.shiftStart ? Date.now() - appData.shiftStart : 0; const afkWarnings = {}; if (appData.afkTimes) { Object.entries(appData.afkTimes).forEach(([name, start]) => { const mins = Math.floor((Date.now() - start) / 60000); if (mins >= 5) afkWarnings[name] = mins; }); } lastShiftSummaryData = { op: prevOP, supOP: prevSupOP, onDuty: [...(appData.onDuty || [])], offDuty: [...(appData.offDuty || [])], closedCases: [...(appData.closedCases || [])], afkWarnings, duration: shiftDuration, startTime: appData.shiftStart, endTime: new Date() }; addOpLog('Handover', `${prevOP} → ${appData.handoverNextOP}`); const prevOPFirstName = prevOP ? prevOP.split(' ')[0] : null; const prevSupOPFirstName = prevSupOP ? prevSupOP.split(' ')[0] : null; const newOPFirstName = appData.handoverNextOP.split(' ')[0]; let newOnDuty = [...(appData.onDuty || [])]; let newOffDuty = [...(appData.offDuty || [])]; if (prevOPFirstName && !newOnDuty.includes(prevOPFirstName)) newOnDuty.push(prevOPFirstName); if (prevSupOPFirstName && !newOnDuty.includes(prevSupOPFirstName)) newOnDuty.push(prevSupOPFirstName); const newOPIdx = newOnDuty.indexOf(newOPFirstName); if (newOPIdx > -1) newOnDuty.splice(newOPIdx, 1); appData = { shiftStart: Date.now(), currentOP: appData.handoverNextOP, supOP: null, onDuty: newOnDuty, offDuty: newOffDuty, afk: appData.afk || [], afkTimes: appData.afkTimes || {}, cases: appData.cases || [], closedCases: [], medicStatuses: appData.medicStatuses || {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null }; const saved = await saveOpData(); if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; } if (currentUser?.fullName === prevOP) showShiftSummary(); applyRoleRestrictions(); renderAllDebounced(); showNotif('Success', `Handover สำเร็จ! ${prevOP || 'ไม่มี'} → ${appData.currentOP}`); addNotification(`🔄 Handover: ${prevOP || '-'} → ${appData.currentOP}`, 'info'); }
+            async function performHandover() {
+                if (!appData.handoverNextOP) return;
+
+                const prevOP = appData.currentOP;
+                const prevSupOP = appData.supOP;
+                const onDutyCount = appData.onDuty?.length || 0;
+                const casesCount = appData.cases?.length || 0;
+
+                // Log critical action BEFORE handover
+                await addDetailedLog('Handover (เริ่ม)', `จาก: ${prevOP || '-'} ไปยัง: ${appData.handoverNextOP}, SupOP: ${prevSupOP || '-'}, OnDuty: ${onDutyCount}, Cases: ${casesCount}`, 'shift_change');
+
+                // Create backup BEFORE handover
+                await createBackup('before_handover');
+
+                const shiftDuration = appData.shiftStart ? Date.now() - appData.shiftStart : 0;
+                const afkWarnings = {};
+                if (appData.afkTimes) {
+                    Object.entries(appData.afkTimes).forEach(([name, start]) => {
+                        const mins = Math.floor((Date.now() - start) / 60000);
+                        if (mins >= 5) afkWarnings[name] = mins;
+                    });
+                }
+                lastShiftSummaryData = {
+                    op: prevOP,
+                    supOP: prevSupOP,
+                    onDuty: [...(appData.onDuty || [])],
+                    offDuty: [...(appData.offDuty || [])],
+                    closedCases: [...(appData.closedCases || [])],
+                    afkWarnings,
+                    duration: shiftDuration,
+                    startTime: appData.shiftStart,
+                    endTime: new Date()
+                };
+
+                addDetailedLog('Handover (สำเร็จ)', `OP ใหม่: ${appData.handoverNextOP}, OP เดิม: ${prevOP || '-'}`, 'shift_change');
+                addOpLog('Handover', `${prevOP} → ${appData.handoverNextOP}`);
+
+                const prevOPFirstName = prevOP ? prevOP.split(' ')[0] : null;
+                const prevSupOPFirstName = prevSupOP ? prevSupOP.split(' ')[0] : null;
+                const newOPFirstName = appData.handoverNextOP.split(' ')[0];
+                let newOnDuty = [...(appData.onDuty || [])];
+                let newOffDuty = [...(appData.offDuty || [])];
+
+                if (prevOPFirstName && !newOnDuty.includes(prevOPFirstName)) newOnDuty.push(prevOPFirstName);
+                if (prevSupOPFirstName && !newOnDuty.includes(prevSupOPFirstName)) newOnDuty.push(prevSupOPFirstName);
+
+                const newOPIdx = newOnDuty.indexOf(newOPFirstName);
+                if (newOPIdx > -1) newOnDuty.splice(newOPIdx, 1);
+
+                appData = {
+                    shiftStart: Date.now(),
+                    currentOP: appData.handoverNextOP,
+                    supOP: null,
+                    onDuty: newOnDuty,
+                    offDuty: newOffDuty,
+                    afk: appData.afk || [],
+                    afkTimes: appData.afkTimes || {},
+                    cases: appData.cases || [],
+                    closedCases: [],
+                    medicStatuses: appData.medicStatuses || {},
+                    opPendingRequests: [],
+                    opHandoverAt: null,
+                    handoverNextOP: null
+                };
+
+                const saved = await saveOpData();
+                if (!saved) {
+                    showNotif('Error', '❌ บันทึกไม่สำเร็จ');
+                    return;
+                }
+
+                if (currentUser?.fullName === prevOP) showShiftSummary();
+                applyRoleRestrictions();
+                renderAllDebounced();
+                showNotif('Success', `Handover สำเร็จ! ${prevOP || 'ไม่มี'} → ${appData.currentOP}`);
+                addNotification(`🔄 Handover: ${prevOP || '-'} → ${appData.currentOP}`, 'info');
+            }
 
             async function startShift() { if (!appData.currentOP) return showNotif('Error', 'กรุณากด "เข้ากะ" ก่อน'); appData.shiftStart = Date.now(); const saved = await saveOpData(); if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; } addOpLog('เริ่มกะ', `OP: ${appData.currentOP}`); showNotif('Success', 'เริ่มกะเรียบร้อย'); addNotification(`▶ เริ่มกะโดย ${appData.currentOP}`, 'success'); renderOPControl(); }
             let lastShiftSummaryData = null;
@@ -10288,6 +10461,16 @@
                 const c = await showConfirm('ยืนยันจบกะ', 'ต้องการจบกะ?');
                 if (!c) return;
                 const prevOP = appData.currentOP;
+                const prevSupOP = appData.supOP;
+                const onDutyCount = appData.onDuty?.length || 0;
+                const casesCount = appData.cases?.length || 0;
+
+                // Log critical action BEFORE clearing
+                await addDetailedLog('จบกะ (เริ่ม)', `OP: ${prevOP || '-'}, SupOP: ${prevSupOP || '-'}, OnDuty: ${onDutyCount}, Cases: ${casesCount}`, 'critical');
+
+                // Create backup BEFORE clearing
+                await createBackup('before_endShift');
+
                 const shiftDuration = appData.shiftStart ? Date.now() - appData.shiftStart : 0;
                 const afkWarnings = {};
                 if (appData.afkTimes) { Object.entries(appData.afkTimes).forEach(([name, start]) => { const mins = Math.floor((Date.now() - start) / 60000); if (mins >= 5) afkWarnings[name] = mins; }); }
@@ -10347,7 +10530,7 @@
             }
 
             // Auto-end shift at restart time (called from UI countdown timer)
-            function autoEndShiftForRestart() {
+            async function autoEndShiftForRestart() {
                 if (restartEndedForSession) return;
                 if (!appData.currentOP) return;
 
@@ -10396,6 +10579,15 @@
                     showShiftSummary();
                 }
 
+                const onDutyCount = appData.onDuty?.length || 0;
+                const casesCount = appData.cases?.length || 0;
+
+                // Log critical action BEFORE clearing
+                await addDetailedLog('จบกะ (Server Restart - เริ่ม)', `OP: ${prevOP || '-'}, SupOP: ${prevSupOP || '-'}, OnDuty: ${onDutyCount}, Cases: ${casesCount}`, 'critical');
+
+                // Create backup BEFORE clearing
+                await createBackup('before_restartEndShift');
+
                 // Then reset data and save (async)
                 addOpLog('จบกะ (Server Restart)', `OP: ${prevOP}`);
                 // New logic: If any story is still active (not closed), keep ALL stories. If all closed, delete closed stories.
@@ -10407,7 +10599,10 @@
                     return !cs.closed;
                 });
                 appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
-                saveOpData();
+                const saved = await saveOpData();
+                if (saved) {
+                    addDetailedLog('จบกะ (Server Restart - สำเร็จ)', `OP เดิม: ${prevOP || '-'}`, 'shift_change');
+                }
                 renderAll();
                 renderOPControl();
             }
