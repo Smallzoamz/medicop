@@ -634,14 +634,14 @@
         <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
             onclick="event.stopPropagation()">
             <div class="flex items-center justify-between p-4 border-b border-slate-700">
-                <div class="flex items-center gap-2">
+                <h3 id="popup-title" class="text-sm font-semibold text-white flex-1 truncate mr-2"></h3>
+                <div class="flex items-center gap-2 shrink-0">
                     <span id="popup-badge" class="px-2 py-0.5 rounded text-[10px] font-medium"></span>
                     <span id="popup-date" class="text-[10px] text-slate-500"></span>
+                    <button onclick="closeNewsPopup()" class="text-slate-400 hover:text-white text-lg ml-2">✕</button>
                 </div>
-                <button onclick="closeNewsPopup()" class="text-slate-400 hover:text-white text-lg">✕</button>
             </div>
             <div class="p-4 overflow-y-auto max-h-[60vh]">
-                <h3 id="popup-title" class="text-base font-semibold text-white mb-3"></h3>
                 <div id="popup-image" class="mb-3 hidden">
                     <img id="popup-img" src="" class="w-full rounded-lg max-h-48 object-cover cursor-pointer"
                         onclick="openImageFull(this.src)">

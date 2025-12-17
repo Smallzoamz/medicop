@@ -6648,7 +6648,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.6.1-build.15';
+        const APP_VERSION = '1.6.1-build.16';
 
         // Update all version displays from APP_VERSION (single source of truth)
         function updateVersionDisplays() {
@@ -11176,8 +11176,27 @@
                 return;
             }
 
-            // Open Discord OAuth popup
+            // Open Discord OAuth
             const authUrl = `${DISCORD_AUTH_URL}?userId=${encodeURIComponent(currentUser.username)}`;
+
+            // Use Electron's openExternal if available (opens in default browser)
+            if (window.windowControls && window.windowControls.openExternal) {
+                window.windowControls.openExternal(authUrl);
+                showNotif('Info', '🔗 กรุณาเชื่อมต่อ Discord ในเบราว์เซอร์');
+                // Periodically check if user linked discord
+                let checkCount = 0;
+                const checkInterval = setInterval(async () => {
+                    checkCount++;
+                    if (checkCount >= 30) { // Stop after 30 checks (30 seconds)
+                        clearInterval(checkInterval);
+                        return;
+                    }
+                    await refreshDiscordLinkStatus();
+                }, 1000);
+                return;
+            }
+
+            // Fallback: Open in popup (for web)
             const popup = window.open(authUrl, 'Discord Link', 'width=500,height=700');
 
             // Check if popup was blocked
