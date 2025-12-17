@@ -6,18 +6,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>รวมคำสั่ง</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --primary-cyan: #22d3ee;
+            --primary-purple: #a855f7;
+            --danger-rose: #fb7185;
+            --success-emerald: #10b981;
+            --warning-amber: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
         body {
             background: transparent;
             -webkit-app-region: no-drag;
             margin: 0;
             overflow: hidden;
+            color: #e2e8f0;
         }
 
         .glass {
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                0 10px 25px -5px rgba(0, 0, 0, 0.4),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .glass-panel:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .drag-region {
@@ -33,12 +71,64 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgba(100, 200, 255, 0.3);
-            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .btn-control {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .btn-control:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+        }
+
+        .glow-blue {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-action {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .btn-action:hover::after {
+            opacity: 1;
+        }
+
+        .btn-action:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
@@ -46,59 +136,75 @@
 <body>
     <div class="glass rounded-xl shadow-2xl overflow-hidden" style="width: 400px;">
         <div id="title-bar"
-            class="drag-region p-2 border-b border-white/10 flex justify-between items-center cursor-move">
-            <span class="text-blue-400 text-xs font-bold">📋 รวมคำสั่งประกาศ</span>
-            <div class="flex gap-1 no-drag">
-                <button id="lock-btn" onclick="toggleLock()" class="text-slate-400 hover:text-cyan-400 text-xs"
-                    title="ล็อค/ปลดล็อคการลาก">🔓</button>
+            class="drag-region p-3 border-b border-white/5 flex justify-between items-center cursor-move">
+            <div class="flex items-center gap-2">
+                <span
+                    class="text-blue-400 text-[10px] font-outfit font-black tracking-widest uppercase glow-blue">ANNOUNCEMENTS</span>
+                <div class="w-1 h-3 bg-white/10 rounded-full"></div>
+                <span class="text-[9px] text-slate-500 font-medium whitespace-nowrap">รวมคำสั่งประกาศ</span>
+            </div>
+            <div class="flex gap-1.5 no-drag">
+                <button id="lock-btn" onclick="toggleLock()" class="btn-control" title="ล็อค/ปลดล็อคการลาก"><span
+                        class="text-[10px]">🔓</span></button>
                 <button onclick="window.panelAPI.close('copy')"
-                    class="text-slate-400 hover:text-red-400 text-xs">✕</button>
+                    class="btn-control hover:!bg-rose-500/20 hover:!text-rose-400"><span
+                        class="text-[10px]">✕</span></button>
             </div>
         </div>
 
-        <!-- Default: Open/Close Hospital -->
-        <div class="p-2 border-b border-white/10">
-            <div class="flex gap-2">
+        <div class="p-3 space-y-3">
+            <!-- Default: Open/Close Hospital -->
+            <div class="flex gap-2.5">
                 <button
                     onclick="copyCmd(this, '/an โรงพยาบาล ${serverName} เปิดทำการยินดีต้อนรับครับ/ค่ะ', '🟢 เปิดทำการ')"
-                    class="no-drag flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition">
+                    class="btn-action no-drag flex-1 py-2.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-xl shadow-lg shadow-emerald-900/20 border border-emerald-500/20">
                     🟢 เปิดทำการ
                 </button>
                 <button
                     onclick="copyCmd(this, '/an โรงพยาบาล ${serverName} ขออนุญาตปิดทำการ ขออภัยในความไม่สะดวก ดูแลตัวเองกันด้วยนะครับ/ค่ะ', '🔴 ปิดทำการ')"
-                    class="no-drag flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium rounded-lg transition">
+                    class="btn-action no-drag flex-1 py-2.5 bg-rose-600/90 hover:bg-rose-500 text-white text-[11px] font-bold rounded-xl shadow-lg shadow-rose-900/20 border border-rose-500/20">
                     🔴 ปิดทำการ
                 </button>
             </div>
-        </div>
 
-        <!-- Recent Commands (last 3) -->
-        <div id="recent-section" class="p-2 border-b border-white/10 hidden">
-            <div class="text-[9px] text-slate-500 mb-1">🕐 ใช้ล่าสุด</div>
-            <div id="recent-list" class="flex flex-wrap gap-1"></div>
-        </div>
+            <!-- Recent Commands -->
+            <div id="recent-section" class="hidden animate-in fade-in slide-in-from-top-1 duration-300">
+                <div
+                    class="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2 ml-1">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    ใช้ล่าสุด
+                </div>
+                <div id="recent-list" class="flex flex-wrap gap-2"></div>
+            </div>
 
-        <!-- Search Box -->
-        <div class="p-2 border-b border-white/10">
-            <input type="text" id="search-input" placeholder="🔍 ค้นหาคำสั่งอื่นๆ เช่น เรเบล, freeday..."
-                class="no-drag w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                oninput="filterCommands(this.value)">
-        </div>
+            <!-- Search Box -->
+            <div class="relative">
+                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input type="text" id="search-input" placeholder="ค้นหาคำสั่ง (เช่น เรเบล, ปิด 5 นาที...)"
+                    class="no-drag w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/5 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 transition-all font-medium"
+                    oninput="filterCommands(this.value)">
+            </div>
 
-        <!-- Search Results (hidden by default) -->
-        <div id="commands-list" class="p-2 max-h-[200px] overflow-y-auto hidden">
-            <!-- Commands will be rendered here -->
+            <!-- Search Results -->
+            <div id="commands-list" class="max-h-[240px] overflow-y-auto hidden pr-1 -mr-1">
+                <!-- Commands will be rendered here -->
+            </div>
         </div>
+        <div class="h-1 bg-gradient-to-r from-blue-500/40 via-cyan-500/40 to-blue-500/40"></div>
     </div>
 
     <script>
-        // Server name placeholder
         const serverName = 'ONE CITY';
-
-        // Recent commands (max 3)
         let recentCommands = JSON.parse(localStorage.getItem('recentCommands') || '[]');
 
-        // All available commands (from Desktop OP copyCmd function)
         const commands = [
             { name: '⏰ ปิด 5 นาที', cmd: `/an โรงพยาบาลกำลังจะปิดทำการในอีก 5 นาที งดรับเคสนอกทุกกรณี ขอให้ประชาชนรักษาสุขภาพกันด้วยนะคะ/ครับ`, tags: 'ปิด 5 นาที' },
             { name: '⏰ ปิด 10 นาที', cmd: `/an โรงพยาบาลกำลังจะปิดทำการในอีก 10 นาที งดรับเคสนอกทุกกรณี ขอให้ประชาชนรักษาสุขภาพกันด้วยนะคะ/ครับ`, tags: 'ปิด 10 นาที' },
@@ -121,44 +227,35 @@
             section.classList.remove('hidden');
             list.innerHTML = recentCommands.map(r => `
                 <button onclick="copyCmd(this, '${r.cmd.replace(/'/g, "\\'")}', '${r.name}')"
-                    class="no-drag px-2 py-1 bg-indigo-700/50 hover:bg-indigo-600 text-white text-[10px] font-medium rounded transition whitespace-nowrap">
+                    class="btn-action no-drag px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[10px] font-bold rounded-lg border border-white/5 transition-all">
                     ${r.name}
                 </button>
             `).join('');
         }
 
         function addToRecent(name, cmd) {
-            // Skip if it's open/close (always visible)
             if (name === '🟢 เปิดทำการ' || name === '🔴 ปิดทำการ') return;
-
-            // Remove if already exists
             recentCommands = recentCommands.filter(r => r.name !== name);
-
-            // Add to front
             recentCommands.unshift({ name, cmd });
-
-            // Keep only last 3
             recentCommands = recentCommands.slice(0, 3);
-
-            // Save to localStorage
             localStorage.setItem('recentCommands', JSON.stringify(recentCommands));
-
             renderRecentCommands();
         }
 
         function renderCommands(list) {
             const container = document.getElementById('commands-list');
             if (list.length === 0) {
-                container.innerHTML = '<div class="text-slate-500 text-xs text-center py-3">ไม่พบคำสั่ง</div>';
+                container.innerHTML = '<div class="text-slate-500 text-[10px] text-center font-outfit py-5 font-black uppercase tracking-widest opacity-50">No results found</div>';
                 container.classList.remove('hidden');
                 return;
             }
 
-            container.innerHTML = `<div class="flex flex-wrap gap-1.5">
+            container.innerHTML = `<div class="grid grid-cols-1 gap-2 pb-2">
                 ${list.map(c => `
                     <button onclick="copyCmd(this, '${c.cmd.replace(/'/g, "\\'")}', '${c.name}')"
-                        class="no-drag px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-medium rounded-lg transition whitespace-nowrap">
-                        ${c.name}
+                        class="btn-action no-drag w-full flex items-center justify-between px-3 py-2.5 bg-white/5 hover:bg-white/10 text-slate-200 text-[10px] font-bold rounded-xl border border-white/5 transition-all group text-left">
+                        <span>${c.name}</span>
+                        <svg class="w-3 h-3 text-slate-600 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h8m0 0v8m0-8l-9 9"></path></svg>
                     </button>
                 `).join('')}
             </div>`;
@@ -186,40 +283,43 @@
             const finalText = text.replace(/\${serverName}/g, serverName);
             navigator.clipboard.writeText(finalText);
 
-            // Add to recent (if name provided)
             if (name) addToRecent(name, text);
 
-            const orig = btn.textContent;
-            btn.textContent = '✅ Copied!';
-            btn.classList.remove('bg-emerald-600', 'bg-rose-600', 'bg-slate-700', 'bg-indigo-700/50');
-            btn.classList.add('bg-cyan-600');
+            const orig = btn.innerHTML;
+            const isMain = name === '🟢 เปิดทำการ' || name === '🔴 ปิดทำการ';
+
+            btn.innerHTML = `<span class="flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg> COPIED!</span>`;
+
+            if (!isMain) {
+                btn.classList.add('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/30');
+                btn.classList.remove('bg-white/5', 'text-slate-300');
+            }
+
             setTimeout(() => {
-                btn.textContent = orig;
-                btn.classList.remove('bg-cyan-600');
-                if (orig.includes('เปิด')) btn.classList.add('bg-emerald-600');
-                else if (orig.includes('ปิดทำการ')) btn.classList.add('bg-rose-600');
-                else btn.classList.add('bg-slate-700');
-            }, 800);
+                btn.innerHTML = orig;
+                if (!isMain) {
+                    btn.classList.remove('bg-cyan-500/20', 'text-cyan-400', 'border-cyan-500/30');
+                    btn.classList.add('bg-white/5', 'text-slate-300');
+                }
+            }, 500);
         }
 
-        // Lock toggle
         let isLocked = false;
         function toggleLock() {
             isLocked = !isLocked;
             const titleBar = document.getElementById('title-bar');
             const lockBtn = document.getElementById('lock-btn');
             if (isLocked) {
-                titleBar.classList.remove('drag-region');
-                titleBar.classList.remove('cursor-move');
-                lockBtn.textContent = '🔒';
+                titleBar.classList.remove('drag-region', 'cursor-move');
+                lockBtn.innerHTML = '<span class="text-[10px]">🔒</span>';
+                lockBtn.classList.add('text-amber-400');
             } else {
-                titleBar.classList.add('drag-region');
-                titleBar.classList.add('cursor-move');
-                lockBtn.textContent = '🔓';
+                titleBar.classList.add('drag-region', 'cursor-move');
+                lockBtn.innerHTML = '<span class="text-[10px]">🔓</span>';
+                lockBtn.classList.remove('text-amber-400');
             }
         }
 
-        // Initial render
         renderRecentCommands();
     </script>
 </body>

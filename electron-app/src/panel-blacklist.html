@@ -8,18 +8,51 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --primary-cyan: #22d3ee;
+            --primary-purple: #a855f7;
+            --danger-rose: #fb7185;
+            --success-emerald: #10b981;
+            --warning-amber: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+
         body {
             background: transparent;
             -webkit-app-region: no-drag;
             margin: 0;
             overflow: hidden;
+            color: #e2e8f0;
         }
 
         .glass {
-            background: rgba(15, 23, 42, 0.98);
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(251, 113, 133, 0.2);
+            box-shadow:
+                0 10px 25px -5px rgba(0, 0, 0, 0.4),
+                inset 0 1px 1px rgba(251, 113, 133, 0.05);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.2s ease;
         }
 
         .drag-region {
@@ -35,29 +68,75 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgba(239, 68, 68, 0.3);
-            border-radius: 2px;
+            background: rgba(251, 113, 133, 0.15);
+            border-radius: 10px;
         }
 
         .inp {
             width: 100%;
-            padding: 8px 12px;
-            font-size: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(100, 116, 139, 0.5);
-            background: rgba(15, 23, 42, 0.8);
+            padding: 10px 14px;
+            font-size: 11px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
             color: white;
             transition: all 0.2s;
         }
 
         .inp:focus {
             outline: none;
-            border-color: rgba(239, 68, 68, 0.6);
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+            border-color: rgba(251, 113, 133, 0.4);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .inp option {
+            background-color: #1e293b;
+            color: white;
+        }
+
+        .btn-control {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .btn-control:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .btn-primary {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .glow-rose {
+            text-shadow: 0 0 10px rgba(251, 113, 133, 0.4);
+        }
+
+        .glow-emerald {
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
         }
     </style>
 </head>
@@ -66,42 +145,62 @@
     <div class="glass rounded-xl shadow-2xl overflow-hidden" style="width: 500px;">
         <!-- Title Bar -->
         <div id="title-bar"
-            class="drag-region px-3 py-2 border-b border-rose-500/30 flex justify-between items-center cursor-move bg-gradient-to-r from-rose-900/50 to-transparent">
-            <span class="text-rose-400 text-sm font-bold flex items-center gap-2">🚫 ประกาศ Blacklist / บทลงโทษ</span>
-            <div class="flex gap-2 no-drag">
-                <button id="lock-btn" onclick="toggleLock()" class="text-slate-400 hover:text-cyan-400 text-xs"
-                    title="ล็อค/ปลดล็อคการลาก">🔓</button>
-                <button onclick="closePanel()" class="text-slate-400 hover:text-red-400 text-xs" title="ปิด">✕</button>
+            class="drag-region p-3 border-b border-rose-500/20 flex justify-between items-center cursor-move bg-gradient-to-r from-rose-500/10 to-transparent">
+            <div class="flex items-center gap-2">
+                <span
+                    class="text-rose-400 text-[10px] font-outfit font-black tracking-widest uppercase glow-rose">BLACKLIST
+                    SYSTEM</span>
+                <div class="w-1 h-3 bg-white/10 rounded-full"></div>
+                <span class="text-[9px] text-slate-500 font-medium">ประกาศ และ บทลงโทษ</span>
+            </div>
+            <div class="flex gap-1.5 no-drag">
+                <button id="lock-btn" onclick="toggleLock()" class="btn-control" title="ล็อค/ปลดล็อคการลาก"><span
+                        class="text-[10px]">🔓</span></button>
+                <button onclick="closePanel()" class="btn-control hover:!bg-rose-500/20 hover:!text-rose-400"
+                    title="ปิด"><span class="text-[10px]">✕</span></button>
             </div>
         </div>
 
-        <div class="p-4 space-y-4 max-h-[550px] overflow-y-auto">
+        <div class="p-4 space-y-5">
             <!-- Section 1: ประกาศ Blacklist -->
-            <div>
-                <div class="text-xs font-bold text-rose-400 mb-3 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                    ประกาศ Blacklist
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-rose-500/20 rounded-lg text-rose-400">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                </path>
+                            </svg>
+                        </div>
+                        <span
+                            class="text-rose-400 text-[11px] font-bold uppercase tracking-wider glow-rose">เพิ่มรายการบัญชีดำ</span>
+                    </div>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 space-y-3">
-                    <!-- ประเภท -->
-                    <div>
-                        <label class="text-[10px] text-slate-400 mb-1 block">ประเภท</label>
-                        <select id="bl-type" class="inp no-drag" onchange="updateTypeLabel()">
-                            <option value="patient">คนไข้ทั่วไป</option>
-                            <option value="citizen">ประชาชน</option>
-                            <option value="gang">แก๊ง</option>
-                            <option value="family">ครอบครัว</option>
-                        </select>
+
+                <div class="glass-panel p-4 border border-rose-500/10 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1.5 block">ประเภท</label>
+                            <select id="bl-type" class="inp no-drag" onchange="updateTypeLabel()">
+                                <option value="patient">📞 คนไข้ทั่วไป</option>
+                                <option value="citizen">👤 ประชาชน</option>
+                                <option value="gang">🏴 แก๊ง</option>
+                                <option value="family">👨‍👩‍👧 ครอบครัว</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label id="bl-name-label"
+                                class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1.5 block">ชื่อ
+                                / เบอร์โทร</label>
+                            <input type="text" id="bl-name" placeholder="กรอกข้อมูล..." class="inp no-drag font-outfit">
+                        </div>
                     </div>
-                    <!-- ชื่อ/เบอร์ -->
+
                     <div>
-                        <label id="bl-name-label" class="text-[10px] text-slate-400 mb-1 block">เบอร์ หรือ ชื่อ
-                            ที่ต้องการ Blacklist</label>
-                        <input type="text" id="bl-name" placeholder="กรอกเบอร์/ชื่อ..." class="inp no-drag">
-                    </div>
-                    <!-- สาเหตุ -->
-                    <div>
-                        <label class="text-[10px] text-slate-400 mb-1 block">สาเหตุ</label>
+                        <label
+                            class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1.5 block">สาเหตุ</label>
                         <select id="bl-reason" class="inp no-drag">
                             <option value="ทำร้ายร่างกายในพื้นที่ Safe Zone">ทำร้ายร่างกายในพื้นที่ Safe Zone</option>
                             <option value="ควักอาวุธในเขตพื้นที่โรงพยาบาล">ควักอาวุธในเขตพื้นที่โรงพยาบาล</option>
@@ -120,56 +219,77 @@
                             <option value="ทำร้ายร่างกายแพทย์ในพื้นที่เรเบล">ทำร้ายร่างกายแพทย์ในพื้นที่เรเบล</option>
                         </select>
                     </div>
-                    <!-- ค่าปรับ -->
-                    <div>
-                        <label class="text-[10px] text-slate-400 mb-1 block">ค่าปรับ (One-Dollars)</label>
-                        <input type="number" id="bl-fine" placeholder="จำนวนเงิน..." class="inp no-drag" min="0">
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1.5 block">ค่าปรับ
+                                ($-One)</label>
+                            <input type="number" id="bl-fine" placeholder="จำนวนเงิน..." class="inp no-drag font-outfit"
+                                min="0">
+                        </div>
+                        <div>
+                            <label
+                                class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1.5 block">บทลงโทษเพิ่มเติม</label>
+                            <select id="bl-penalty" class="inp no-drag">
+                                <option value="">ไม่มีโทษเพิ่มเติม</option>
+                                <option value="x2">โทษค่ารักษา x2</option>
+                                <option value="x5">โทษค่ารักษา x5</option>
+                                <option value="no-treat">ไม่ทำการรักษา (No-Treat)</option>
+                            </select>
+                        </div>
                     </div>
-                    <!-- โทษเพิ่มเติม -->
-                    <div>
-                        <label class="text-[10px] text-slate-400 mb-1 block">โทษเพิ่มเติม</label>
-                        <select id="bl-penalty" class="inp no-drag">
-                            <option value="">ไม่มีโทษเพิ่มเติม</option>
-                            <option value="x2">โทษค่ารักษา x2</option>
-                            <option value="x5">โทษค่ารักษา x5</option>
-                            <option value="no-treat">ไม่ทำการรักษา</option>
-                        </select>
-                    </div>
-                    <!-- Button -->
+
                     <button onclick="copyBlacklist()"
-                        class="no-drag w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium rounded-lg transition">
-                        📋 Copy ประกาศ + บันทึก Blacklist
+                        class="btn-primary no-drag w-full py-3 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-xl shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
+                            </path>
+                        </svg>
+                        ประกาศ และ บันทึกบัญชีดำ
                     </button>
                 </div>
-            </div>
+            </section>
 
             <!-- Section 2: ประกาศปลด Blacklist -->
-            <div>
-                <div class="text-xs font-bold text-emerald-400 mb-3 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    ประกาศปลด Blacklist
+            <section>
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span
+                            class="text-emerald-400 text-[11px] font-bold uppercase tracking-wider glow-emerald">ปลดรายการบัญชีดำ</span>
+                    </div>
                 </div>
-                <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 space-y-3">
-                    <!-- เลือกรายการ -->
+
+                <div class="glass-panel p-4 border border-emerald-500/10 space-y-4">
                     <div>
-                        <label class="text-[10px] text-slate-400 mb-1 block">เลือกรายการ Blacklist ที่จะปลด</label>
-                        <select id="unbl-select" class="inp no-drag">
-                            <option value="">-- เลือกรายการ --</option>
-                            <!-- Populated dynamically -->
+                        <label
+                            class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1.5 block">เลือกรายการเพื่อปลดล็อค</label>
+                        <select id="unbl-select" class="inp no-drag font-outfit">
+                            <option value="">-- NO SELECTION --</option>
                         </select>
                     </div>
-                    <!-- Button -->
                     <button onclick="copyUnblacklist()"
-                        class="no-drag w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition">
-                        📋 Copy ประกาศปลด + ลบ Blacklist
+                        class="btn-primary no-drag w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-xl shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M9 11l3 3m0 0l3-3m-3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z"></path>
+                        </svg>
+                        ประกาศปลด และ ลบบัญชีดำ
                     </button>
                 </div>
-            </div>
+            </section>
         </div>
+        <div class="h-1 bg-gradient-to-r from-rose-500/40 via-purple-500/40 to-rose-500/40"></div>
     </div>
 
     <script>
-        // Firebase config (same as main app)
         const firebaseConfig = {
             apiKey: "AIzaSyCPnd6bmpPe0cbWXbNh2LsYaeGcFHZNNsU",
             authDomain: "medic-op.firebaseapp.com",
@@ -181,32 +301,30 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Settings
-        const announceCmd = '/an';
-
-        // Blacklist data (will be synced from Firebase)
+        let announceCmd = '/an';
         let blacklistData = [];
 
-        // Load blacklist data when panel opens
+        // Load server settings for announce command
+        db.collection('op_settings').doc('server').get().then(doc => {
+            if (doc.exists && doc.data().announceCmd) {
+                announceCmd = doc.data().announceCmd;
+            }
+        });
+
         loadBlacklistFromFirebase();
 
         function updateTypeLabel() {
             const type = document.getElementById('bl-type').value;
             const label = document.getElementById('bl-name-label');
-            if (type === 'patient') {
-                label.textContent = 'เบอร์ หรือ ชื่อ ที่ต้องการ Blacklist';
-            } else if (type === 'citizen') {
-                label.textContent = 'ชื่อประชาชนที่ต้องการ Blacklist';
-            } else if (type === 'gang') {
-                label.textContent = 'ชื่อแก๊งที่ต้องการ Blacklist';
-            } else {
-                label.textContent = 'ชื่อครอบครัวที่ต้องการ Blacklist';
-            }
+            if (type === 'patient') label.textContent = 'เบอร์ หรือ ชื่อ';
+            else if (type === 'citizen') label.textContent = 'ชื่อประชาชน';
+            else if (type === 'gang') label.textContent = 'ชื่อแก๊ง';
+            else label.textContent = 'ชื่อครอบครัว';
         }
 
         function populateUnblacklistDropdown() {
             const select = document.getElementById('unbl-select');
-            select.innerHTML = '<option value="">-- เลือกรายการ --</option>';
+            select.innerHTML = '<option value="">-- NO SELECTION --</option>';
             blacklistData.forEach((entry, idx) => {
                 const name = typeof entry === 'object' ? entry.name : entry;
                 const type = typeof entry === 'object' ? entry.type : 'unknown';
@@ -227,38 +345,30 @@
             return '';
         }
 
-        // Load blacklist from Firebase
         async function loadBlacklistFromFirebase() {
             try {
-                const snapshot = await db.collection('blacklist').orderBy('createdAt', 'desc').get();
-                blacklistData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const doc = await db.collection('op_settings').doc('blacklist').get();
+                if (doc.exists) {
+                    blacklistData = doc.data().list || [];
+                } else {
+                    blacklistData = [];
+                }
                 populateUnblacklistDropdown();
+                if (typeof autoResize === 'function') autoResize();
             } catch (e) {
                 console.error('Failed to load blacklist:', e);
             }
         }
 
-        // Add blacklist entry to Firebase
-        async function addBlacklistToFirebase(entry) {
+        async function saveBlacklistToFirebase() {
             try {
-                await db.collection('blacklist').add(entry);
-                console.log('✅ Blacklist entry added:', entry.name);
-                await loadBlacklistFromFirebase(); // Refresh list
+                await db.collection('op_settings').doc('blacklist').set({ list: blacklistData });
+                console.log('✅ Blacklist synced to Firebase');
             } catch (e) {
-                console.error('Failed to add blacklist:', e);
+                console.error('Failed to sync blacklist:', e);
             }
         }
 
-        // Remove blacklist entry from Firebase
-        async function removeBlacklistFromFirebase(docId) {
-            try {
-                await db.collection('blacklist').doc(docId).delete();
-                console.log('✅ Blacklist entry removed:', docId);
-                await loadBlacklistFromFirebase(); // Refresh list
-            } catch (e) {
-                console.error('Failed to remove blacklist:', e);
-            }
-        }
 
         async function copyBlacklist() {
             const type = document.getElementById('bl-type').value;
@@ -267,96 +377,75 @@
             const fine = document.getElementById('bl-fine').value.trim();
             const penalty = document.getElementById('bl-penalty').value;
 
-            if (!name) {
-                alert('กรุณากรอกชื่อ/เบอร์');
-                return;
-            }
-            if (!fine) {
-                alert('กรุณากรอกค่าปรับ');
-                return;
-            }
+            if (!name || !fine) return;
 
             const typeLabel = getTypeLabel(type);
-
-            // Exact text from Desktop OP (line 8654)
             const msg = `${announceCmd} ประกาศ Blacklist ${typeLabel} ${name} เนื่องจาก ${reason} กรุณาติดต่อแพทย์เพื่อจ่ายค่าปรับจำนวน ${fine} One-Dollars กรุณามาติดต่อเพื่อชำระค่าปรับด้วย ขอบคุณครับ/ค่ะ`;
 
-            // Copy to clipboard
             await navigator.clipboard.writeText(msg);
 
-            // Visual feedback
             const btn = document.querySelector('button[onclick="copyBlacklist()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '✅ Copy แล้ว!';
-            btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
-            btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '✅ COPIED & SAVED!';
+            btn.classList.replace('bg-rose-600', 'bg-emerald-600');
+            btn.classList.replace('hover:bg-rose-500', 'hover:bg-emerald-500');
             btn.disabled = true;
 
-            // Save to blacklist via Firebase
-            const entry = { name, type, reason, fine, penaltyTag: penalty, createdAt: Date.now() };
-            await addBlacklistToFirebase(entry);
+            const entry = { name, type, reason, fine, penaltyTag: penalty, createdAt: Date.now(), createdBy: 'Overlay' };
 
-            // Clear form
+            // Check if already exists
+            const exists = blacklistData.some(b => (typeof b === 'object' ? b.name : b) === name);
+            if (!exists) {
+                blacklistData.push(entry);
+                await saveBlacklistToFirebase();
+                populateUnblacklistDropdown();
+            }
+
             document.getElementById('bl-name').value = '';
             document.getElementById('bl-fine').value = '';
-            document.getElementById('bl-penalty').value = '';
 
-            // Close panel and restore overlays (with delay)
             setTimeout(() => {
                 closePanel();
-                // Reset button style (in case reopened)
-                btn.innerHTML = originalText;
-                btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-                btn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+                btn.innerHTML = originalHTML;
+                btn.classList.replace('bg-emerald-600', 'bg-rose-600');
+                btn.classList.replace('hover:bg-emerald-500', 'hover:bg-rose-500');
                 btn.disabled = false;
-            }, 1000); // 1.5s delay was too long, let's do 1s to be snappy but safe
+            }, 500);
         }
 
         async function copyUnblacklist() {
             const select = document.getElementById('unbl-select');
             const idx = select.value;
-
-            if (idx === '') {
-                alert('กรุณาเลือกรายการที่จะปลด');
-                return;
-            }
+            if (idx === '') return;
 
             const entry = blacklistData[parseInt(idx)];
             const name = typeof entry === 'object' ? entry.name : entry;
             const type = typeof entry === 'object' ? entry.type : 'unknown';
             const typeLabel = getTypeLabel(type);
 
-            // Exact text from Desktop OP (line 8692)
             const msg = `${announceCmd} ประกาศปลด Blacklist ${typeLabel} ${name} เนื่องจากได้จ่ายค่าปรับครบจำนวนเป็นที่เรียบร้อย และจะได้รับการรักษาจากแพทย์ตามปกติครับ/ค่ะ`;
 
-            // Copy to clipboard
             await navigator.clipboard.writeText(msg);
 
-            // Visual feedback
             const btn = document.querySelector('button[onclick="copyUnblacklist()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '✅ Copy แล้ว!';
-            btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-            btn.classList.add('bg-cyan-600', 'hover:bg-cyan-500');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '✅ COPIED & REMOVED!';
+            btn.classList.replace('bg-emerald-600', 'bg-cyan-600');
             btn.disabled = true;
 
-            // Remove from blacklist via Firebase
-            if (entry && entry.id) {
-                await removeBlacklistFromFirebase(entry.id);
-            }
+            // Remove from array
+            blacklistData.splice(parseInt(idx), 1);
+            await saveBlacklistToFirebase();
+            populateUnblacklistDropdown();
 
-            // Clear selection
             select.value = '';
 
-            // Close panel and restore overlays (with delay)
             setTimeout(() => {
                 closePanel();
-                // Reset button style
-                btn.innerHTML = originalText;
-                btn.classList.remove('bg-cyan-600', 'hover:bg-cyan-500');
-                btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                btn.innerHTML = originalHTML;
+                btn.classList.replace('bg-cyan-600', 'bg-emerald-600');
                 btn.disabled = false;
-            }, 1000);
+            }, 500);
         }
 
         function closePanel() {
@@ -372,15 +461,35 @@
             const titleBar = document.getElementById('title-bar');
             const lockBtn = document.getElementById('lock-btn');
             if (isLocked) {
-                titleBar.classList.remove('drag-region');
-                titleBar.classList.remove('cursor-move');
-                lockBtn.textContent = '🔒';
+                titleBar.classList.remove('drag-region', 'cursor-move');
+                lockBtn.innerHTML = '<span class="text-[10px]">🔒</span>';
+                lockBtn.classList.add('text-amber-400');
             } else {
                 titleBar.classList.add('drag-region');
                 titleBar.classList.add('cursor-move');
-                lockBtn.textContent = '🔓';
+                lockBtn.innerHTML = '<span class="text-[10px]">🔓</span>';
+                lockBtn.classList.remove('text-amber-400');
             }
         }
+
+        // Auto resize function
+        function autoResize() {
+            setTimeout(() => {
+                if (window.panelAPI && window.panelAPI.resizeToFit) {
+                    window.panelAPI.resizeToFit('blacklist', document.body.offsetHeight + 10);
+                }
+            }, 100);
+        }
+
+        // Resize on load and after Firebase data is loaded
+        window.addEventListener('load', autoResize);
+
+        // Call autoResize after list updates
+        const originalPopulate = populateUnblacklistDropdown;
+        populateUnblacklistDropdown = function () {
+            originalPopulate();
+            autoResize();
+        };
     </script>
 </body>
 

@@ -9,5 +9,7 @@ contextBridge.exposeInMainWorld('panelAPI', {
     // Auto-announce function
     announce: (message) => ipcRenderer.send('send-announcement', message),
     // Blacklist panel specific - closes and restores other overlays
-    closeBlacklistPanel: () => ipcRenderer.send('close-blacklist-panel')
+    closeBlacklistPanel: () => ipcRenderer.send('close-blacklist-panel'),
+    // Generic resize
+    resizeToFit: (panelType, height) => ipcRenderer.send('panel-resize', { type: panelType, height })
 });

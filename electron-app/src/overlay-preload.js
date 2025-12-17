@@ -17,5 +17,8 @@ contextBridge.exposeInMainWorld('overlayAPI', {
     // Game mode listener
     onGameModeChanged: (callback) => ipcRenderer.on('game-mode-changed', (event, isGameMode) => callback(isGameMode)),
     // Blacklist panel - opens with focus mode (hides other overlays)
-    openBlacklistPanel: () => ipcRenderer.send('open-blacklist-panel')
+    openBlacklistPanel: () => ipcRenderer.send('open-blacklist-panel'),
+    // Music Box
+    openMusicBox: () => ipcRenderer.send('open-music-box'),
+    closeMusicBox: () => ipcRenderer.send('close-music-box')
 });

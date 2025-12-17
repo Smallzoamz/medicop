@@ -17,7 +17,8 @@
     "license": "MIT",
     "dependencies": {
         "electron-store": "^11.0.2",
-        "electron-updater": "^6.1.7"
+        "electron-updater": "^6.1.7",
+        "ytsr": "^3.8.4"
     },
     "devDependencies": {
         "@electron-delta/builder": "^0.1.17",

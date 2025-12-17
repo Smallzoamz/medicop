@@ -1,5 +1,6 @@
 const { app, BrowserWindow, shell, dialog, ipcMain, session, globalShortcut, Tray, Menu, clipboard } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const ytsr = require('ytsr');
 const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
@@ -118,6 +119,17 @@ function setupLauncherAutoUpdater() {
     // Send status to launcher
     if (launcherWindow && !launcherWindow.isDestroyed()) {
         launcherWindow.webContents.send('update-status', 'checking');
+    }
+
+    // Skip update check in development mode to prevent hangs
+    if (!app.isPackaged) {
+        console.log('🧪 Development mode detected: Skipping update check');
+        setTimeout(() => {
+            if (launcherWindow && !launcherWindow.isDestroyed()) {
+                launcherWindow.webContents.send('update-status', 'ready');
+            }
+        }, 1500);
+        return;
     }
 
     autoUpdater.checkForUpdates().catch(err => {
@@ -370,6 +382,12 @@ function setupAutoUpdater() {
 
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
+
+    // Skip update check in development mode
+    if (!app.isPackaged) {
+        console.log('🧪 Development mode: Skipping background update check');
+        return;
+    }
 
     console.log('🔍 Checking for updates...');
     autoUpdater.checkForUpdates().catch(err => {
@@ -1192,6 +1210,22 @@ ipcMain.on('close-panel-window', (event, panelType) => {
     }
 });
 
+// Resize panel window
+ipcMain.on('panel-resize', (event, { type, height }) => {
+    const win = panelWindows[type];
+    if (win && !win.isDestroyed()) {
+        const bounds = win.getBounds();
+        // Set limits: min height 200, max height based on screen but reasonable
+        const newHeight = Math.min(Math.max(height, 200), 900);
+        win.setBounds({
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: newHeight
+        });
+    }
+});
+
 // Track which windows were visible before Blacklist opened
 let hiddenWindowsBeforeBlacklist = {
     overlay: false,
@@ -1353,6 +1387,30 @@ ipcMain.on('close-music-box', () => {
     if (musicBoxWindow && !musicBoxWindow.isDestroyed()) {
         musicBoxWindow.close();
         musicBoxWindow = null;
+    }
+});
+
+// YouTube Search for Music Box
+ipcMain.handle('youtube-search', async (event, query) => {
+    try {
+        console.log(`🔍 Searching YouTube for: ${query}`);
+        const filters1 = await ytsr.getFilters(query);
+        const filter1 = filters1.get('Type').get('Video');
+        const options = {
+            limit: 10,
+        };
+        const searchResults = await ytsr(filter1.url, options);
+
+        return searchResults.items.map(item => ({
+            videoId: item.id,
+            title: item.title,
+            artist: item.author ? item.author.name : 'Unknown Artist',
+            thumbnail: item.bestThumbnail ? item.bestThumbnail.url : '',
+            duration: item.duration
+        }));
+    } catch (error) {
+        console.error('❌ YouTube Search Error:', error);
+        return [];
     }
 });
 

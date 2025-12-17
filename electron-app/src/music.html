@@ -194,6 +194,15 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(6, 182, 212, 0.5);
         }
+
+        .search-result-item {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .search-result-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
     </style>
 </head>
 
@@ -272,29 +281,46 @@
                 </div>
             </div>
 
-            <!-- Add Song -->
+            <!-- Search Song -->
             <div class="glass rounded-xl p-2 mb-2">
                 <div class="flex gap-2">
-                    <input type="text" id="youtube-url" placeholder="🔗 วาง YouTube URL..."
-                        class="flex-1 bg-slate-800/50 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-                    <button onclick="addToPlaylist()"
+                    <input type="text" id="youtube-search-input" placeholder="🔍 ค้นหาเพลง..."
+                        class="flex-1 bg-slate-800/50 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                        onkeypress="if(event.key === 'Enter') searchMusic()">
+                    <button onclick="searchMusic()" id="btn-search"
                         class="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg text-xs font-bold hover:opacity-90 transition">
-                        ➕
+                        ค้นหา
+                    </button>
+                    <button onclick="showPlaylist()" id="btn-show-playlist"
+                        class="hidden px-3 py-1.5 bg-slate-700 rounded-lg text-xs font-bold hover:bg-slate-600 transition">
+                        Back
                     </button>
                 </div>
             </div>
 
-            <!-- Playlist -->
-            <div class="glass rounded-xl flex-1 overflow-hidden flex flex-col">
+            <!-- Search Results & Playlist Container -->
+            <div id="main-list-container" class="glass rounded-xl flex-1 overflow-hidden flex flex-col">
+                <!-- Header -->
                 <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50">
-                    <span class="text-[10px] font-bold text-slate-400">📜 Playlist</span>
-                    <span id="playlist-count" class="text-[9px] text-slate-500">0 เพลง</span>
+                    <span id="list-title" class="text-[10px] font-bold text-slate-400">📜 Playlist</span>
+                    <span id="list-count" class="text-[9px] text-slate-500">0 เพลง</span>
                 </div>
-                <div id="playlist" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+
+                <!-- Playlist View -->
+                <div id="playlist-view" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
                     <div class="text-center text-slate-500 text-[10px] py-6">
                         <div class="text-2xl mb-1">🎶</div>
                         <p>Playlist ว่างเปล่า</p>
                     </div>
+                </div>
+
+                <!-- Search Results View -->
+                <div id="search-results-view" class="hidden flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                    <div id="search-status" class="text-center text-slate-500 text-[10px] py-6">
+                        <div class="animate-spin text-2xl mb-1">⏳</div>
+                        <p>กำลังค้นหา...</p>
+                    </div>
+                    <div id="search-results-list" class="space-y-1"></div>
                 </div>
             </div>
         </div>
@@ -450,44 +476,113 @@
             }
         }
 
-        async function addToPlaylist() {
-            const input = document.getElementById('youtube-url');
-            const url = input.value.trim();
-            if (!url) return;
+        async function searchMusic() {
+            const input = document.getElementById('youtube-search-input');
+            const query = input.value.trim();
+            if (!query) return;
 
-            const videoId = extractVideoId(url);
-            if (!videoId) {
-                alert('❌ URL ไม่ถูกต้อง');
+            // Direct link handling
+            const videoId = extractVideoId(query);
+            if (videoId) {
+                await addByVideoId(videoId);
+                input.value = '';
                 return;
             }
 
+            // UI Switch
+            document.getElementById('playlist-view').classList.add('hidden');
+            document.getElementById('search-results-view').classList.remove('hidden');
+            document.getElementById('btn-show-playlist').classList.remove('hidden');
+            document.getElementById('btn-search').classList.add('hidden');
+            document.getElementById('list-title').textContent = '🔍 ผลการค้นหา';
+            document.getElementById('search-status').classList.remove('hidden');
+            document.getElementById('search-results-list').innerHTML = '';
+
+            try {
+                if (!window.electronAPI?.searchYouTube) {
+                    alert('YouTube Search is only available in Desktop version.');
+                    showPlaylist();
+                    return;
+                }
+
+                const results = await window.electronAPI.searchYouTube(query);
+                displaySearchResults(results);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('search-status').innerHTML = '<div class="text-rose-400">เกิดข้อผิดพลาดในการค้นหา</div>';
+            }
+        }
+
+        function displaySearchResults(results) {
+            document.getElementById('search-status').classList.add('hidden');
+            const list = document.getElementById('search-results-list');
+            document.getElementById('list-count').textContent = `${results.length} รายการ`;
+
+            if (results.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-500 text-[10px] py-6">ไม่พบผลการค้นหา</div>';
+                return;
+            }
+
+            list.innerHTML = results.map(song => `
+                <div class="search-result-item flex items-center gap-2 p-2 rounded-lg cursor-pointer" onclick="addAndPlay('${song.videoId}', '${song.title.replace(/'/g, "\\'")}', '${song.artist.replace(/'/g, "\\'")}', '${song.thumbnail}')">
+                    <div class="w-10 h-10 rounded bg-slate-700 shrink-0 overflow-hidden flex items-center justify-center text-sm relative">
+                        <img src="${song.thumbnail}" class="w-full h-full object-cover">
+                        <span class="absolute bottom-0 right-0 bg-black/70 text-[8px] px-1 font-mono">${song.duration}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[10px] font-bold text-white truncate">${song.title}</div>
+                        <div class="text-[9px] text-slate-400 truncate">${song.artist}</div>
+                    </div>
+                    <button class="text-cyan-400 text-xs p-1">➕</button>
+                </div>
+            `).join('');
+        }
+
+        function showPlaylist() {
+            document.getElementById('playlist-view').classList.remove('hidden');
+            document.getElementById('search-results-view').classList.add('hidden');
+            document.getElementById('btn-show-playlist').classList.add('hidden');
+            document.getElementById('btn-search').classList.remove('hidden');
+            document.getElementById('list-title').textContent = '📜 Playlist';
+            document.getElementById('list-count').textContent = `${playlist.length} เพลง`;
+            renderPlaylist();
+        }
+
+        async function addAndPlay(videoId, title, artist, thumbnail) {
             if (playlist.find(s => s.videoId === videoId)) {
-                alert('⚠️ เพลงนี้อยู่ใน Playlist แล้ว');
+                const index = playlist.findIndex(s => s.videoId === videoId);
+                playSong(index);
+                showPlaylist();
                 return;
             }
 
-            const info = await getVideoInfo(videoId);
+            const song = { videoId, title, artist, thumbnail };
+            playlist.push(song);
+            savePlaylist();
+            showPlaylist();
+            playSong(playlist.length - 1);
+        }
 
+        async function addByVideoId(videoId) {
+            if (playlist.find(s => s.videoId === videoId)) {
+                return;
+            }
+            const info = await getVideoInfo(videoId);
             const song = {
                 videoId: videoId,
                 title: info.title,
                 artist: info.author,
                 thumbnail: info.thumbnail
             };
-
             playlist.push(song);
             savePlaylist();
             renderPlaylist();
-            input.value = '';
-
-            if (playlist.length === 1) {
-                playSong(0);
-            }
+            if (playlist.length === 1) playSong(0);
         }
 
         function renderPlaylist() {
-            const container = document.getElementById('playlist');
-            const countEl = document.getElementById('playlist-count');
+            const container = document.getElementById('playlist-view');
+            const countEl = document.getElementById('list-count');
 
             countEl.textContent = `${playlist.length} เพลง`;
 
