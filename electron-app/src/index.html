@@ -1860,6 +1860,21 @@
                                     class="w-full text-sm rounded-lg border-slate-700 bg-slate-900/50 p-2.5 text-white h-20 resize-none"
                                     placeholder="รายละเอียดข่าวสาร..."></textarea>
                             </div>
+                            <div>
+                                <label class="text-xs text-slate-400 mb-1 block">🖼️ แนบรูปภาพ (ไม่บังคับ)</label>
+                                <div class="flex items-center gap-2">
+                                    <label
+                                        class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg cursor-pointer transition text-xs text-slate-300">
+                                        📷 เลือกรูป
+                                        <input type="file" accept="image/*" class="hidden" id="announce-image-input"
+                                            onchange="previewAnnounceImage(this)">
+                                    </label>
+                                    <span id="announce-image-name" class="text-xs text-slate-500">ยังไม่ได้เลือก</span>
+                                </div>
+                                <div id="announce-image-preview" class="mt-2 hidden">
+                                    <img id="announce-image-preview-img" src="" class="max-h-24 rounded-lg">
+                                </div>
+                            </div>
                             <div class="flex items-center justify-between">
                                 <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
                                     <input type="checkbox" id="announce-pinned" class="w-4 h-4 rounded accent-rose-500">
@@ -6633,7 +6648,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.6.1-build.14';
+        const APP_VERSION = '1.6.1-build.15';
 
         // Update all version displays from APP_VERSION (single source of truth)
         function updateVersionDisplays() {
@@ -9164,6 +9179,27 @@
             }
         }
 
+        // Preview announcement image
+        function previewAnnounceImage(input) {
+            const file = input.files[0];
+            const nameEl = document.getElementById('announce-image-name');
+            const previewDiv = document.getElementById('announce-image-preview');
+            const previewImg = document.getElementById('announce-image-preview-img');
+
+            if (file) {
+                nameEl.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    previewDiv.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                nameEl.textContent = 'ยังไม่ได้เลือก';
+                previewDiv.classList.add('hidden');
+            }
+        }
+
         async function addAnnouncement() {
             if (currentUser?.role !== 'Owner') return showNotif('Error', 'เฉพาะ Owner เท่านั้น');
 
@@ -9171,16 +9207,30 @@
             const type = document.getElementById('announce-type').value;
             const content = document.getElementById('announce-content').value.trim();
             const pinned = document.getElementById('announce-pinned').checked;
+            const imageInput = document.getElementById('announce-image-input');
+            const imageFile = imageInput?.files[0];
 
             if (!title) return showNotif('Error', 'กรุณากรอกหัวข้อ');
             if (!content) return showNotif('Error', 'กรุณากรอกเนื้อหา');
 
             try {
+                let imageUrl = '';
+
+                // Upload image if exists
+                if (imageFile) {
+                    showNotif('Info', '📤 กำลังอัพโหลดรูป...');
+                    const storageRef = firebase.storage().ref();
+                    const fileName = `announcements/${Date.now()}_${imageFile.name}`;
+                    const uploadTask = await storageRef.child(fileName).put(imageFile);
+                    imageUrl = await uploadTask.ref.getDownloadURL();
+                }
+
                 await db.collection('announcements').add({
                     title,
                     type,
                     content,
                     pinned,
+                    imageUrl,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     author: currentUser.username
                 });
@@ -9191,6 +9241,9 @@
                 document.getElementById('announce-title').value = '';
                 document.getElementById('announce-content').value = '';
                 document.getElementById('announce-pinned').checked = false;
+                if (imageInput) imageInput.value = '';
+                document.getElementById('announce-image-name').textContent = 'ยังไม่ได้เลือก';
+                document.getElementById('announce-image-preview').classList.add('hidden');
 
                 // Reload list
                 loadAdminAnnouncements();

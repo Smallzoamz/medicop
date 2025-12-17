@@ -307,40 +307,6 @@
             max-width: 260px;
         }
 
-        /* Top OP Leaderboard */
-        .leaderboard-container {
-            position: fixed;
-            bottom: 80px;
-            left: 20px;
-            width: 200px;
-            height: 120px;
-            overflow: hidden;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 10px;
-            z-index: 50;
-        }
-
-        .leaderboard-title {
-            font-size: 10px;
-            font-weight: 600;
-            color: #fbbf24;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .leaderboard-scroll {
-            animation: scrollUp 15s linear infinite;
-        }
-
-        .leaderboard-scroll:hover {
-            animation-play-state: paused;
-        }
-
         @keyframes scrollUp {
             0% {
                 transform: translateY(0);
@@ -351,56 +317,57 @@
             }
         }
 
-        .leaderboard-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 0;
-            font-size: 10px;
-        }
-
-        .leaderboard-rank {
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            font-weight: 700;
+        /* Filter tabs */
+        .news-filter-btn {
+            padding: 3px 8px;
             font-size: 9px;
-        }
-
-        .leaderboard-rank.gold {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #1e1b4b;
-        }
-
-        .leaderboard-rank.silver {
-            background: linear-gradient(135deg, #94a3b8, #64748b);
-            color: #1e1b4b;
-        }
-
-        .leaderboard-rank.bronze {
-            background: linear-gradient(135deg, #f97316, #ea580c);
-            color: #fff;
-        }
-
-        .leaderboard-rank.normal {
-            background: rgba(100, 116, 139, 0.5);
+            border-radius: 6px;
+            background: rgba(51, 65, 85, 0.5);
             color: #94a3b8;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .leaderboard-name {
-            flex: 1;
+        .news-filter-btn:hover {
+            background: rgba(51, 65, 85, 0.8);
             color: #e2e8f0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        .leaderboard-count {
+        .news-filter-btn.active {
+            background: rgba(6, 182, 212, 0.3);
             color: #06b6d4;
-            font-weight: 600;
+        }
+
+        /* Category badges */
+        .badge-news {
+            background: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .badge-event {
+            background: rgba(34, 197, 94, 0.3);
+            color: #4ade80;
+        }
+
+        .badge-update {
+            background: rgba(168, 85, 247, 0.3);
+            color: #c084fc;
+        }
+
+        .badge-maintenance {
+            background: rgba(234, 179, 8, 0.3);
+            color: #facc15;
+        }
+
+        /* News item */
+        .news-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
         }
 
         /* Social buttons */
@@ -468,12 +435,12 @@
             background: linear-gradient(135deg, #000000, #25F4EE);
         }
 
-        /* Inline Leaderboard Scroll */
-        .leaderboard-scroll-inline {
+        /* Inline Story Scroll */
+        .story-scroll-inline {
             animation: scrollUp 12s linear infinite;
         }
 
-        .leaderboard-scroll-inline:hover {
+        .story-scroll-inline:hover {
             animation-play-state: paused;
         }
     </style>
@@ -578,12 +545,25 @@
 
             <!-- Right Panel - News -->
             <div class="right-panel">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between mb-2">
                     <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
                         <span>📢</span> ข่าวสาร & ประกาศ
                     </h2>
                     <button onclick="loadAnnouncements()"
                         class="text-xs text-slate-500 hover:text-cyan-400 transition">🔄</button>
+                </div>
+
+                <!-- Category Filter Tabs -->
+                <div class="flex gap-1 mb-2 flex-wrap" id="news-filter-tabs">
+                    <button onclick="filterNews('all')" class="news-filter-btn active"
+                        data-filter="all">ทั้งหมด</button>
+                    <button onclick="filterNews('news')" class="news-filter-btn" data-filter="news">📰 ข่าวสาร</button>
+                    <button onclick="filterNews('event')" class="news-filter-btn" data-filter="event">🎉
+                        กิจกรรม</button>
+                    <button onclick="filterNews('update')" class="news-filter-btn" data-filter="update">🆕
+                        อัพเดท</button>
+                    <button onclick="filterNews('maintenance')" class="news-filter-btn" data-filter="maintenance">🔧
+                        ซ่อมแซม</button>
                 </div>
 
                 <div class="news-container" id="news-container" style="flex: 1; min-height: 0;">
@@ -595,18 +575,18 @@
                 <!-- Separator -->
                 <div class="border-t border-slate-700/50 my-3"></div>
 
-                <!-- Bottom Section: Leaderboard + Social -->
+                <!-- Bottom Section: Story News + Social -->
                 <div class="flex items-start justify-between gap-4">
-                    <!-- Top OP Leaderboard (inline) -->
+                    <!-- Story News (inline) -->
                     <div class="flex-1">
-                        <div class="text-[10px] font-semibold text-amber-400 mb-2 flex items-center gap-1">🏆 Top 10 OP
-                            ประจำเดือน</div>
+                        <div class="text-[10px] font-semibold text-cyan-400 mb-2 flex items-center gap-1">📺
+                            สตอรี่วันนี้</div>
                         <div class="h-16 overflow-hidden">
-                            <div class="leaderboard-scroll-inline" id="leaderboard-scroll">
-                                <div id="leaderboard-list">
+                            <div class="story-scroll-inline" id="story-scroll">
+                                <div id="story-list">
                                     <div class="text-slate-500 text-[9px]">กำลังโหลด...</div>
                                 </div>
-                                <div id="leaderboard-list-clone"></div>
+                                <div id="story-list-clone"></div>
                             </div>
                         </div>
                     </div>
@@ -644,6 +624,29 @@
                 <button id="launch-btn" onclick="handleLogin()" class="launch-btn">
                     🚀 เข้าสู่ระบบ
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- News Popup Modal -->
+    <div id="news-popup" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4"
+        onclick="closeNewsPopup(event)">
+        <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+            onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-slate-700">
+                <div class="flex items-center gap-2">
+                    <span id="popup-badge" class="px-2 py-0.5 rounded text-[10px] font-medium"></span>
+                    <span id="popup-date" class="text-[10px] text-slate-500"></span>
+                </div>
+                <button onclick="closeNewsPopup()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+            <div class="p-4 overflow-y-auto max-h-[60vh]">
+                <h3 id="popup-title" class="text-base font-semibold text-white mb-3"></h3>
+                <div id="popup-image" class="mb-3 hidden">
+                    <img id="popup-img" src="" class="w-full rounded-lg max-h-48 object-cover cursor-pointer"
+                        onclick="openImageFull(this.src)">
+                </div>
+                <div id="popup-content" class="text-sm text-slate-300 whitespace-pre-wrap"></div>
             </div>
         </div>
     </div>
@@ -861,65 +864,119 @@
             }
         }
 
+        // Store announcements data for filtering
+        let allAnnouncements = [];
+        let currentFilter = 'all';
+
         function createNewsCard(data, docId) {
             const card = document.createElement('div');
-            card.className = `news-card ${data.pinned ? 'pinned' : ''} cursor-pointer`;
-            card.setAttribute('data-expanded', 'false');
+            card.className = 'news-item';
+            card.setAttribute('data-type', data.type || 'news');
 
-            const typeIcon = {
+            const typeEmoji = {
                 'news': '📰',
                 'update': '🆕',
                 'event': '🎉',
                 'maintenance': '🔧'
-            }[data.type] || '📌';
+            }[data.type] || '📰';
 
-            const typeClass = `type-${data.type || 'news'}`;
+            const typeLabel = {
+                'news': 'ข่าวสาร',
+                'update': 'อัพเดท',
+                'event': 'กิจกรรม',
+                'maintenance': 'ซ่อมแซม'
+            }[data.type] || 'ข่าวสาร';
 
-            const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('th-TH', {
-                day: 'numeric', month: 'short', year: 'numeric'
-            }) : '';
+            const badgeClass = `badge-${data.type || 'news'}`;
 
-            // Escape HTML and preserve line breaks
-            const contentHtml = (data.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+            // Format date as dd/mm/yy
+            let dateStr = '';
+            if (data.createdAt) {
+                const d = new Date(data.createdAt.seconds * 1000);
+                dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+            }
 
             card.innerHTML = `
-                <div class="flex items-start justify-between mb-1">
-                    <div class="flex items-center gap-2">
-                        <span>${typeIcon}</span>
-                        <span class="type-badge ${typeClass}">${data.type || 'news'}</span>
-                        ${data.pinned ? '<span class="text-xs text-red-400">📌 ปักหมุด</span>' : ''}
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-500">${date}</span>
-                        <span class="expand-icon text-slate-500 transition-transform">▼</span>
-                    </div>
-                </div>
-                <h3 class="text-sm font-semibold text-white">${data.title || 'ไม่มีหัวข้อ'}</h3>
-                <div class="news-content hidden mt-2 pt-2 border-t border-slate-700/50">
-                    <p class="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap">${contentHtml}</p>
+                <div class="flex items-center gap-1.5 text-[10px]">
+                    ${data.pinned ? '<span class="text-red-400">📌</span>' : ''}
+                    <span>${typeEmoji}</span>
+                    <span class="px-1.5 py-0.5 rounded ${badgeClass}">${typeLabel}</span>
+                    <span class="text-white font-medium flex-1 truncate">${data.title || 'ไม่มีหัวข้อ'}</span>
+                    <span class="text-slate-500 shrink-0">${dateStr}</span>
+                    <button onclick="showNewsPopup(${JSON.stringify(data).replace(/"/g, '&quot;')})" class="text-cyan-400 hover:text-cyan-300 shrink-0">อ่านเพิ่มเติม...</button>
                 </div>
             `;
 
-            // Toggle expand/collapse on click
-            card.addEventListener('click', () => {
-                const isExpanded = card.getAttribute('data-expanded') === 'true';
-                const content = card.querySelector('.news-content');
-                const icon = card.querySelector('.expand-icon');
+            return card;
+        }
 
-                if (isExpanded) {
-                    content.classList.add('hidden');
-                    icon.textContent = '▼';
-                    icon.style.transform = 'rotate(0deg)';
-                    card.setAttribute('data-expanded', 'false');
-                } else {
-                    content.classList.remove('hidden');
-                    icon.textContent = '▲';
-                    icon.style.transform = 'rotate(180deg)';
-                    card.setAttribute('data-expanded', 'true');
-                }
+        function filterNews(type) {
+            currentFilter = type;
+
+            // Update active tab
+            document.querySelectorAll('.news-filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-filter') === type);
             });
 
-            return card;
+            // Filter items
+            document.querySelectorAll('.news-item').forEach(item => {
+                const itemType = item.getAttribute('data-type');
+                if (type === 'all' || itemType === type) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function showNewsPopup(data) {
+            const popup = document.getElementById('news-popup');
+            const badge = document.getElementById('popup-badge');
+            const date = document.getElementById('popup-date');
+            const title = document.getElementById('popup-title');
+            const imageDiv = document.getElementById('popup-image');
+            const img = document.getElementById('popup-img');
+            const content = document.getElementById('popup-content');
+
+            const typeEmoji = { 'news': '📰', 'update': '🆕', 'event': '🎉', 'maintenance': '🔧' }[data.type] || '📰';
+            const typeLabel = { 'news': 'ข่าวสาร', 'update': 'อัพเดท', 'event': 'กิจกรรม', 'maintenance': 'ซ่อมแซม' }[data.type] || 'ข่าวสาร';
+            const badgeClass = `badge-${data.type || 'news'}`;
+
+            badge.className = `px-2 py-0.5 rounded text-[10px] font-medium ${badgeClass}`;
+            badge.textContent = `${typeEmoji} ${typeLabel}`;
+
+            if (data.createdAt) {
+                const d = new Date(data.createdAt.seconds * 1000);
+                date.textContent = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+            } else {
+                date.textContent = '';
+            }
+
+            title.textContent = data.title || 'ไม่มีหัวข้อ';
+            content.textContent = data.content || '';
+
+            // Show image if exists
+            if (data.imageUrl) {
+                img.src = data.imageUrl;
+                imageDiv.classList.remove('hidden');
+            } else {
+                imageDiv.classList.add('hidden');
+            }
+
+            popup.classList.remove('hidden');
+        }
+
+        function closeNewsPopup(event) {
+            if (event && event.target.id !== 'news-popup') return;
+            document.getElementById('news-popup').classList.add('hidden');
+        }
+
+        function openImageFull(src) {
+            if (window.launcherAPI && window.launcherAPI.openExternal) {
+                window.launcherAPI.openExternal(src);
+            } else {
+                window.open(src, '_blank');
+            }
         }
 
         // ========== Social Links ==========
@@ -974,56 +1031,43 @@
             }
         }
 
-        // ========== Top OP Leaderboard ==========
-        async function loadLeaderboard() {
-            const list = document.getElementById('leaderboard-list');
-            const clone = document.getElementById('leaderboard-list-clone');
+        // ========== Story News ==========
+        async function loadStoryNews() {
+            const list = document.getElementById('story-list');
+            const clone = document.getElementById('story-list-clone');
 
             try {
-                // Get current month's date range
-                const now = new Date();
-                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-
-                // Get op_logs from this month where action is "เริ่มกะ"
-                const snapshot = await db.collection('op_logs')
-                    .where('action', '==', 'เริ่มกะ')
-                    .where('timestamp', '>=', firstDay)
-                    .get();
-
-                // Count shifts per OP
-                const opCounts = {};
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const name = data.user || data.by || 'Unknown';
-                    if (name && name !== 'Unknown') {
-                        opCounts[name] = (opCounts[name] || 0) + 1;
-                    }
-                });
-
-                // Sort by count descending and take top 10
-                const sorted = Object.entries(opCounts)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10);
-
-                if (sorted.length === 0) {
-                    list.innerHTML = '<div class="text-slate-500 text-[10px] text-center py-2">ยังไม่มีข้อมูล</div>';
+                // Get current op_data
+                const doc = await db.collection('op_data').doc('current').get();
+                if (!doc.exists) {
+                    list.innerHTML = '<div class="text-slate-500 text-[9px] text-center">ไม่มีข้อมูล</div>';
                     clone.innerHTML = '';
                     return;
                 }
 
-                // Render leaderboard
-                list.innerHTML = sorted.map((item, i) => {
-                    const rank = i + 1;
-                    let rankClass = 'normal';
-                    if (rank === 1) rankClass = 'gold';
-                    else if (rank === 2) rankClass = 'silver';
-                    else if (rank === 3) rankClass = 'bronze';
+                const data = doc.data();
+                const cases = data.cases || [];
+
+                if (cases.length === 0) {
+                    list.innerHTML = '<div class="text-slate-500 text-[9px] text-center">ยังไม่มีสตอรี่</div>';
+                    clone.innerHTML = '';
+                    return;
+                }
+
+                // Render stories
+                list.innerHTML = cases.map(c => {
+                    const time = c.startTime || '--:--';
+                    const partyA = c.partyA || '-';
+                    const partyB = c.partyB || '-';
+                    const medics = c.medics?.length || 0;
+                    const closed = c.closed;
 
                     return `
-                        <div class="leaderboard-item">
-                            <span class="leaderboard-rank ${rankClass}">${rank}</span>
-                            <span class="leaderboard-name">${item[0]}</span>
-                            <span class="leaderboard-count">${item[1]} กะ</span>
+                        <div class="flex items-center gap-2 py-1 text-[9px] ${closed ? 'opacity-50' : ''}">
+                            <span class="text-cyan-400 font-mono">${time}</span>
+                            <span class="text-white flex-1 truncate">${partyA} VS ${partyB}</span>
+                            <span class="text-slate-500">${medics}👨‍⚕️</span>
+                            ${closed ? '<span class="text-green-400">✓</span>' : '<span class="text-amber-400">🔴</span>'}
                         </div>
                     `;
                 }).join('');
@@ -1032,8 +1076,8 @@
                 clone.innerHTML = list.innerHTML;
 
             } catch (e) {
-                console.error('Leaderboard error:', e);
-                list.innerHTML = '<div class="text-slate-500 text-[10px] text-center py-2">โหลดไม่สำเร็จ</div>';
+                console.error('Story news error:', e);
+                list.innerHTML = '<div class="text-slate-500 text-[9px] text-center">โหลดไม่สำเร็จ</div>';
             }
         }
 
@@ -1197,7 +1241,7 @@
         // ========== Init ==========
         loadVersion();
         loadAnnouncements();
-        loadLeaderboard();
+        loadStoryNews();
         loadSocialLinks();
         checkRememberedLogin();
         setupUpdateListener();
