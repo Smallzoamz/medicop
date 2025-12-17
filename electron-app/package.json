@@ -1,6 +1,6 @@
 {
     "name": "medical-op-systems",
-    "version": "1.6.1-build.17",
+    "version": "1.6.1-build.18",
     "description": "Medical OP Systems - Desktop Application",
     "main": "main.js",
     "scripts": {

@@ -650,6 +650,21 @@ ipcMain.on('user-logout', () => {
     console.log('🔓 User logout - showing goodbye screen');
     loggedInUser = null;
 
+    // Close overlay window if open
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.close();
+        overlayWindow = null;
+        isOverlayMode = false;
+    }
+
+    // Close any open panel windows
+    Object.keys(panelWindows).forEach(key => {
+        if (panelWindows[key] && !panelWindows[key].isDestroyed()) {
+            panelWindows[key].close();
+        }
+    });
+    panelWindows = {};
+
     // Show goodbye window
     createGoodbyeWindow();
 });
