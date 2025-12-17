@@ -1686,6 +1686,10 @@
                     class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600"
                     data-owner-tab>📢
                     ข่าวสาร</button>
+                <button onclick="switchAdminTab('recovery')" id="admin-tab-recovery"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    data-owner-tab>🔄
+                    กู้คืน</button>
             </div>
             <!-- User Management Tab -->
             <div id="admin-tab-content-users" class="flex-1 overflow-y-auto custom-scrollbar">
@@ -1896,6 +1900,38 @@
                         </div>
                         <div id="admin-announcements-list" class="space-y-2">
                             <p class="text-slate-500 text-xs text-center py-4">กำลังโหลด...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Recovery Tab (Owner) -->
+            <div id="admin-tab-content-recovery" class="hidden flex-1 overflow-y-auto custom-scrollbar">
+                <div class="space-y-4">
+                    <!-- Backup List -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-bold text-amber-400">💾 รายการ Backup</h4>
+                            <div class="flex gap-2">
+                                <button onclick="createBackup('manual_owner'); refreshBackupList();"
+                                    class="text-[10px] px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded">➕
+                                    สร้าง Backup</button>
+                                <button onclick="refreshBackupList()"
+                                    class="text-xs text-slate-500 hover:text-cyan-400">🔄 รีเฟรช</button>
+                            </div>
+                        </div>
+                        <div id="backup-list" class="space-y-2 max-h-48 overflow-y-auto">
+                            <p class="text-slate-500 text-xs">กดรีเฟรชเพื่อโหลด...</p>
+                        </div>
+                    </div>
+                    <!-- Critical Logs -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-bold text-rose-400">🚨 Critical Logs</h4>
+                            <button onclick="loadCriticalLogs()" class="text-xs text-slate-500 hover:text-cyan-400">🔄
+                                รีเฟรช</button>
+                        </div>
+                        <div id="critical-logs-list" class="space-y-2 max-h-48 overflow-y-auto">
+                            <p class="text-slate-500 text-xs">กดรีเฟรชเพื่อโหลด...</p>
                         </div>
                     </div>
                 </div>
@@ -6648,7 +6684,7 @@
         // App Version & Changelog
         // Version format: X.Y.Z - Update Z by +1 each deploy. When Z=9, next is Y+1 with Z=0
         // Example: 1.3.9 -> 1.4.0 -> 1.4.1 -> ... -> 1.4.9 -> 1.5.0
-        const APP_VERSION = '1.6.1-build.20';
+        const APP_VERSION = '1.6.1-build.21';
 
         // Update all version displays from APP_VERSION (single source of truth)
         function updateVersionDisplays() {
@@ -9374,9 +9410,9 @@
             }
         }
         async function changeUserRole(userId, newRole) { if (!isAdmin()) return; try { await db.collection('op_users').doc(userId).update({ role: newRole }); addOpLog('เปลี่ยนยศ', `${userId} → ${newRole}`); showNotif('Success', `เปลี่ยนยศเป็น ${newRole}`); } catch (e) { showNotif('Error', 'เกิดข้อผิดพลาด'); } }
-        function showStaffAdminModal() { if (!isStaff()) return showNotif('Error', 'สำหรับ Staff ขึ้นไปเท่านั้น'); loadOpLogs(); renderAdminUsers(); renderAdminNotifications(); populateStaffAdminSettings(); if (currentUser?.role !== 'Owner') { document.getElementById('admin-tab-settings').classList.add('hidden'); document.getElementById('admin-tab-announcements').classList.add('hidden'); } else { document.getElementById('admin-tab-settings').classList.remove('hidden'); document.getElementById('admin-tab-announcements').classList.remove('hidden'); loadAdminAnnouncements(); } if (!isAdmin()) document.getElementById('admin-tab-notifications').classList.add('hidden'); else document.getElementById('admin-tab-notifications').classList.remove('hidden'); document.getElementById('staff-admin-modal').classList.remove('hidden'); switchAdminTab('users'); }
+        function showStaffAdminModal() { if (!isStaff()) return showNotif('Error', 'สำหรับ Staff ขึ้นไปเท่านั้น'); loadOpLogs(); renderAdminUsers(); renderAdminNotifications(); populateStaffAdminSettings(); if (currentUser?.role !== 'Owner') { document.getElementById('admin-tab-settings').classList.add('hidden'); document.getElementById('admin-tab-announcements').classList.add('hidden'); document.getElementById('admin-tab-recovery').classList.add('hidden'); } else { document.getElementById('admin-tab-settings').classList.remove('hidden'); document.getElementById('admin-tab-announcements').classList.remove('hidden'); document.getElementById('admin-tab-recovery').classList.remove('hidden'); loadAdminAnnouncements(); } if (!isAdmin()) document.getElementById('admin-tab-notifications').classList.add('hidden'); else document.getElementById('admin-tab-notifications').classList.remove('hidden'); document.getElementById('staff-admin-modal').classList.remove('hidden'); switchAdminTab('users'); }
         function closeStaffAdminModal() { document.getElementById('staff-admin-modal').classList.add('hidden'); }
-        function switchAdminTab(tab) { const themeColor = serverSettings.themeColor || '#06b6d4';['users', 'logs', 'actions', 'notifications', 'settings', 'announcements'].forEach(t => { const tabBtn = document.getElementById(`admin-tab-${t}`); const tabContent = document.getElementById(`admin-tab-content-${t}`); if (tabBtn) { tabBtn.style.backgroundColor = ''; tabBtn.classList.remove('text-white'); tabBtn.classList.add('bg-slate-700', 'text-slate-300'); } if (tabContent) tabContent.classList.add('hidden'); }); const activeBtn = document.getElementById(`admin-tab-${tab}`); activeBtn.style.backgroundColor = themeColor; activeBtn.classList.add('text-white'); activeBtn.classList.remove('bg-slate-700', 'text-slate-300'); document.getElementById(`admin-tab-content-${tab}`).classList.remove('hidden'); if (tab === 'users' && !isAdmin()) { document.getElementById('admin-tab-content-users').innerHTML = '<p class="text-amber-400 text-center py-8">⚠️ Staff ไม่มีสิทธิ์จัดการยศ</p>'; } else if (tab === 'users') renderAdminUsers(); if (tab === 'notifications') renderAdminNotifications(); if (tab === 'settings') populateStaffAdminSettings(); if (tab === 'announcements') loadAdminAnnouncements(); }
+        function switchAdminTab(tab) { const themeColor = serverSettings.themeColor || '#06b6d4';['users', 'logs', 'actions', 'notifications', 'settings', 'announcements', 'recovery'].forEach(t => { const tabBtn = document.getElementById(`admin-tab-${t}`); const tabContent = document.getElementById(`admin-tab-content-${t}`); if (tabBtn) { tabBtn.style.backgroundColor = ''; tabBtn.classList.remove('text-white'); tabBtn.classList.add('bg-slate-700', 'text-slate-300'); } if (tabContent) tabContent.classList.add('hidden'); }); const activeBtn = document.getElementById(`admin-tab-${tab}`); activeBtn.style.backgroundColor = themeColor; activeBtn.classList.add('text-white'); activeBtn.classList.remove('bg-slate-700', 'text-slate-300'); document.getElementById(`admin-tab-content-${tab}`).classList.remove('hidden'); if (tab === 'users' && !isAdmin()) { document.getElementById('admin-tab-content-users').innerHTML = '<p class="text-amber-400 text-center py-8">⚠️ Staff ไม่มีสิทธิ์จัดการยศ</p>'; } else if (tab === 'users') renderAdminUsers(); if (tab === 'notifications') renderAdminNotifications(); if (tab === 'settings') populateStaffAdminSettings(); if (tab === 'announcements') loadAdminAnnouncements(); if (tab === 'recovery') { refreshBackupList(); loadCriticalLogs(); } }
         function renderAdminNotifications() { const list = document.getElementById('admin-all-notifications'); if (!list || !isAdmin()) return; if (!notifications.length) { list.innerHTML = '<p class="text-slate-500 text-center py-4">ไม่มีแจ้งเตือน</p>'; return; } list.innerHTML = notifications.map((n, i) => `<div class="flex gap-2 items-start bg-slate-800/50 p-2 rounded"><span class="text-sm ${n.type === 'warning' ? 'text-amber-400' : n.type === 'error' ? 'text-rose-400' : n.type === 'success' ? 'text-emerald-400' : 'text-cyan-400'}">${n.type === 'warning' ? '⚠️' : n.type === 'error' ? '❌' : n.type === 'success' ? '✅' : 'ℹ️'}</span><div class="flex-1"><p class="text-white">${n.msg}</p><p class="text-[10px] text-slate-500">${n.time}</p></div></div>`).join(''); }
         function populateStaffAdminSettings() {
             document.getElementById('staff-admin-server-name').value = serverSettings.serverName || 'ONE CITY';
@@ -9694,6 +9730,9 @@
         async function forceEndShift() {
             if (!isStaff()) return;
 
+            // Rate limiting check
+            if (!canClearShift()) return;
+
             // Auto-close started stories (not pending) before force ending shift
             const startedCases = (appData.cases || []).filter(c => !isTimeInFuture(c.startTime, c.storyDate) && !c.pendingStart);
             if (startedCases.length > 0) {
@@ -9708,9 +9747,21 @@
                 addOpLog('บังคับปิดสตอรี่', caseNames);
             }
 
-            const c = await showConfirm('⚠️ บังคับปิดกะ', 'คุณแน่ใจหรือไม่? การกระทำนี้จะปิดกะทันทีและไม่สามารถย้อนกลับได้');
-            if (!c) return;
+            // Critical confirmation - require typing to confirm
+            const confirmed = await showCriticalConfirm('⚠️ บังคับปิดกะ', 'การกระทำนี้จะปิดกะทันทีและไม่สามารถย้อนกลับได้', 'ปิดกะ');
+            if (!confirmed) return;
+
             const prevOP = appData.currentOP;
+            const prevSupOP = appData.supOP;
+            const onDutyCount = appData.onDuty?.length || 0;
+            const casesCount = appData.cases?.length || 0;
+
+            // Log critical action BEFORE clearing
+            await addDetailedLog('บังคับปิดกะ (เริ่ม)', `OP: ${prevOP || '-'}, SupOP: ${prevSupOP || '-'}, OnDuty: ${onDutyCount}, Cases: ${casesCount}`, 'critical');
+
+            // Create backup BEFORE clearing
+            await createBackup('before_forceEndShift');
+
             // New logic: If any story is still active (not closed), keep ALL stories. If all closed, delete closed stories.
             const activeStories = (appData.cases || []).filter(cs => !cs.closed && !isTimeInFuture(cs.startTime, cs.storyDate) && !cs.pendingStart);
             const hasActiveStories = activeStories.length > 0;
@@ -9728,7 +9779,10 @@
                 return;
             }
 
-            addOpLog('บังคับปิดกะ', `OP เดิม: ${prevOP || '-'}`);
+            // Record shift clear for rate limiting
+            recordShiftClear();
+
+            addDetailedLog('บังคับปิดกะ (สำเร็จ)', `OP เดิม: ${prevOP || '-'}`, 'shift_change');
             closeStaffAdminModal();
             showNotif('Success', 'บังคับปิดกะเรียบร้อย');
         }
@@ -10335,6 +10389,17 @@
             if (appData.shiftStart) return showNotif('Error', 'กะเริ่มแล้ว ใช้ "จบกะ" แทน');
             const c = await showConfirm('ออกกะ', 'ออกกะโดยไม่เริ่มนับเวลา? (จะเคลียร์รายชื่อทั้งหมด)');
             if (!c) return;
+
+            const opName = appData.currentOP;
+            const supOP = appData.supOP;
+            const onDutyCount = appData.onDuty?.length || 0;
+
+            // Log critical action BEFORE clearing
+            await addDetailedLog('ออกกะ (ก่อน clear)', `OP: ${opName}, SupOP: ${supOP || '-'}, OnDuty: ${onDutyCount}`, 'critical');
+
+            // Create backup BEFORE clearing
+            await createBackup('before_exitShift');
+
             appData.currentOP = null;
             appData.supOP = null;
             appData.onDuty = [];
@@ -10345,7 +10410,7 @@
             if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
             renderAll();
             showNotif('Success', 'ออกกะเรียบร้อย');
-            addOpLog('ออกกะ (ยกเลิก)', `OP: ${currentUser.fullName}`);
+            addDetailedLog('ออกกะ (สำเร็จ)', `OP: ${opName}`, 'shift_change');
             addNotification(`${currentUser.fullName} ออกกะ`, 'info');
             renderOPControl();
         }
