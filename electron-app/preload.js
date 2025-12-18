@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('windowControls', {
     isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
     logout: () => ipcRenderer.send('user-logout'),
     toggleOverlayMode: () => ipcRenderer.send('toggle-overlay-mode'),
-    openMusicBox: () => ipcRenderer.send('open-music-box'),
+    youtubeSearch: (query) => ipcRenderer.invoke('youtube-search', query),
     openExternal: (url) => ipcRenderer.send('open-external', url),
     // Logout with confirmation - use this from UI
     confirmLogout: () => {

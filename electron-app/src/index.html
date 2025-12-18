@@ -479,11 +479,6 @@
             <span class="title-bar-text">Medical OP Systems v.1.6.1</span>
         </div>
         <div class="title-bar-controls">
-            <button class="title-bar-btn music-box" id="btn-music-box" title="Music Box"
-                onclick="window.windowControls?.openMusicBox()"
-                style="color: #a855f7; width: auto; padding: 0 8px; font-size: 11px; font-weight: bold;">
-                🎵
-            </button>
             <button class="title-bar-btn mini-mode" id="btn-mini-mode" title="Mini Overlay Mode"
                 onclick="window.windowControls?.toggleOverlayMode()"
                 style="color: #06b6d4; width: auto; padding: 0 8px; font-size: 11px; font-weight: bold;">
@@ -1366,7 +1361,8 @@
                 </div>
             </div>
             <!-- Hidden YouTube Player Container (for API volume control) -->
-            <div id="music-youtube-player" class="hidden" style="width:1px;height:1px;overflow:hidden;"></div>
+            <div id="music-youtube-player" class="fixed -left-[2000px] pointer-events-none opacity-0"
+                style="width:200px;height:200px;overflow:hidden;"></div>
         </div>
     </div>
 
@@ -1396,7 +1392,8 @@
                     </button>
                 </div>
             </div>
-            <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">🎯 ตั้งค่า Event Times</div>
+            <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">🎯 ตั้งค่า Event Times
+            </div>
             <div id="event-settings-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
                 <!-- Events will be rendered here -->
             </div>
@@ -1419,7 +1416,8 @@
                 <button onclick="closeRescheduleModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
             </div>
             <div class="space-y-4">
-                <div id="reschedule-story-info" class="text-xs text-slate-300 bg-slate-800/50 rounded-lg p-2"></div>
+                <div id="reschedule-story-info" class="text-xs text-slate-300 bg-slate-800/50 rounded-lg p-2">
+                </div>
                 <div>
                     <label class="text-xs text-slate-300 mb-1 block">📅 วันที่ใหม่</label>
                     <input type="date" id="reschedule-date" class="inp-pretty text-xs w-full">
@@ -1453,11 +1451,14 @@
             <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 <!-- OP Control -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">🎯 การจัดการ OP</h4>
+                    <h4 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2">🎯 การจัดการ OP
+                    </h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">เข้ากะ (เป็น OP)</span> - กดเพื่อตั้งตัวเองเป็น OP
+                        <li>• <span class="text-white font-medium">เข้ากะ (เป็น OP)</span> -
+                            กดเพื่อตั้งตัวเองเป็น OP
                             ประจำกะ</li>
-                        <li>• <span class="text-white font-medium">▶ เริ่มกะ</span> - เริ่มนับเวลากะ (ต้องเป็น OP ก่อน)
+                        <li>• <span class="text-white font-medium">▶ เริ่มกะ</span> - เริ่มนับเวลากะ (ต้องเป็น
+                            OP ก่อน)
                         </li>
                         <li>• <span class="text-white font-medium">⏹️ จบกะ</span> - จบกะและแสดงสรุปการทำงาน</li>
                         <li>• <span class="text-white font-medium">📋 Request OP</span> - ส่งคำขอเป็น OP
@@ -1467,7 +1468,8 @@
 
                 <!-- Support OP -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-purple-400 mb-2 flex items-center gap-2">👥 Support OP</h4>
+                    <h4 class="text-sm font-bold text-purple-400 mb-2 flex items-center gap-2">👥 Support OP
+                    </h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
                         <li>• เลือก Sup OP จาก Dropdown เพื่อแต่งตั้งผู้ช่วย OP</li>
                         <li>• Sup OP มีสิทธิ์จัดการ On Duty, Dispatch และฟังก์ชั่นเหมือน OP</li>
@@ -1477,11 +1479,13 @@
 
                 <!-- Medic Management -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">✅ On Duty / Off Duty
+                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">✅ On Duty / Off
+                        Duty
                         /
                         AFK</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">Add Name...</span> - พิมพ์ชื่อเพื่อเพิ่มแพทย์ใน
+                        <li>• <span class="text-white font-medium">Add Name...</span> -
+                            พิมพ์ชื่อเพื่อเพิ่มแพทย์ใน
                             On
                             Duty</li>
                         <li>• <span class="text-cyan-300">✓ รับเคส</span> - ระบุว่าหมอพร้อมรับเคส</li>
@@ -1493,7 +1497,8 @@
                         <li>• <span class="text-slate-300">📴 Off</span> - ย้ายหมอไป Off Duty</li>
                         <li>• <span class="text-emerald-300">🔄 คืนตำแหน่ง AFK</span> - หมอที่กลับจาก AFK
                             จะกลับไปอยู่ตำแหน่งเดิมในรายชื่อ (ไม่ต่อท้าย)</li>
-                        <li>• <span class="text-red-400">⚠️ Warning</span> - หมอที่ AFK นาน 5+ นาทีจะได้รับ Warning
+                        <li>• <span class="text-red-400">⚠️ Warning</span> - หมอที่ AFK นาน 5+ นาทีจะได้รับ
+                            Warning
                         </li>
                     </ul>
                 </div>
@@ -1507,7 +1512,8 @@
                         <li>• กด <span class="text-emerald-400">+ สร้าง</span> เพื่อสร้างเคสสตอรี่</li>
                         <li>• <span class="text-amber-300">⏳ รอเริ่ม</span> - แสดงเมื่อเวลาเริ่มยังไม่ถึง</li>
                         <li>• <span class="text-rose-300">🚫 ห้ามฉีดยา</span> - แสดงเมื่อถึงวันสตอรี่แล้ว</li>
-                        <li>• กดปุ่ม <span class="text-white">👨‍⚕️ กำหนดแพทย์</span> เพื่อเลือกแพทย์ 1-3 คนสำหรับเคส
+                        <li>• กดปุ่ม <span class="text-white">👨‍⚕️ กำหนดแพทย์</span> เพื่อเลือกแพทย์ 1-3
+                            คนสำหรับเคส
                         </li>
                         <li>• เมื่อถึงเวลาเริ่ม + มีแพทย์แล้ว จะย้ายแพทย์ออกจาก On Duty อัตโนมัติ</li>
                         <li>• สตอรี่ที่ยังไม่มีแพทย์จะไม่ถูกบังคับปิดเมื่อจบกะ</li>
@@ -1516,30 +1522,38 @@
 
                 <!-- Case Management -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-rose-400 mb-2 flex items-center gap-2">📋 รายการสตอรี่</h4>
+                    <h4 class="text-sm font-bold text-rose-400 mb-2 flex items-center gap-2">📋 รายการสตอรี่
+                    </h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
                         <li>• <span class="text-white font-medium">✏️ แก้ไข</span> - แก้ไขข้อมูลเคส</li>
-                        <li>• <span class="text-white font-medium">❌ ปิดเคส</span> - ปิดเคสและนำแพทย์กลับ On Duty</li>
-                        <li>• <span class="text-white font-medium">👨‍⚕️ กำหนดแพทย์</span> - เลือกแพทย์ 1-3 คน</li>
+                        <li>• <span class="text-white font-medium">❌ ปิดเคส</span> - ปิดเคสและนำแพทย์กลับ On
+                            Duty</li>
+                        <li>• <span class="text-white font-medium">👨‍⚕️ กำหนดแพทย์</span> - เลือกแพทย์ 1-3 คน
+                        </li>
                         <li>• <span class="text-cyan-300">🎮 กำลังเล่น</span> - แสดงเมื่อสตอรี่เริ่มแล้ว <span
                                 class="text-[10px] bg-cyan-500/30 text-cyan-300 px-1 rounded">ใหม่!</span></li>
-                        <li>• <span class="text-rose-300">🚫 ห้ามฉีดยา / 💰x5</span> - แสดงเมื่อถึงวันแล้ว/Blacklist
+                        <li>• <span class="text-rose-300">🚫 ห้ามฉีดยา / 💰x5</span> -
+                            แสดงเมื่อถึงวันแล้ว/Blacklist
                         </li>
-                        <li>• <span class="text-emerald-300">✅ จบกะได้เลย</span> - สตอรี่ที่ยังไม่จบจะส่งต่อกะหน้า <span
+                        <li>• <span class="text-emerald-300">✅ จบกะได้เลย</span> -
+                            สตอรี่ที่ยังไม่จบจะส่งต่อกะหน้า <span
                                 class="text-[10px] bg-cyan-500/30 text-cyan-300 px-1 rounded">ใหม่!</span></li>
                     </ul>
                 </div>
 
                 <!-- Medical Fees -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">💊 ค่ารักษาพยาบาล
+                    <h4 class="text-sm font-bold text-emerald-400 mb-2 flex items-center gap-2">💊
+                        ค่ารักษาพยาบาล
                         (ใหม่!)</h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• <span class="text-white font-medium">💊 เคสปกติ</span> - ราคาชุบ/ฉีด แยกตามเขต (ในเมือง,
+                        <li>• <span class="text-white font-medium">💊 เคสปกติ</span> - ราคาชุบ/ฉีด แยกตามเขต
+                            (ในเมือง,
                             ทะเลทราย, เมืองบน, เข้าถึงยาก)</li>
                         <li>• <span class="text-white font-medium">⚠️ เคสสุ่มเสี่ยง</span> -
                             ราคาชุบสำหรับพื้นที่สุ่มเสี่ยง (ไม่ฉีดยา)</li>
-                        <li>• <span class="text-white font-medium">🎬 ชุบสตอรี่</span> - ราคาชุบสำหรับพื้นที่สตอรี่
+                        <li>• <span class="text-white font-medium">🎬 ชุบสตอรี่</span> -
+                            ราคาชุบสำหรับพื้นที่สตอรี่
                             (ไม่ฉีดยา)</li>
                         <li>• กดปุ่ม ✏️ แก้ไข เพื่อปรับราคา และ 💾 บันทึก เพื่อบันทึก</li>
                         <li>• ข้อมูลจะอัปเดต Real-time ให้ทุกคนเห็นทันที</li>
@@ -1548,14 +1562,18 @@
 
                 <!-- Blacklist -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-red-400 mb-2 flex items-center gap-2">🚫 รายการ Blacklist (ใหม่!)
+                    <h4 class="text-sm font-bold text-red-400 mb-2 flex items-center gap-2">🚫 รายการ Blacklist
+                        (ใหม่!)
                     </h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• กดปุ่ม <span class="text-white font-medium">🚫 Blacklist</span> ที่แถบเมนูเพื่อเปิด Modal
+                        <li>• กดปุ่ม <span class="text-white font-medium">🚫 Blacklist</span>
+                            ที่แถบเมนูเพื่อเปิด Modal
                         </li>
-                        <li>• <span class="text-white font-medium">เพิ่มแก๊ง</span> - พิมพ์ชื่อแก๊งแล้วกด "เพิ่ม"</li>
+                        <li>• <span class="text-white font-medium">เพิ่มแก๊ง</span> - พิมพ์ชื่อแก๊งแล้วกด
+                            "เพิ่ม"</li>
                         <li>• <span class="text-white font-medium">ลบแก๊ง</span> - กดปุ่ม ❌ หลังชื่อแก๊ง</li>
-                        <li>• <span class="text-rose-300">โทษx5</span> - แสดงบน Story Card เมื่อ Party A หรือ B เป็นแก๊ง
+                        <li>• <span class="text-rose-300">โทษx5</span> - แสดงบน Story Card เมื่อ Party A หรือ B
+                            เป็นแก๊ง
                             Blacklist</li>
                         <li>• ข้อมูลจะบันทึกใน Firebase และอัปเดต Real-time</li>
                     </ul>
@@ -1566,7 +1584,8 @@
                     <h4 class="text-sm font-bold text-teal-400 mb-2 flex items-center gap-2">📋 รวมคำสั่งประกาศ
                     </h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
-                        <li>• กดปุ่ม <span class="text-white font-medium">📋 รวมคำสั่งประกาศ</span> ที่แถบเมนูเพื่อเปิด
+                        <li>• กดปุ่ม <span class="text-white font-medium">📋 รวมคำสั่งประกาศ</span>
+                            ที่แถบเมนูเพื่อเปิด
                             Modal</li>
                         <li>• <span class="text-cyan-300">🏥 ประกาศจากโรงพยาบาล</span> - รับสมัคร/ปิดรับ</li>
                         <li>• <span class="text-purple-300">🚪 ประกาศเชิญออกจากพื้นที่</span> -
@@ -1581,16 +1600,19 @@
 
                 <!-- Special Features -->
                 <div class="bg-slate-800/50 rounded-xl p-4">
-                    <h4 class="text-sm font-bold text-amber-400 mb-2 flex items-center gap-2">⚙️ ฟังก์ชั่นพิเศษ</h4>
+                    <h4 class="text-sm font-bold text-amber-400 mb-2 flex items-center gap-2">⚙️ ฟังก์ชั่นพิเศษ
+                    </h4>
                     <ul class="text-xs text-slate-300 space-y-1.5">
                         <li>• <span class="text-white font-medium">📊 สรุปกะ</span> - แสดงเมื่อจบกะหรือ Handover
                         </li>
                         <li>• <span class="text-white font-medium">🚫 บังคับปิดกะ</span> - ใช้เมื่อ OP
                             ไม่ได้ลงทะเบียน
                             (⚠️ สีเหลือง)</li>
-                        <li>• <span class="text-white font-medium">⏰ Handover</span> - ระบบส่งต่อเวร OP อัตโนมัติ
+                        <li>• <span class="text-white font-medium">⏰ Handover</span> - ระบบส่งต่อเวร OP
+                            อัตโนมัติ
                         </li>
-                        <li>• <span class="text-white font-medium">รูปโปรไฟล์</span> - แสดงรูปของผู้ใช้ที่ลงทะเบียน
+                        <li>• <span class="text-white font-medium">รูปโปรไฟล์</span> -
+                            แสดงรูปของผู้ใช้ที่ลงทะเบียน
                         </li>
                     </ul>
                 </div>
@@ -1603,13 +1625,17 @@
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div class="space-y-2">
-                            <div class="text-[10px] font-bold text-amber-400 uppercase">📡 Real-time Features</div>
+                            <div class="text-[10px] font-bold text-amber-400 uppercase">📡 Real-time Features
+                            </div>
                             <ul class="text-xs text-amber-200/80 space-y-1">
-                                <li>• <span class="text-white">Real-time Update</span> - ข้อมูลอัพเดททันที ไม่ต้อง
+                                <li>• <span class="text-white">Real-time Update</span> - ข้อมูลอัพเดททันที
+                                    ไม่ต้อง
                                     Refresh</li>
-                                <li>• <span class="text-white">Live Status</span> - ดูสถานะ On Duty / AFK แบบ Real-time
+                                <li>• <span class="text-white">Live Status</span> - ดูสถานะ On Duty / AFK แบบ
+                                    Real-time
                                 </li>
-                                <li>• <span class="text-white">Instant Sync</span> - ทุกคนเห็นข้อมูลเดียวกันพร้อมกัน
+                                <li>• <span class="text-white">Instant Sync</span> -
+                                    ทุกคนเห็นข้อมูลเดียวกันพร้อมกัน
                                 </li>
                             </ul>
                         </div>
@@ -1622,9 +1648,11 @@
                             </ul>
                         </div>
                         <div class="space-y-2">
-                            <div class="text-[10px] font-bold text-amber-400 uppercase">📊 ระบบบริหารจัดการ</div>
+                            <div class="text-[10px] font-bold text-amber-400 uppercase">📊 ระบบบริหารจัดการ
+                            </div>
                             <ul class="text-xs text-amber-200/80 space-y-1">
-                                <li>• <span class="text-white">Shift Summary</span> - สรุปกะอัตโนมัติพร้อมคัดลอก</li>
+                                <li>• <span class="text-white">Shift Summary</span> - สรุปกะอัตโนมัติพร้อมคัดลอก
+                                </li>
                                 <li>• <span class="text-white">Handover</span> - ระบบส่งต่อเวร OP อัตโนมัติ</li>
                                 <li>• <span class="text-white">Request OP</span> - ขอเป็น OP ล่วงหน้าได้</li>
                             </ul>
@@ -1632,19 +1660,24 @@
                         <div class="space-y-2">
                             <div class="text-[10px] font-bold text-amber-400 uppercase">🎯 ความสะดวกสบาย</div>
                             <ul class="text-xs text-amber-200/80 space-y-1">
-                                <li>• <span class="text-white">คำสั่งสำเร็จรูป</span> - คัดลอกคำสั่งประกาศได้ทันที</li>
-                                <li>• <span class="text-white">เบอร์ IC ในคิว</span> - รู้เบอร์โทรทันทีเมื่อหมอสลบ</li>
-                                <li>• <span class="text-white">รูปโปรไฟล์</span> - โชว์รูปให้เพื่อนๆ แพทย์เห็น</li>
+                                <li>• <span class="text-white">คำสั่งสำเร็จรูป</span> -
+                                    คัดลอกคำสั่งประกาศได้ทันที</li>
+                                <li>• <span class="text-white">เบอร์ IC ในคิว</span> -
+                                    รู้เบอร์โทรทันทีเมื่อหมอสลบ</li>
+                                <li>• <span class="text-white">รูปโปรไฟล์</span> - โชว์รูปให้เพื่อนๆ แพทย์เห็น
+                                </li>
                             </ul>
                         </div>
                     </div>
                     <div class="mt-3 pt-3 border-t border-amber-500/30">
                         <div class="text-[10px] font-bold text-amber-400 uppercase mb-2">🔔 สำหรับ Owner</div>
                         <ul class="text-xs text-amber-200/80 space-y-1">
-                            <li>• <span class="text-white">Online/Offline Notification</span> - รู้ทันทีเมื่อมีคน
+                            <li>• <span class="text-white">Online/Offline Notification</span> -
+                                รู้ทันทีเมื่อมีคน
                                 Login/Logout</li>
                             <li>• <span class="text-white">User Management</span> - จัดการยศและลบผู้ใช้ได้</li>
-                            <li>• <span class="text-white">Server Settings</span> - ปรับแต่ง Theme และ Logo ได้</li>
+                            <li>• <span class="text-white">Server Settings</span> - ปรับแต่ง Theme และ Logo ได้
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -1668,7 +1701,8 @@
             <!-- Tabs -->
             <div class="flex flex-wrap gap-2 mb-4 shrink-0">
                 <button onclick="switchAdminTab('users')" id="admin-tab-users"
-                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white">👥 จัดการยศ</button>
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 text-white">👥
+                    จัดการยศ</button>
                 <button onclick="switchAdminTab('logs')" id="admin-tab-logs"
                     class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700 text-slate-300 hover:bg-slate-600">📋
                     Log ระบบ</button>
@@ -1796,7 +1830,8 @@
                         </div>
                     </div>
                     <div>
-                        <label class="text-xs text-slate-400 mb-1 block">📢 คำสั่งประกาศ (Announce Command)</label>
+                        <label class="text-xs text-slate-400 mb-1 block">📢 คำสั่งประกาศ (Announce
+                            Command)</label>
                         <div class="flex gap-2 items-center">
                             <input type="text" id="staff-admin-announce-cmd"
                                 class="w-32 text-sm rounded-lg border-slate-700 bg-slate-900/50 p-2.5 text-white text-center font-mono"
@@ -1865,7 +1900,8 @@
                                     placeholder="รายละเอียดข่าวสาร..."></textarea>
                             </div>
                             <div>
-                                <label class="text-xs text-slate-400 mb-1 block">🖼️ แนบรูปภาพ (ไม่บังคับ)</label>
+                                <label class="text-xs text-slate-400 mb-1 block">🖼️ แนบรูปภาพ
+                                    (ไม่บังคับ)</label>
                                 <div class="flex items-center gap-2">
                                     <label
                                         class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg cursor-pointer transition text-xs text-slate-300">
@@ -1948,7 +1984,8 @@
                 <span>📥</span> ดาวน์โหลด
             </a>
             <button onclick="closeImagePopup()"
-                class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition">✕ ปิด</button>
+                class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition">✕
+                ปิด</button>
         </div>
         <img id="image-popup-img" src="" class="max-w-[90vw] max-h-[85vh] object-contain rounded-lg shadow-2xl"
             onclick="event.stopPropagation()">
@@ -1984,7 +2021,8 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <input type="checkbox" id="login-remember" class="rounded bg-slate-800 border-slate-600">
-                        <label for="login-remember" class="text-xs text-slate-400">จดจำการเข้าสู่ระบบ 7 วัน</label>
+                        <label for="login-remember" class="text-xs text-slate-400">จดจำการเข้าสู่ระบบ 7
+                            วัน</label>
                     </div>
                     <button onclick="handleLogin()"
                         class="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition">เข้าสู่ระบบ</button>
@@ -2256,10 +2294,11 @@
                                 class="hidden flex-1 bg-yellow-900/10 rounded-xl border border-yellow-900/20 flex flex-col overflow-hidden min-h-0">
                                 <div
                                     class="px-3 py-2 border-b border-yellow-900/20 flex justify-between items-center bg-yellow-500/5 shrink-0">
-                                    <span class="text-xs font-bold text-yellow-400 flex items-center gap-1">💤 AFK
+                                    <span class="text-xs font-bold text-yellow-400 flex items-center gap-1">💤
+                                        AFK
                                         List</span>
-                                    <span class="text-[10px] font-bold opacity-60 flex items-center gap-1">👤 <span
-                                            id="count-afk">0</span></span>
+                                    <span class="text-[10px] font-bold opacity-60 flex items-center gap-1">👤
+                                        <span id="count-afk">0</span></span>
                                 </div>
                                 <div id="list-afk" class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                                 </div>
@@ -2326,7 +2365,7 @@
                                     <div class="flex items-center gap-1">
                                         <button onclick="toggleMusicMute()" id="music-mute-btn"
                                             class="text-white/80 hover:text-white transition text-[10px]">🔉</button>
-                                        <input type="range" id="music-volume" min="0" max="100" value="1"
+                                        <input type="range" id="music-volume" min="0" max="100" value="50"
                                             class="w-8 h-1 accent-pink-400 cursor-pointer"
                                             oninput="setMusicVolume(this.value)">
                                     </div>
@@ -2365,23 +2404,31 @@
                                     <tbody id="fee-normal-body" class="text-white">
                                         <tr>
                                             <td class="py-0.5">🏙️ ในเมือง</td>
-                                            <td class="text-center"><span id="fee-normal-city-chub">-</span></td>
-                                            <td class="text-center"><span id="fee-normal-city-chit">-</span></td>
+                                            <td class="text-center"><span id="fee-normal-city-chub">-</span>
+                                            </td>
+                                            <td class="text-center"><span id="fee-normal-city-chit">-</span>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="py-0.5">🏜️ ทะเลทราย</td>
-                                            <td class="text-center"><span id="fee-normal-desert-chub">-</span></td>
-                                            <td class="text-center"><span id="fee-normal-desert-chit">-</span></td>
+                                            <td class="text-center"><span id="fee-normal-desert-chub">-</span>
+                                            </td>
+                                            <td class="text-center"><span id="fee-normal-desert-chit">-</span>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="py-0.5">⛰️ เมืองบน</td>
-                                            <td class="text-center"><span id="fee-normal-upper-chub">-</span></td>
-                                            <td class="text-center"><span id="fee-normal-upper-chit">-</span></td>
+                                            <td class="text-center"><span id="fee-normal-upper-chub">-</span>
+                                            </td>
+                                            <td class="text-center"><span id="fee-normal-upper-chit">-</span>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="py-0.5">🚧 พื้นที่เข้าถึงยาก</td>
-                                            <td class="text-center"><span id="fee-normal-hard-chub">-</span></td>
-                                            <td class="text-center"><span id="fee-normal-hard-chit">-</span></td>
+                                            <td class="text-center"><span id="fee-normal-hard-chub">-</span>
+                                            </td>
+                                            <td class="text-center"><span id="fee-normal-hard-chit">-</span>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -2392,8 +2439,10 @@
                                 </div>
                                 <!-- Edit Form (hidden by default) -->
                                 <div id="fee-normal-form" class="hidden mt-2 space-y-1 text-[9px]">
-                                    <div class="grid grid-cols-3 gap-1 text-slate-400 font-bold"><span></span><span
-                                            class="text-center">ชุบ</span><span class="text-center">ฉีด</span></div>
+                                    <div class="grid grid-cols-3 gap-1 text-slate-400 font-bold">
+                                        <span></span><span class="text-center">ชุบ</span><span
+                                            class="text-center">ฉีด</span>
+                                    </div>
                                     <div class="grid grid-cols-3 gap-1 items-center"><span
                                             class="text-slate-400">ในเมือง</span><input type="text"
                                             id="fee-normal-city-chub-input"
@@ -2431,7 +2480,8 @@
                             <div class="glass rounded-xl p-3">
                                 <div class="flex justify-between items-center mb-2">
                                     <h5 class="text-xs font-bold text-amber-400 flex items-center gap-1">
-                                        <span class="p-0.5 bg-amber-900/50 rounded">⚠️</span> เคสสุ่มเสี่ยง / สตอรี่
+                                        <span class="p-0.5 bg-amber-900/50 rounded">⚠️</span> เคสสุ่มเสี่ยง /
+                                        สตอรี่
                                     </h5>
                                     <button id="fee-risky-edit-btn" onclick="toggleFeeEdit('risky')"
                                         class="text-[9px] bg-slate-600 hover:bg-slate-500 text-white px-2 py-0.5 rounded transition">✏️
@@ -2540,14 +2590,16 @@
                                             <span class="w-1 h-3 bg-indigo-500 rounded"></span> รายการสตอรี่
                                         </span>
                                         <button onclick="toggleHistory()"
-                                            class="text-xs text-slate-500 hover:text-white transition">📜 ประวัติ
+                                            class="text-xs text-slate-500 hover:text-white transition">📜
+                                            ประวัติ
                                             <span id="history-count">(0)</span></button>
                                     </div>
                                     <div id="op-case-list"
                                         class="flex flex-wrap gap-2 overflow-y-auto custom-scrollbar pr-1 content-start">
                                     </div>
                                     <div id="history-section" class="hidden mt-4 bg-slate-800/50 rounded-xl p-3">
-                                        <h4 class="text-xs font-bold text-slate-400 mb-2">📜 ประวัติสตอรี่ที่ปิดแล้ว
+                                        <h4 class="text-xs font-bold text-slate-400 mb-2">📜
+                                            ประวัติสตอรี่ที่ปิดแล้ว
                                         </h4>
                                         <div id="history-list"
                                             class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
@@ -2598,13 +2650,15 @@
                                     <!-- Medics on Umae -->
                                     <div id="nonop-umae-medic-section"
                                         class="hidden mb-2 bg-purple-900/20 rounded p-1.5 border border-purple-500/20">
-                                        <span class="text-[9px] text-purple-300">👨‍⚕️ แพทย์ในสตอรี่อุ้มห่อ: </span>
+                                        <span class="text-[9px] text-purple-300">👨‍⚕️ แพทย์ในสตอรี่อุ้มห่อ:
+                                        </span>
                                         <span id="nonop-umae-medic-list"
                                             class="text-[9px] text-white font-medium"></span>
                                     </div>
                                     <div id="nonop-umae-list"
                                         class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
-                                        <div class="text-center text-slate-500 text-[10px] py-2">ยังไม่มีเคส</div>
+                                        <div class="text-center text-slate-500 text-[10px] py-2">ยังไม่มีเคส
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2657,7 +2711,8 @@
                                         class="mb-1 bg-purple-900/20 rounded p-1.5 border border-purple-500/20">
                                         <div class="flex items-center justify-between gap-2">
                                             <div class="flex items-center gap-1 flex-wrap flex-1">
-                                                <span class="text-[9px] text-purple-300">👨‍⚕️ แพทย์อุ้มห่อ</span>
+                                                <span class="text-[9px] text-purple-300">👨‍⚕️
+                                                    แพทย์อุ้มห่อ</span>
                                                 <span id="umae-medic-limit"
                                                     class="text-[9px] text-purple-400 bg-purple-900/50 px-1 rounded">(0/0)</span>
                                                 <span class="text-[9px] text-purple-300">:</span>
@@ -3071,7 +3126,7 @@
         let musicAudio = null;
         let musicPlaying = false;
         let musicMuted = false;
-        let musicVolume = 1; // Default 1%
+        let musicVolume = 50; // Default 50%
         let musicSettings = { source: 'lofi', youtubeUrl: '', songTitle: 'Lo-Fi Radio' };
         // Lo-Fi Radio Stream - multiple fallback URLs
         const LOFI_STREAM_URLS = [
@@ -3218,18 +3273,30 @@
                                 ytPlayer.setVolume(musicVolume);
                             } else {
                                 ytPlayer = new YT.Player('music-youtube-player', {
-                                    height: '1',
-                                    width: '1',
+                                    height: '200',
+                                    width: '200',
                                     videoId: videoId,
                                     playerVars: {
-                                        autoplay: 1
+                                        autoplay: 1,
+                                        controls: 0,
+                                        disablekb: 1,
+                                        fs: 0,
+                                        origin: window.location.origin
                                     },
                                     events: {
                                         onReady: (e) => {
+                                            console.log('🎵 YT Player Ready, Video ID:', videoId, 'Volume:', musicVolume);
                                             e.target.setVolume(musicVolume);
                                             if (musicMuted) e.target.mute();
+                                            e.target.playVideo(); // Force play
                                         },
-                                        onStateChange: onYoutubePlayerStateChange
+                                        onStateChange: (event) => {
+                                            console.log('🎵 YT Player State Changed:', event.data);
+                                            if (event.data === -1) { // Unstarted, try to force play
+                                                event.target.playVideo();
+                                            }
+                                            onYoutubePlayerStateChange(event);
+                                        }
                                     }
                                 });
                             }
@@ -3352,40 +3419,28 @@
             const results = document.getElementById('music-search-results');
             results.innerHTML = '<div class="text-center text-slate-400 text-xs py-4">🔍 กำลังค้นหา...</div>';
 
-            // List of Invidious instances to try with CORS proxy
-            const instances = [
-                'https://vid.puffyan.us',
-                'https://invidious.fdn.fr',
-                'https://y.com.sb',
-                'https://invidious.nerdvpn.de'
-            ];
-
-            for (const instance of instances) {
+            // Use Electron IPC if available (much more stable)
+            if (window.windowControls && window.windowControls.youtubeSearch) {
                 try {
-                    // Use corsproxy.io to bypass CORS
-                    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(instance + '/api/v1/search?q=' + encodeURIComponent(query) + '&type=video')}`;
-                    const response = await fetch(proxyUrl);
-                    const data = await response.json();
-
+                    const data = await window.windowControls.youtubeSearch(query);
                     if (data && data.length > 0) {
-                        results.innerHTML = data.slice(0, 8).map(item => `
+                        results.innerHTML = data.map(item => `
                             <div class="flex gap-2 p-2 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 cursor-pointer transition" onclick="selectMusicResult('${item.videoId}', '${escapeHtml(item.title.replace(/'/g, "\\'"))}')">
-                                <img src="https://img.youtube.com/vi/${item.videoId}/default.jpg" class="w-16 h-12 rounded object-cover shrink-0">
+                                <img src="${item.thumbnail}" class="w-16 h-12 rounded object-cover shrink-0">
                                 <div class="flex-1 min-w-0">
                                     <div class="text-xs text-white truncate">${escapeHtml(item.title)}</div>
-                                    <div class="text-[10px] text-slate-400">${item.author || ''}</div>
+                                    <div class="text-[10px] text-slate-400">${item.artist || ''}</div>
                                 </div>
                             </div>
                         `).join('');
-                        return; // Success, exit
+                        return;
                     }
                 } catch (e) {
-                    console.log('Search failed for', instance, e);
-                    continue; // Try next instance
+                    console.error('IPC Search failed:', e);
                 }
             }
 
-            // All instances failed - show error with URL paste option
+            // Fallback: Show error with URL paste option
             results.innerHTML = `
                 <div class="text-center text-xs py-4">
                     <div class="text-amber-400 mb-2">⚠️ ค้นหาไม่สำเร็จ</div>
@@ -4201,6 +4256,7 @@
 
         // Store last messages for chat list
         let lastDMMessages = {};
+        let lastMessageListeners = {}; // NEW: Store unsubscription functions for last messages
 
         // Render Chat List with Group Chat + Online/Offline sections
         function renderChatList() {
@@ -4383,17 +4439,34 @@
             renderDMBubbles();
         }
 
-        // Listen to last messages for all users
+        // Listen to last messages for all users - Incremental & Non-leaking
         function listenToLastMessages() {
+            if (!currentUser) return;
             const myName = currentUser?.firstName || (currentUser?.fullName?.split(' ')[0]) || '';
             const registeredUsers = allUsers || [];
 
+            const currentUserNames = new Set();
             registeredUsers.forEach(user => {
                 const name = user.firstName || user.fullName?.split(' ')[0];
-                if (!name || name === myName) return;
+                if (name && name !== myName) currentUserNames.add(name);
+            });
+
+            // 1. Remove listeners for users who are gone
+            Object.keys(lastMessageListeners).forEach(name => {
+                if (!currentUserNames.has(name)) {
+                    if (typeof lastMessageListeners[name] === 'function') lastMessageListeners[name]();
+                    delete lastMessageListeners[name];
+                    const chatId = getDMChatId(myName, name);
+                    delete lastDMMessages[chatId];
+                }
+            });
+
+            // 2. Add listeners for new users
+            currentUserNames.forEach(name => {
+                if (lastMessageListeners[name]) return; // Already listening
 
                 const chatId = getDMChatId(myName, name);
-                db.collection('dm_chats').doc(chatId).collection('messages')
+                lastMessageListeners[name] = db.collection('dm_chats').doc(chatId).collection('messages')
                     .orderBy('timestamp', 'desc')
                     .limit(1)
                     .onSnapshot(snap => {
@@ -4401,8 +4474,11 @@
                             lastDMMessages[chatId] = snap.docs[0].data();
                             if (chatListOpen) renderChatList();
                         }
+                    }, err => {
+                        // Silently handle - chat might not exist
                     });
             });
+            console.log('Last Message listeners synced. Count:', Object.keys(lastMessageListeners).length);
         }
 
         function renderOnlineUsersList() {
@@ -4694,117 +4770,126 @@
         let incomingDMListeners = {}; // Store listeners per chat partner
         let incomingDMCheckInterval = null;
 
+        // Helper to get last read timestamp
+        function getLastReadTimestamp(chatId) {
+            try {
+                const key = `dm_last_read_${chatId}`;
+                const saved = localStorage.getItem(key);
+                return saved ? new Date(parseInt(saved)) : null;
+            } catch (e) { return null; }
+        }
+
+        // Save last read timestamp
+        window.saveLastReadTimestamp = (chatId) => {
+            try {
+                const key = `dm_last_read_${chatId}`;
+                localStorage.setItem(key, Date.now().toString());
+            } catch (e) { }
+        };
+
+        // For each registered user, set up a listener for potential DMs
+        function setupListenerForUser(userName) {
+            const myName = currentUser?.firstName || (currentUser?.fullName?.split(' ')[0]) || '';
+            if (!userName || userName === myName) return;
+            if (incomingDMListeners[userName]) return; // Already listening
+
+            const chatId = getDMChatId(myName, userName);
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+            let prevMsgCount = 0;
+            let initialized = false;
+            const lastReadTime = getLastReadTimestamp(chatId);
+
+            incomingDMListeners[userName] = db.collection('dm_chats').doc(chatId).collection('messages')
+                .where('timestamp', '>', oneWeekAgo)
+                .orderBy('timestamp', 'desc')
+                .limit(10)
+                .onSnapshot(snap => {
+                    if (!currentUser) return;
+
+                    const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                    // On initial load, check for unread messages (sent while offline)
+                    if (!initialized) {
+                        initialized = true;
+                        prevMsgCount = msgs.length;
+
+                        // Check for unread messages sent while we were offline
+                        if (msgs.length > 0 && lastReadTime) {
+                            const unreadMsgs = msgs.filter(m => {
+                                const msgTime = m.timestamp?.toDate?.() || new Date(0);
+                                return msgTime > lastReadTime && m.sender !== myName;
+                            });
+
+                            if (unreadMsgs.length > 0) {
+                                // Show bubble with unread count
+                                if (!openDMBubbles[userName]) {
+                                    const senderUser = (allUsers || []).find(u => (u.firstName || u.fullName?.split(' ')[0]) === userName);
+                                    createDMBubble(userName, senderUser?.avatar || '', true);
+                                    if (openDMBubbles[userName]) {
+                                        openDMBubbles[userName].unread = unreadMsgs.length;
+                                        renderDMBubbles();
+                                    }
+                                }
+                            }
+                        }
+                        return;
+                    }
+
+                    // Check for new messages
+                    if (msgs.length > prevMsgCount) {
+                        const latestMsg = msgs[0]; // Most recent
+                        if (latestMsg && latestMsg.sender !== myName) {
+                            // New message from this user!
+                            if (!openDMBubbles[userName]) {
+                                // Create new bubble
+                                showDMNotification(userName, latestMsg.text || '[รูปภาพ]');
+                            } else if (openDMBubbles[userName].minimized) {
+                                // Bubble exists but minimized
+                                openDMBubbles[userName].unread++;
+                                playChatNotifSound();
+                                renderDMBubbles();
+                            }
+                        }
+                    }
+                    prevMsgCount = msgs.length;
+                }, err => {
+                    // Silently ignore - chat might not exist yet
+                });
+        }
+
         function startIncomingDMListener() {
             if (!currentUser) return;
 
             const myName = currentUser?.firstName || (currentUser?.fullName?.split(' ')[0]) || '';
             if (!myName) return;
 
-            // Clear any existing listeners
-            stopIncomingDMListener();
-
-            // Get last read timestamps for all DMs
-            const getLastReadTimestamp = (chatId) => {
-                try {
-                    const key = `dm_last_read_${chatId}`;
-                    const saved = localStorage.getItem(key);
-                    return saved ? new Date(parseInt(saved)) : null;
-                } catch (e) { return null; }
-            };
-
-            // Save last read timestamp
-            window.saveLastReadTimestamp = (chatId) => {
-                try {
-                    const key = `dm_last_read_${chatId}`;
-                    localStorage.setItem(key, Date.now().toString());
-                } catch (e) { }
-            };
-
-            // For each registered user, set up a listener for potential DMs
-            const setupListenerForUser = (userName) => {
-                if (userName === myName) return; // Skip self
-                if (incomingDMListeners[userName]) return; // Already listening
-
-                const chatId = getDMChatId(myName, userName);
-                const oneWeekAgo = new Date();
-                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-                let prevMsgCount = 0;
-                let initialized = false;
-                const lastReadTime = getLastReadTimestamp(chatId);
-
-                incomingDMListeners[userName] = db.collection('dm_chats').doc(chatId).collection('messages')
-                    .where('timestamp', '>', oneWeekAgo)
-                    .orderBy('timestamp', 'desc')
-                    .limit(10)
-                    .onSnapshot(snap => {
-                        if (!currentUser) return;
-
-                        const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-                        // On initial load, check for unread messages (sent while offline)
-                        if (!initialized) {
-                            initialized = true;
-                            prevMsgCount = msgs.length;
-
-                            // Check for unread messages sent while we were offline
-                            if (msgs.length > 0 && lastReadTime) {
-                                const unreadMsgs = msgs.filter(m => {
-                                    const msgTime = m.timestamp?.toDate?.() || new Date(0);
-                                    return msgTime > lastReadTime && m.sender !== myName;
-                                });
-
-                                if (unreadMsgs.length > 0) {
-                                    // Show bubble with unread count
-                                    const latestUnread = unreadMsgs[0];
-                                    if (!openDMBubbles[userName]) {
-                                        const senderUser = allUsers.find(u => (u.firstName || u.fullName?.split(' ')[0]) === userName);
-                                        createDMBubble(userName, senderUser?.avatar || '', true);
-                                        if (openDMBubbles[userName]) {
-                                            openDMBubbles[userName].unread = unreadMsgs.length;
-                                            renderDMBubbles();
-                                        }
-                                    }
-                                }
-                            }
-                            return;
-                        }
-
-                        // Check for new messages
-                        if (msgs.length > prevMsgCount) {
-                            const latestMsg = msgs[0]; // Most recent
-                            if (latestMsg && latestMsg.sender !== myName) {
-                                // New message from this user!
-                                if (!openDMBubbles[userName]) {
-                                    // Create new bubble
-                                    const senderUser = allUsers.find(u => (u.firstName || u.fullName?.split(' ')[0]) === userName);
-                                    showDMNotification(userName, latestMsg.text || '[รูปภาพ]');
-                                } else if (openDMBubbles[userName].minimized) {
-                                    // Bubble exists but minimized
-                                    openDMBubbles[userName].unread++;
-                                    playChatNotifSound();
-                                    renderDMBubbles();
-                                }
-                            }
-                        }
-                        prevMsgCount = msgs.length;
-                    }, err => {
-                        // Silently ignore - chat might not exist yet
-                    });
-            };
-
-            // Set up listeners for all registered users
+            // Generate set of current users we should listen to
+            const currentNames = new Set();
             (allUsers || []).forEach(user => {
                 const userName = user.firstName || user.fullName?.split(' ')[0];
-                if (userName) setupListenerForUser(userName);
+                if (userName && userName !== myName) currentNames.add(userName);
             });
-
-            // Also check online users
             (window.chatOnlineUsers || []).forEach(u => {
-                if (u.name) setupListenerForUser(u.name);
+                if (u.name && u.name !== myName) currentNames.add(u.name);
             });
 
-            console.log('Incoming DM listeners started for', Object.keys(incomingDMListeners).length, 'users');
+            // 1. Remove listeners for users who are no longer in our current view
+            Object.keys(incomingDMListeners).forEach(name => {
+                if (!currentNames.has(name)) {
+                    if (typeof incomingDMListeners[name] === 'function') {
+                        incomingDMListeners[name](); // Unsubscribe
+                        console.log('Stopped DM listener for', name);
+                    }
+                    delete incomingDMListeners[name];
+                }
+            });
+
+            // 2. Setup listeners for new names (incremental)
+            currentNames.forEach(name => setupListenerForUser(name));
+
+            console.log('Incoming DM listeners synced. Count:', Object.keys(incomingDMListeners).length);
         }
 
         function stopIncomingDMListener() {
@@ -7078,7 +7163,7 @@
             } else {
                 appData.medicStatuses[name] = status;
             }
-            saveOpData();
+            saveOpDataDebounced();
         }
 
         // Show queue warning popup above the medic's Accept button
@@ -7164,7 +7249,7 @@
                                 }
                             }, 5 * 60 * 1000);
                         }
-                        saveOpData();
+                        saveOpDataDebounced();
                     }
                 });
             });
@@ -7264,7 +7349,7 @@
             };
             appData.umae.cases.push(newCase);
             document.getElementById('umae-phone-input').value = '';
-            saveOpData();
+            saveOpDataDebounced();
             renderUmaeTab();
             showNotif('Success', `เพิ่มเบอร์ ${phone} (${mins} นาที)`);
         }
@@ -7277,7 +7362,7 @@
                 c.helpedAt = Date.now();
                 c.timeRemaining = c.duration - (Date.now() - c.startTime);
                 appData.umae.helped.push(c);
-                saveOpData();
+                saveOpDataDebounced();
                 renderUmaeTab();
                 showNotif('Success', `✅ ${c.phone} ได้รับการช่วยเหลือแล้ว`);
             }
@@ -7296,7 +7381,7 @@
                     // Time already expired - move to expired list
                     c.expiredAt = now;
                     appData.umae.expired.push(c);
-                    saveOpData();
+                    saveOpDataDebounced();
                     renderUmaeTab();
                     showNotif('Warning', `⚠️ ${c.phone} หมดเวลาแล้ว - ย้ายไปเบอร์ที่เอ๋อ`);
                 } else {
@@ -7304,7 +7389,7 @@
                     delete c.helpedAt;
                     delete c.timeRemaining;
                     appData.umae.cases.push(c);
-                    saveOpData();
+                    saveOpDataDebounced();
                     renderUmaeTab();
                     showNotif('Success', `🔄 ${c.phone} กลับมาในคิว`);
                 }
@@ -7314,7 +7399,7 @@
         function clearExpiredUmae() {
             initUmaeData();
             appData.umae.expired = [];
-            saveOpData();
+            saveOpDataDebounced();
             renderUmaeTab();
             showNotif('Success', 'ล้างเบอร์ที่เอ๋อแล้ว');
         }
@@ -7329,7 +7414,7 @@
                     // Remove from onDuty
                     const idx = appData.onDuty?.indexOf(medicName);
                     if (idx > -1) appData.onDuty.splice(idx, 1);
-                    saveOpData();
+                    saveOpDataDebounced();
                     renderUmaeTab();
                 }
             }
@@ -7343,7 +7428,7 @@
                 if (idx > -1) {
                     c.medics.splice(idx, 1);
                     if (!appData.onDuty.includes(medicName)) appData.onDuty.push(medicName);
-                    saveOpData();
+                    saveOpDataDebounced();
                     renderUmaeTab();
                 }
             }
@@ -7360,7 +7445,7 @@
                 // Remove from onDuty
                 const idx = appData.onDuty?.indexOf(medicName);
                 if (idx > -1) appData.onDuty.splice(idx, 1);
-                saveOpData();
+                saveOpDataDebounced();
                 renderUmaeTab();
                 renderOnDuty();
             }
@@ -7411,7 +7496,7 @@
             if (idx > -1) {
                 appData.umae.medics.splice(idx, 1);
                 if (!appData.onDuty.includes(medicName)) appData.onDuty.push(medicName);
-                saveOpData();
+                saveOpDataDebounced();
                 renderUmaeTab();
                 renderOnDuty();
             }
@@ -9896,6 +9981,15 @@
             }
         }
 
+        let saveDebounceTimer = null;
+        function saveOpDataDebounced() {
+            if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+            saveDebounceTimer = setTimeout(async () => {
+                const success = await saveOpData();
+                if (!success) console.warn('⏳ [Debounce] Save was deferred due to conflict or error');
+            }, 800); // 800ms debounce
+        }
+
         function showDataConflictModal(serverData) {
             // Create or update conflict modal
             let modal = document.getElementById('data-conflict-modal');
@@ -10253,7 +10347,7 @@
 
         function editCase(id) { editingCaseId = id; renderAll(); }
         function cancelEdit() { editingCaseId = null; renderAll(); }
-        function saveEdit(id) { const idx = appData.cases.findIndex(c => c.id === id); if (idx === -1) return; appData.cases[idx].partyA = document.getElementById(`edit-pA-${id}`).value; appData.cases[idx].partyB = document.getElementById(`edit-pB-${id}`).value; appData.cases[idx].location = document.getElementById(`edit-loc-${id}`).value; appData.cases[idx].radio = document.getElementById(`edit-rad-${id}`).value; appData.cases[idx].council = document.getElementById(`edit-cou-${id}`).value; appData.cases[idx].storyDate = document.getElementById(`edit-date-${id}`).value; editingCaseId = null; saveOpData(); showNotif('Success', 'แก้ไขเรียบร้อย'); }
+        function saveEdit(id) { const idx = appData.cases.findIndex(c => c.id === id); if (idx === -1) return; appData.cases[idx].partyA = document.getElementById(`edit-pA-${id}`).value; appData.cases[idx].partyB = document.getElementById(`edit-pB-${id}`).value; appData.cases[idx].location = document.getElementById(`edit-loc-${id}`).value; appData.cases[idx].radio = document.getElementById(`edit-rad-${id}`).value; appData.cases[idx].council = document.getElementById(`edit-cou-${id}`).value; appData.cases[idx].storyDate = document.getElementById(`edit-date-${id}`).value; editingCaseId = null; saveOpDataDebounced(); showNotif('Success', 'แก้ไขเรียบร้อย'); }
         function toggleHistory() { showingHistory = !showingHistory; document.getElementById('history-section').classList.toggle('hidden', !showingHistory); }
         async function deleteHistory(idx) { const c = await showConfirm('ยืนยันลบ', 'ลบสตอรี่จากประวัติ?'); if (!c) return; if (appData.closedCases?.[idx]) { appData.closedCases.splice(idx, 1); saveOpData(); showNotif('Success', 'ลบเรียบร้อย'); } }
         async function deleteActiveCase(id) {
@@ -11144,7 +11238,7 @@
             appData.onDuty.push(nameToAdd);
             input.value = '';
             hideAutocomplete(document.getElementById('manual-add-autocomplete'));
-            saveOpData();
+            saveOpDataDebounced();
         }
 
         // Initialize autocomplete after page loads
@@ -11182,7 +11276,7 @@
                 // Use current onDuty index, not old afkPos
                 appData.afkPositions[name] = currentOnDutyIndex !== -1 ? currentOnDutyIndex : 0;
                 appData.afk.push(name);
-                saveOpData();
+                saveOpDataDebounced();
                 return;
             } else if (from === 'afk' && to === 'onDuty') {
                 // Returning FROM AFK to onDuty - restore to saved position
@@ -11191,7 +11285,7 @@
                 // Clean up AFK data
                 delete appData.afkTimes?.[name];
                 delete appData.afkPositions?.[name];
-                saveOpData();
+                saveOpDataDebounced();
                 return;
             }
 
@@ -11201,9 +11295,9 @@
             }
             if (!appData[to]) appData[to] = [];
             appData[to].push(name);
-            saveOpData();
+            saveOpDataDebounced();
         }
-        function removeMedic(name) { removeFromAllLists(name); delete appData.medicStatuses?.[name]; saveOpData(); }
+        function removeMedic(name) { removeFromAllLists(name); delete appData.medicStatuses?.[name]; saveOpDataDebounced(); }
 
         // Helper to check if a time string (HH:MM) is in the future (with optional date)
         function isTimeInFuture(timeStr, dateStr) {
@@ -11256,7 +11350,7 @@
             appData.cases.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
             addOpLog('สร้างสตอรี่', `${pA} vs ${pB}`);
             ['case-party-a', 'case-party-b', 'case-time', 'case-date'].forEach(id => document.getElementById(id).value = '');
-            saveOpData();
+            saveOpDataDebounced();
             showNotif('Success', 'สร้างสตอรี่เรียบร้อย (กด ✏️ เพื่อแก้ไขรายละเอียด)');
         }
 
@@ -11315,7 +11409,7 @@
 
             assigningCaseId = null;
             tempAssignedMedics = [];
-            saveOpData();
+            saveOpDataDebounced();
             showNotif('Success', 'บันทึกแพทย์เรียบร้อย');
         }
 

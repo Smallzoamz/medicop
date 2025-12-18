@@ -303,13 +303,11 @@ function createMainWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js'),
-            // Enable external content for YouTube iframe API
             webSecurity: true,
             allowRunningInsecureContent: false,
-            // Allow iframes from external sources (YouTube)
             webviewTag: false,
-            // Enable media features
-            plugins: true
+            autoplayPolicy: 'no-user-gesture-required',
+            backgroundThrottling: false
         },
         autoHideMenuBar: true,
         backgroundColor: '#0f172a'
@@ -787,7 +785,9 @@ function createOverlayWindow() {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'src', 'overlay-preload.js')
+            preload: path.join(__dirname, 'src', 'overlay-preload.js'),
+            autoplayPolicy: 'no-user-gesture-required',
+            backgroundThrottling: false
         }
     });
 
@@ -1322,7 +1322,6 @@ ipcMain.on('close-blacklist-panel', () => {
 });
 
 // ========== MUSIC BOX ==========
-let musicBoxWindow = null;
 
 function createMusicBoxWindow() {
     if (musicBoxWindow && !musicBoxWindow.isDestroyed()) {
@@ -1393,30 +1392,30 @@ ipcMain.on('close-music-box', () => {
 // YouTube Search for Music Box
 ipcMain.handle('youtube-search', async (event, query) => {
     try {
-        console.log(`🔍 Searching YouTube for: ${query}`);
-        const filters1 = await ytsr.getFilters(query);
-        const filter1 = filters1.get('Type').get('Video');
-        const options = {
+        console.log('🔍 YouTube Searching for:', query);
+        const searchResults = await ytsr(query, {
             limit: 10,
-        };
-        const searchResults = await ytsr(filter1.url, options);
-
-        return searchResults.items.map(item => ({
-            videoId: item.id,
-            title: item.title,
-            artist: item.author ? item.author.name : 'Unknown Artist',
-            thumbnail: item.bestThumbnail ? item.bestThumbnail.url : '',
-            duration: item.duration
-        }));
+            safeSearch: false
+        });
+        // Filter only videos and return clean data
+        return searchResults.items
+            .filter(item => item.type === 'video')
+            .map(item => ({
+                id: item.id,
+                title: item.title,
+                thumbnail: item.thumbnails[0]?.url,
+                duration: item.duration,
+                author: item.author?.name
+            }));
     } catch (error) {
-        console.error('❌ YouTube Search Error:', error);
+        console.error('❌ ytsr error:', error.message);
+        // If ytsr fails due to gridShelfViewModel or other layout changes,
+        // we'll return an empty array or a specific error code to the UI
         return [];
     }
 });
 
-// ========== END AUTO UPDATE ==========
-
-// App ready
+// Quit when all windows are closed
 app.whenReady().then(() => {
     // Configure session to allow YouTube iframe API and audio streams
     const filter = {
@@ -1431,9 +1430,28 @@ app.whenReady().then(() => {
         ]
     };
 
-    // Allow cross-origin requests for YouTube
+    // Intercept requests to YouTube to spoof headers and bypass restrictions
+    session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+        const { requestHeaders } = details;
+        const url = new URL(details.url);
+
+        // Spoof Referer and Origin to make YouTube think the request is from its own site
+        requestHeaders['Referer'] = 'https://www.youtube.com/';
+        requestHeaders['Origin'] = 'https://www.youtube.com/';
+
+        // Use a modern browser User-Agent
+        requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+        // Add Sec headers often checked by YouTube
+        requestHeaders['sec-ch-ua'] = '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"';
+        requestHeaders['sec-ch-ua-mobile'] = '?0';
+        requestHeaders['sec-ch-ua-platform'] = '"Windows"';
+
+        callback({ requestHeaders });
+    });
+
+    // Allow cross-origin responses and remove framing restrictions for YouTube
     session.defaultSession.webRequest.onHeadersReceived(filter, (details, callback) => {
-        // Remove restrictive headers that block iframes
         const responseHeaders = { ...details.responseHeaders };
 
         // Allow embedding in iframes
@@ -1443,10 +1461,17 @@ app.whenReady().then(() => {
         // Allow cross-origin requests
         responseHeaders['Access-Control-Allow-Origin'] = ['*'];
 
+        // Remove restrictive Content-Security-Policy
+        delete responseHeaders['content-security-policy'];
+        delete responseHeaders['Content-Security-Policy'];
+
+        // Add permissions for YouTube
+        responseHeaders['Permissions-Policy'] = ['encrypted-media=*, autoplay=*, picture-in-picture=*'];
+
         callback({ responseHeaders });
     });
 
-    console.log('🎵 YouTube iframe API CORS bypass enabled');
+    console.log('🎵 YouTube iframe API & Audio stream bypass enabled');
 
     // Show splash first
     createSplashWindow();

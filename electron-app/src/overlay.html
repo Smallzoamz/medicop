@@ -211,9 +211,6 @@
             <button onclick="openPanelWindow('copy')"
                 class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-xs text-blue-400">📋
                 รวมคำสั่งประกาศ</button>
-            <button onclick="toggleMusicBox()"
-                class="w-full text-left px-2 py-1 hover:bg-white/10 rounded text-xs text-purple-400">🎵
-                Music Box (เครื่องเล่นเพลง)</button>
 
         </div>
 
@@ -468,13 +465,6 @@
             }
         }
 
-        // Toggle Music Box
-        function toggleMusicBox() {
-            if (window.overlayAPI?.openMusicBox) {
-                window.overlayAPI.openMusicBox();
-                document.getElementById('add-menu').classList.add('hidden');
-            }
-        }
 
         // Copy Story Announcement (Cooldown / Enter Area) - Exact text from Desktop OP
         function copyStoryAnnounce(type, partyA, partyB) {
@@ -1072,6 +1062,7 @@
                     window.overlayAPI.resizeToFit(height);
                 }
             });
+
         });
     </script>
 </body>
