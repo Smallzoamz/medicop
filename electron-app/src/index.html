@@ -10054,19 +10054,16 @@
             const isOP = hasOP && (isOPMatch || isSupOPMatch || includesOP || includesSupOP);
             const isStaffPlus = currentUser?.role && ['Staff', 'Admin', 'Owner'].includes(currentUser.role);
 
-            // DEBUG - Check in console
-            console.log('🔍 renderAll Debug:', {
-                userFirstName,
-                opFirstName,
-                supOpFirstName,
-                hasOP,
-                isOPMatch,
-                isSupOPMatch,
-                isOP,
-                isStaffPlus,
-                currentUserFullName: currentUser?.fullName,
-                currentOP: appData.currentOP,
-                supOP: appData.supOP
+            // OPTIMIZATION: Create maps for faster lookups
+            const allUsersByFirstName = new Map();
+            (allUsers || []).forEach(u => {
+                if (u.firstName) allUsersByFirstName.set(u.firstName, u);
+            });
+
+            const blacklistByNameMap = new Map();
+            (blacklistData || []).forEach(entry => {
+                const name = typeof entry === 'object' ? entry.name : entry;
+                if (name) blacklistByNameMap.set(name.toLowerCase(), entry);
             });
 
             // Fight form visibility:
@@ -10075,7 +10072,6 @@
             // - Otherwise: Hidden
             const fightForm = document.getElementById('fight-create-form');
             const canSeeFightForm = isOP || (!hasOP && isStaffPlus);
-            console.log('🔍 Fight form debug:', { isOP, hasOP, isStaffPlus, canSeeFightForm, fightFormFound: !!fightForm });
             if (fightForm) fightForm.classList.toggle('hidden', !canSeeFightForm);
 
             // Umae form: Only OP can see
@@ -10123,8 +10119,8 @@
                 const acceptBtn = st === 'accept' ? `<button onclick="toggleMedicStatus('${n}','accept')" class="medic-action-btn flex-shrink-0 px-2 py-1 rounded text-[10px] bg-cyan-600 text-white font-medium">✓</button>` : `<button onclick="toggleMedicStatus('${n}','accept')" class="medic-action-btn flex-shrink-0 px-2 py-1 rounded text-[10px] bg-slate-700/80 text-slate-400 hover:bg-cyan-600/40 hover:text-cyan-300">✓</button>`;
                 const waitBtn = st === 'waitfix' ? `<button onclick="toggleMedicStatus('${n}','waitfix')" class="medic-action-btn flex-shrink-0 px-2 py-1 rounded text-[10px] bg-amber-600 text-white font-medium">⏳</button>` : `<button onclick="toggleMedicStatus('${n}','waitfix')" class="medic-action-btn flex-shrink-0 px-2 py-1 rounded text-[10px] bg-slate-700/80 text-slate-400 hover:bg-amber-600/40 hover:text-amber-300">⏳</button>`;
                 const declineBtn = st === 'decline' ? `<button onclick="toggleMedicStatus('${n}','decline')" class="medic-action-btn flex-shrink-0 px-2 py-1 rounded text-[10px] bg-rose-600 text-white font-medium">❌</button>` : `<button onclick="toggleMedicStatus('${n}','decline')" class="medic-action-btn flex-shrink-0 px-2 py-1 rounded text-[10px] bg-slate-700/80 text-slate-400 hover:bg-rose-600/40 hover:text-rose-300">❌</button>`;
-                // Find registered user by matching first name (not full name)
-                const matchedUser = allUsers.find(u => u.firstName && u.firstName === n.split(' ')[0]);
+                // OPTIMIZED: Use Map for user lookup
+                const matchedUser = allUsersByFirstName.get(n.split(' ')[0]);
                 const icPhone = matchedUser?.icPhone ? `<span class="text-[10px] text-slate-500 ml-1">📞${matchedUser.icPhone}</span>` : '';
                 const themeHex = (serverSettings.themeColor || '#06b6d4').replace('#', '');
                 const avatarUrl = matchedUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(n)}&background=${themeHex}&color=fff&size=32`;
@@ -10253,15 +10249,9 @@
                             const pendingBadge = isPending && !isClosed ? '<span class="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded ml-1">⏳ รอเริ่ม</span>' : '';
                             const isAssigning = assigningCaseId === c.id;
 
-                            // Check blacklist for Party A and Party B (handle both string and object format)
-                            const partyABlEntry = blacklistData.find(g => {
-                                const name = typeof g === 'object' ? g.name : g;
-                                return name?.toLowerCase() === c.partyA?.toLowerCase();
-                            });
-                            const partyBBlEntry = blacklistData.find(g => {
-                                const name = typeof g === 'object' ? g.name : g;
-                                return name?.toLowerCase() === c.partyB?.toLowerCase();
-                            });
+                            // OPTIMIZED: Use Map for blacklist lookup
+                            const partyABlEntry = blacklistByNameMap.get(c.partyA?.toLowerCase());
+                            const partyBBlEntry = blacklistByNameMap.get(c.partyB?.toLowerCase());
 
                             // Build emoji tag based on penaltyTag with tooltip showing penalty only
                             const getEmojiTag = (entry) => {
@@ -10342,7 +10332,9 @@
             }
 
             const hc = appData.closedCases?.length || 0; document.getElementById('history-count').textContent = '(' + hc + ')';
-            document.getElementById('history-list').innerHTML = (appData.closedCases || []).map((c, i) => '<div class="bg-slate-800/50 rounded p-2 text-xs"><div class="flex justify-between"><span class="text-slate-300">' + c.partyA + ' vs ' + c.partyB + ' <span class="text-slate-500">📍' + c.location + '</span></span><button onclick="deleteHistory(' + i + ')" class="text-red-400 hover:text-red-300">🗑️</button></div><div class="text-slate-500 mt-1">' + (c.medics?.join(', ') || '-') + '</div></div>').join('') || '<p class="text-xs text-slate-500 text-center py-2">ไม่มีประวัติ</p>';
+            // OPTIMIZATION: Limit history rendering to last 15 items for performance
+            const historyToRender = (appData.closedCases || []).slice(0, 15);
+            document.getElementById('history-list').innerHTML = historyToRender.map((c, i) => '<div class="bg-slate-800/50 rounded p-2 text-xs"><div class="flex justify-between"><span class="text-slate-300">' + c.partyA + ' vs ' + c.partyB + ' <span class="text-slate-500">📍' + c.location + '</span></span><button onclick="deleteHistory(' + i + ')" class="text-red-400 hover:text-red-300">🗑️</button></div><div class="text-slate-500 mt-1">' + (c.medics?.join(', ') || '-') + '</div></div>').join('') || (hc > 0 ? '<p class="text-xs text-slate-500 text-center py-2">ใช้ Staff/Admin เคลียร์ประวัติเพื่อประสิทธิภาพ</p>' : '<p class="text-xs text-slate-500 text-center py-2">ไม่มีประวัติ</p>');
         }
 
         function editCase(id) { editingCaseId = id; renderAll(); }
