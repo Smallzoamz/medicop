@@ -7164,6 +7164,7 @@
                 appData.medicStatuses[name] = status;
             }
             saveOpDataDebounced();
+            renderAllDebounced();
         }
 
         // Show queue warning popup above the medic's Accept button
@@ -9855,7 +9856,7 @@
                 if (hasActiveStories) return true;
                 return !cs.closed;
             });
-            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, afkWarnings: {}, afkWarnedTimes: {} };
+            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, afkWarnings: {}, afkWarnedTimes: {}, opHandoverTargetTime: null };
 
             // CRITICAL: Wait for save to complete before proceeding
             const saved = await saveOpData();
@@ -10031,7 +10032,31 @@
         } let allUsers = [];
         let renderTimeout = null;
         function renderAllDebounced() { if (renderTimeout) clearTimeout(renderTimeout); renderTimeout = setTimeout(() => { renderAll(); updateUserDropdowns(); applyRoleRestrictions(); if (typeof updateSupOPDisplay === 'function') updateSupOPDisplay(); }, 300); }
-        async function loadUsers() { try { const snap = await db.collection('op_users').get(); allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })); updateUserDropdowns(); renderOPControl(); startIncomingDMListener(); renderOnlineUsersList(); listenToLastMessages(); } catch (e) { } db.collection('op_users').onSnapshot(snap => { allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })); updateUserDropdowns(); startIncomingDMListener(); renderOnlineUsersList(); if (chatListOpen) renderChatList(); }); }
+        let usersSyncTimeout = null;
+        async function loadUsers() {
+            try {
+                const snap = await db.collection('op_users').get();
+                allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateUserDropdowns();
+                renderOPControl();
+                startIncomingDMListener();
+                renderOnlineUsersList();
+                listenToLastMessages();
+            } catch (e) { }
+
+            db.collection('op_users').onSnapshot(snap => {
+                // Debounce user synchronization to prevent UI thrashing
+                if (usersSyncTimeout) clearTimeout(usersSyncTimeout);
+                usersSyncTimeout = setTimeout(() => {
+                    allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    updateUserDropdowns();
+                    startIncomingDMListener();
+                    renderOnlineUsersList();
+                    if (chatListOpen) renderChatList();
+                    renderAllDebounced(); // Ensure OP list reflects status changes
+                }, 800);
+            });
+        }
         function updateUserDropdowns() { const supSel = document.getElementById('op-sup-select'); const m1 = document.getElementById('case-medic-1'), m2 = document.getElementById('case-medic-2'), m3 = document.getElementById('case-medic-3'); if (!supSel) return;[m1, m2, m3].forEach(s => { if (s) s.innerHTML = '<option value="">-- เลือก --</option>'; }); supSel.innerHTML = '<option value="">-- Select --</option>'; allUsers.filter(u => u.workStatus !== 'ลางาน' && u.fullName !== appData.currentOP).forEach(u => { const displayName = u.firstName || u.fullName.split(' ')[0]; supSel.innerHTML += `<option value="${u.fullName}">${displayName}</option>`; }); (appData.onDuty || []).forEach(name => { [m1, m2, m3].forEach(s => { if (s) s.innerHTML += `<option value="${name}">${name}</option>`; }); }); if (appData.supOP) supSel.value = appData.supOP; }
 
         function updateHeader() { const el = document.getElementById('op-shift-date'); if (el) el.textContent = new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }); }
@@ -10335,6 +10360,9 @@
             // OPTIMIZATION: Limit history rendering to last 15 items for performance
             const historyToRender = (appData.closedCases || []).slice(0, 15);
             document.getElementById('history-list').innerHTML = historyToRender.map((c, i) => '<div class="bg-slate-800/50 rounded p-2 text-xs"><div class="flex justify-between"><span class="text-slate-300">' + c.partyA + ' vs ' + c.partyB + ' <span class="text-slate-500">📍' + c.location + '</span></span><button onclick="deleteHistory(' + i + ')" class="text-red-400 hover:text-red-300">🗑️</button></div><div class="text-slate-500 mt-1">' + (c.medics?.join(', ') || '-') + '</div></div>').join('') || (hc > 0 ? '<p class="text-xs text-slate-500 text-center py-2">ใช้ Staff/Admin เคลียร์ประวัติเพื่อประสิทธิภาพ</p>' : '<p class="text-xs text-slate-500 text-center py-2">ไม่มีประวัติ</p>');
+
+            // Refresh timer cache after render
+            if (typeof updateAFKTimerCache === 'function') updateAFKTimerCache();
         }
 
         function editCase(id) { editingCaseId = id; renderAll(); }
@@ -10782,7 +10810,7 @@
                 // If all stories are closed, only keep pending/future (already checked above)
                 return !cs.closed;
             });
-            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
+            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] }, afkWarnings: {}, afkWarnedTimes: {}, opHandoverTargetTime: null };
             const saved = await saveOpData();
             if (!saved) { showNotif('Error', '❌ บันทึกไม่สำเร็จ'); return; }
             renderAll();
@@ -10893,7 +10921,7 @@
                 if (hasActiveStories) return true;
                 return !cs.closed;
             });
-            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] } };
+            appData = { shiftStart: null, currentOP: null, supOP: null, onDuty: [], offDuty: [], afk: [], afkTimes: {}, cases: preservedCases, closedCases: [], medicStatuses: {}, opPendingRequests: [], opHandoverAt: null, handoverNextOP: null, umae: { cases: [], expired: [], helped: [] }, afkWarnings: {}, afkWarnedTimes: {}, opHandoverTargetTime: null };
             const saved = await saveOpData();
             if (saved) {
                 addDetailedLog('จบกะ (Server Restart - สำเร็จ)', `OP เดิม: ${prevOP || '-'}`, 'shift_change');
@@ -11269,6 +11297,7 @@
                 appData.afkPositions[name] = currentOnDutyIndex !== -1 ? currentOnDutyIndex : 0;
                 appData.afk.push(name);
                 saveOpDataDebounced();
+                renderAllDebounced(); // Optimistic UI update
                 return;
             } else if (from === 'afk' && to === 'onDuty') {
                 // Returning FROM AFK to onDuty - restore to saved position
@@ -11278,6 +11307,7 @@
                 delete appData.afkTimes?.[name];
                 delete appData.afkPositions?.[name];
                 saveOpDataDebounced();
+                renderAllDebounced(); // Optimistic UI update
                 return;
             }
 
@@ -11288,6 +11318,7 @@
             if (!appData[to]) appData[to] = [];
             appData[to].push(name);
             saveOpDataDebounced();
+            renderAllDebounced(); // Optimistic UI update
         }
         function removeMedic(name) { removeFromAllLists(name); delete appData.medicStatuses?.[name]; saveOpDataDebounced(); }
 
@@ -11476,6 +11507,10 @@
 
         let handoverWarned5 = false, handoverWarned1 = false;
         let prevPendingStates = {}; // Track previous pending states for auto-refresh
+        let cachedAfkTimers = [];
+        function updateAFKTimerCache() {
+            cachedAfkTimers = Array.from(document.querySelectorAll('.afk-timer'));
+        }
         setInterval(() => {
             const now = Date.now();
 
@@ -11499,7 +11534,14 @@
                 if (needsRefresh) renderAllDebounced();
             }
             if (appData.shiftStart) { const d = now - appData.shiftStart; const timerEl = document.getElementById('op-shift-timer'); if (timerEl) timerEl.textContent = `${String(Math.floor(d / 3600000)).padStart(2, '0')}:${String(Math.floor((d % 3600000) / 60000)).padStart(2, '0')}:${String(Math.floor((d % 60000) / 1000)).padStart(2, '0')}`; } else { const timerEl = document.getElementById('op-shift-timer'); if (timerEl) timerEl.textContent = '00:00:00'; }
-            document.querySelectorAll('.afk-timer').forEach(el => { const start = parseInt(el.dataset.start); if (start) { const d = now - start; el.textContent = ` ${String(Math.floor(d / 60000)).padStart(2, '0')}:${String(Math.floor((d % 60000) / 1000)).padStart(2, '0')}`; } });
+            // OPTIMIZED: Use cached elements instead of querySelectorAll every second
+            cachedAfkTimers.forEach(el => {
+                const start = parseInt(el.dataset.start);
+                if (start) {
+                    const d = now - start;
+                    el.textContent = ` ${String(Math.floor(d / 60000)).padStart(2, '0')}:${String(Math.floor((d % 60000) / 1000)).padStart(2, '0')}`;
+                }
+            });
             // Handover countdown
             if (appData.handoverNextOP && appData.opHandoverTargetTime) {
                 const targetRemaining = appData.opHandoverTargetTime - now;
