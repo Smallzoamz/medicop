@@ -661,7 +661,20 @@
 
         // Load all users for IC phone lookup
         db.collection('op_users').onSnapshot(snap => {
-            allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            allUsers = snap.docs.map(doc => {
+                const data = doc.data();
+                const firstName = data.firstName || '';
+                // Since this is a mini overlay, we don't have serverSettings here easily, 
+                // but we can at least ensure fields are consistent.
+                const avatarUrl = data.discordAvatar || data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || 'U')}&background=06b6d4&color=fff&size=80`;
+
+                return {
+                    id: doc.id,
+                    username: doc.id,
+                    ...data,
+                    avatar: avatarUrl
+                };
+            });
         });
 
         // OP Timer - Update every second (like Desktop)

@@ -288,13 +288,18 @@ exports.checkLeaveStatus = onSchedule({
     // B. Sync Avatars (Only if Bot On)
     if (await isBotEnabled()) {
         try {
+            // 1. Sync Roster Avatars
             const avatarUpdates = await syncAllAvatars(rosterData);
             if (avatarUpdates) {
                 rosterData = avatarUpdates;
                 updated = true;
                 console.log("Synced rosters avatars from Discord");
-                await logSystem('INFO', 'Synced avatars from Discord (Daily Job)');
+                await logSystem('INFO', 'Synced roster avatars (Daily Job)');
             }
+
+            // 2. Sync op_users Avatars (Discord Links)
+            await syncOpUsersAvatars();
+
         } catch (e) {
             console.error("Avatar Sync Failed:", e);
         }
@@ -455,7 +460,7 @@ async function updateAvatarInDb(discordId, avatarUrl) {
     if (found) await rosterRef.update({ items: newItems });
 }
 
-// Helper: Bulk Sync
+// Helper: Bulk Sync Roster
 async function syncAllAvatars(rosterData) {
     try {
         if (!await ensureBotLogin()) return null;
@@ -480,6 +485,54 @@ async function syncAllAvatars(rosterData) {
     } catch (e) {
         console.error("Sync Error:", e);
         return null;
+    }
+}
+
+// Helper: Bulk Sync Registered Users (op_users)
+async function syncOpUsersAvatars() {
+    try {
+        if (!await ensureBotLogin()) return;
+
+        const guild = await client.guilds.fetch(GUILD_ID);
+        const members = await guild.members.fetch();
+
+        const usersSnap = await db.collection('op_users').where('discordId', '!=', null).get();
+        if (usersSnap.empty) return;
+
+        console.log(`Syncing avatars for ${usersSnap.size} linked accounts...`);
+        const batch = db.batch();
+        let updateCount = 0;
+
+        for (const doc of usersSnap.docs) {
+            const userData = doc.data();
+            const discordId = userData.discordId;
+
+            if (discordId && members.has(discordId)) {
+                const member = members.get(discordId);
+                const freshAvatar = member.user.displayAvatarURL({ format: 'png', size: 512 });
+
+                // Update both fields to be safe and consistent
+                const needsUpdate = (userData.discordAvatar !== freshAvatar) || (userData.avatar !== freshAvatar);
+
+                if (needsUpdate) {
+                    batch.update(doc.ref, {
+                        discordAvatar: freshAvatar,
+                        avatar: freshAvatar, // Harmonize field
+                        discordUsername: member.user.username, // Refresh username too
+                        lastAvatarSync: Date.now()
+                    });
+                    updateCount++;
+                }
+            }
+        }
+
+        if (updateCount > 0) {
+            await batch.commit();
+            console.log(`✅ Updated ${updateCount} user avatars in op_users`);
+            await logSystem('INFO', `Synced ${updateCount} Discord avatars for linked accounts`);
+        }
+    } catch (e) {
+        console.error("OpUsers Avatar Sync Failed:", e);
     }
 }
 

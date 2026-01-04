@@ -9769,7 +9769,22 @@
             async function loadUsers() {
                 try {
                     const snap = await db.collection('op_users').get();
-                    allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    allUsers = snap.docs.map(doc => {
+                        const data = doc.data();
+                        const firstName = data.firstName || '';
+                        const themeHex = (serverSettings?.themeColor || '#06b6d4').replace('#', '');
+
+                        // Use discordAvatar if available, else standard avatar, else fallback
+                        const avatarUrl = data.discordAvatar || data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || 'U')}&background=${themeHex}&color=fff&size=80`;
+
+                        return {
+                            id: doc.id,
+                            username: doc.id,
+                            ...data,
+                            avatar: avatarUrl // Ensure avatar field is consistently populated
+                        };
+                    });
+                    console.log(`Loaded ${allUsers.length} users from op_users`);
                     updateUserDropdowns();
                     renderOPControl();
                     startIncomingDMListener();
@@ -9780,7 +9795,22 @@
                 db.collection('op_users').onSnapshot(snap => {
                     if (usersSyncTimeout) clearTimeout(usersSyncTimeout);
                     usersSyncTimeout = setTimeout(() => {
-                        allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        allUsers = snap.docs.map(doc => {
+                            const data = doc.data();
+                            const firstName = data.firstName || '';
+                            const themeHex = (serverSettings?.themeColor || '#06b6d4').replace('#', '');
+
+                            // Use discordAvatar if available, else standard avatar, else fallback
+                            const avatarUrl = data.discordAvatar || data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || 'U')}&background=${themeHex}&color=fff&size=80`;
+
+                            return {
+                                id: doc.id,
+                                username: doc.id,
+                                ...data,
+                                avatar: avatarUrl
+                            };
+                        });
+                        console.log(`Updated ${allUsers.length} users (Live)`);
                         updateUserDropdowns();
                         startIncomingDMListener();
                         renderOnlineUsersList();
@@ -10197,8 +10227,21 @@
                     const opFirstName = appData.currentOP.split(' ')[0];
                     const opAvatar = opUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(opFirstName)}&background=${isUnregisteredOP ? 'f59e0b' : themeHex}&color=fff&size=80`;
                     const warningBadge = isUnregisteredOP ? `<span class="text-[9px] bg-amber-600 text-white px-1.5 py-0.5 rounded ml-1" title="ผู้ใช้นี้ไม่ได้ลงทะเบียนในระบบ">⚠️</span>` : '';
+                    // Helper for avatar error fallback
+                    window.handleAvatarError = function (img, name) {
+                        const themeHex = (serverSettings?.themeColor || '#06b6d4').replace('#', '');
+                        img.onerror = null; // Prevent infinite loop
+                        img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${themeHex}&color=fff&size=80`;
+                    };
+
                     const shiftTimerHTML = `<span class="ml-2 px-2 py-0.5 bg-slate-800/50 rounded text-[10px] font-mono text-cyan-400" id="op-shift-timer">00:00:00</span>`;
-                    statusEl.innerHTML = `<div class="text-sm font-bold text-white truncate flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full ${isUnregisteredOP ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse"></div><span>${opFirstName}${warningBadge}</span>${shiftTimerHTML}<img src="${opAvatar}" onclick="showImagePreview('${opAvatar}', '${opFirstName}')" class="w-12 h-12 rounded-lg object-cover ml-auto cursor-pointer hover:ring-2 hover:ring-cyan-400 transition" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(opFirstName)}&background=${themeHex}&color=fff&size=80'"></div>${isUnregisteredOP ? `<div class="text-[10px] text-amber-400 ml-3.5">⚠️ ไม่ได้ลงทะเบียน</div><button onclick="forceEndUnregisteredOP()" class="mt-1 w-full bg-rose-600/80 hover:bg-rose-600 text-white text-[10px] font-medium py-1 rounded transition">🚫 บังคับปิดกะ</button>` : (opPhone ? `<div class="text-[10px] text-slate-400 ml-3.5">📞 ${opPhone}</div>` : '')}`;
+                    statusEl.innerHTML = `<div class="text-sm font-bold text-white truncate flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full ${isUnregisteredOP ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse"></div>
+                        <span>${opFirstName}${warningBadge}</span>${shiftTimerHTML}
+                        <img src="${opAvatar}" onclick="showImagePreview('${opAvatar}', '${opFirstName}')" 
+                             class="w-12 h-12 rounded-lg object-cover ml-auto cursor-pointer hover:ring-2 hover:ring-cyan-400 transition" 
+                             onerror="handleAvatarError(this, '${opFirstName}')">
+                    </div>${isUnregisteredOP ? `<div class="text-[10px] text-amber-400 ml-3.5">⚠️ ไม่ได้ลงทะเบียน</div><button onclick="forceEndUnregisteredOP()" class="mt-1 w-full bg-rose-600/80 hover:bg-rose-600 text-white text-[10px] font-medium py-1 rounded transition">🚫 บังคับปิดกะ</button>` : (opPhone ? `<div class="text-[10px] text-slate-400 ml-3.5">📞 ${opPhone}</div>` : '')}`;
                 } else {
                     statusEl.innerHTML = `<div class="text-sm text-slate-400 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>ยังไม่มี OP</div>`;
                 }
